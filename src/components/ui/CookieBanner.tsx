@@ -36,7 +36,10 @@ export const CookieBanner: React.FC = () => {
     setVisible(false)
   }
 
-  const aceitarTodos       = () => salvar({ essenciais: true, analytics: true,  marketing: true  })
+  const aceitarTodos       = () => {
+    setConsent({ essenciais: true, analytics: true, marketing: true })
+    salvar({ essenciais: true, analytics: true, marketing: true })
+  }
   const recusarOpcionais   = () => salvar({ essenciais: true, analytics: false, marketing: false })
   const salvarPreferencias = () => salvar(consent)
 
