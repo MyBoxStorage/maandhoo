@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Ticket, Users, BookMarked, TrendingUp, CalendarDays, ArrowRight, CheckCircle2, Clock } from 'lucide-react'
+import { Ticket, Users, BookMarked, TrendingUp, CalendarDays, ArrowRight, CheckCircle2, Clock, UserPlus } from 'lucide-react'
 import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -11,7 +11,7 @@ const stats = [
   { label: 'Ingressos Vendidos', valor: '247', sub: 'Este mês', icon: <Ticket size={20} />, cor: 'text-dourado' },
   { label: 'Receita Total', valor: 'R$ 12.350', sub: 'Este mês', icon: <TrendingUp size={20} />, cor: 'text-green-400' },
   { label: 'Reservas Pendentes', valor: '8', sub: 'Aguardando confirmação', icon: <BookMarked size={20} />, cor: 'text-amber-400' },
-  { label: 'Listas Amigas', valor: '183', sub: 'Inscrições ativas', icon: <Users size={20} />, cor: 'text-blue-400' },
+  { label: 'Leads Capturados', valor: '6', sub: 'Novos esta semana', icon: <UserPlus size={20} />, cor: 'text-blue-400' },
 ]
 
 const ultimasVendas = [

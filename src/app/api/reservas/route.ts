@@ -16,11 +16,28 @@ export async function POST(req: NextRequest) {
     }
 
     // TODO: 1. Salvar reserva no Supabase
-    // await supabase.from('reservas').insert({
-    //   tipo, nome, email, whatsapp, numeroPessoas, areaDesejada, dataAniversario, observacoes,
-    //   status: 'pendente',
-    //   criadoEm: new Date(),
-    // })
+    // await supabase.from('reservas').insert({...})
+
+    // 2. Captura lead automaticamente
+    try {
+      const origemMap: Record<string, string> = {
+        mesa: 'reserva_mesa',
+        camarote: 'reserva_camarote',
+        aniversario: 'reserva_aniversario',
+      }
+      await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome, email, whatsapp,
+          origem: origemMap[tipo] || 'contato',
+          observacoes: `Reserva ${tipo} · ${numeroPessoas} pessoas · ${areaDesejada || ''}`,
+          consentimentoLGPD: true,
+        }),
+      })
+    } catch (e) {
+      console.warn('[Leads] Falha ao capturar lead da reserva:', e)
+    }
 
     // TODO: 2. Enviar email para contato@maandhoo.com com os dados da reserva
     // await transporter.sendMail({

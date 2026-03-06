@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, CalendarDays, Ticket, Users, ListChecks,
-  BookMarked, UtensilsCrossed, Image, LogOut, Menu, X, QrCode
+  BookMarked, UtensilsCrossed, Image, LogOut, Menu, X, QrCode, UserPlus
 } from 'lucide-react'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 
@@ -15,6 +15,7 @@ const navAdmin = [
   { href: '/admin/ingressos', label: 'Ingressos', icon: <Ticket size={17} />, roles: ['admin'] },
   { href: '/admin/listas', label: 'Listas Amigas', icon: <ListChecks size={17} />, roles: ['admin', 'operador'] },
   { href: '/admin/reservas', label: 'Reservas', icon: <BookMarked size={17} />, roles: ['admin'] },
+  { href: '/admin/leads', label: 'Leads & Contatos', icon: <UserPlus size={17} />, roles: ['admin'] },
   { href: '/admin/cardapio', label: 'Cardápio', icon: <UtensilsCrossed size={17} />, roles: ['admin'] },
   { href: '/admin/galeria', label: 'Galeria', icon: <Image size={17} />, roles: ['admin', 'operador'] },
   { href: '/admin/usuarios', label: 'Usuários', icon: <Users size={17} />, roles: ['admin'] },

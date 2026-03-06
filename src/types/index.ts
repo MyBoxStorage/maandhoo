@@ -106,7 +106,33 @@ export interface Reserva {
   criadoEm: Date
 }
 
-export type CategoriaCardapio =
+export type OrigemLead =
+  | 'popup_lista'
+  | 'reserva_mesa'
+  | 'reserva_camarote'
+  | 'reserva_aniversario'
+  | 'compra_ingresso'
+  | 'contato'
+
+export type StatusLead = 'novo' | 'contatado' | 'convertido' | 'descartado'
+
+export interface Lead {
+  id: string
+  nome: string
+  email?: string
+  whatsapp?: string
+  origem: OrigemLead
+  eventoId?: string
+  eventoNome?: string
+  observacoes?: string
+  status: StatusLead
+  consentimentoLGPD: boolean
+  dataConsentimento: Date
+  criadoEm: Date
+  atualizadoEm: Date
+}
+
+
   | 'drinks'
   | 'longneck'
   | 'doses'

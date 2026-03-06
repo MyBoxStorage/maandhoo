@@ -34,6 +34,21 @@ export const PopupLista: React.FC = () => {
     setLoading(true)
     try {
       await new Promise(r => setTimeout(r, 800)) // placeholder API
+
+      // Captura lead com consentimento LGPD
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: nome.trim(),
+          email: email.trim(),
+          origem: 'popup_lista',
+          eventoId: proximoEvento?.id,
+          eventoNome: proximoEvento?.nome,
+          consentimentoLGPD: true,
+        }),
+      })
+
       toast.success('Nome adicionado à lista! Confira seu email.')
       fechar()
     } catch {
@@ -96,6 +111,11 @@ export const PopupLista: React.FC = () => {
 
           <p className="text-xs text-bege-escuro/40 italic">
             * Lista válida até 00:00. Sujeita a alteração conforme lotação.
+          </p>
+
+          <p className="text-[10px] text-bege-escuro/30 leading-relaxed">
+            Ao se cadastrar, você concorda com o uso dos seus dados para fins de comunicação sobre eventos, conforme nossa{' '}
+            <a href="/politicas#privacidade" className="underline hover:text-bege-escuro/50">Política de Privacidade (LGPD)</a>.
           </p>
 
           <button
