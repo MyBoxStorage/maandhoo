@@ -132,7 +132,7 @@ export interface Lead {
   atualizadoEm: Date
 }
 
-
+export type CategoriaCardapio =
   | 'drinks'
   | 'longneck'
   | 'doses'
