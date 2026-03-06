@@ -46,19 +46,19 @@ export async function POST(req: NextRequest) {
       sofaMap[s.id] = s
     })
 
-    function cam(id: string, dx: number, dy: number, dw: number, dh: number) {
+    const cam = (id: string, dx: number, dy: number, dw: number, dh: number) => {
       const c = camMap[id]
       if (!c) return { x: dx, y: dy, w: dw, h: dh }
       return c
     }
 
-    function mesa(id: string, dcx: number, dcy: number) {
+    const mesa = (id: string, dcx: number, dcy: number) => {
       const m = mesaMap[id]
       if (!m) return { cx: dcx, cy: dcy }
       return m
     }
 
-    function sofa(id: string, dx: number, dy: number, dw: number, dh: number) {
+    const sofa = (id: string, dx: number, dy: number, dw: number, dh: number) => {
       const s = sofaMap[id]
       if (!s) return { x: dx, y: dy, w: dw, h: dh }
       return s
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     const eb = escadasBlk ?? { x: 200, y: 128, w: 260, h: 28 }
 
     // Linhas
-    function line(id: string, dx1: number, dy1: number, dx2: number, dy2: number) {
+    const line = (id: string, dx1: number, dy1: number, dx2: number, dy2: number) => {
       const l = estrutura.find((e: { id: string }) => e.id === id) as
         { x1: number; y1: number; x2: number; y2: number } | undefined
       return l ?? { x1: dx1, y1: dy1, x2: dx2, y2: dy2 }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     const s3 = sofa('s3', 112, 360, 72, 55)
 
     // Mesas — helper para gerar linha JSX
-    function m(id: string, label: string, dcx: number, dcy: number) {
+    const m = (id: string, label: string, dcx: number, dcy: number) => {
       const mm = mesa(id, dcx, dcy)
       return `{m(${label}, ${mm.cx}, ${mm.cy})}`
     }
