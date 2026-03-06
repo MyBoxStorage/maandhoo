@@ -102,14 +102,14 @@ export const HeroSection: React.FC = () => {
       })
     })
 
-    // ── 5 holofotes da BORDA ESQUERDA ──
+    // ── 5 holofotes da BORDA ESQUERDA — apontam para dentro/direita ──
     ;[0.10, 0.28, 0.50, 0.72, 0.90].forEach((pos, i) => {
       const ci = (i + 2) % palette.length
       beams.push({
         ox: -5, oy: H * pos,
-        angle: -(0.05 + Math.random() * 0.25),
+        angle: -(Math.PI * 0.08) + (Math.random() - 0.5) * 0.5,  // aponta para direita com variação
         spread: 0.035 + Math.random() * 0.030,
-        length: W * (0.45 + Math.random() * 0.40),
+        length: W * (0.55 + Math.random() * 0.40),
         swingRange: 0.04 + Math.random() * 0.12,
         swingSpeed: 0.0018 + Math.random() * 0.0032,
         swingOffset: Math.random() * Math.PI * 2,
@@ -120,14 +120,14 @@ export const HeroSection: React.FC = () => {
       })
     })
 
-    // ── 5 holofotes da BORDA DIREITA ──
+    // ── 5 holofotes da BORDA DIREITA — apontam para dentro/esquerda ──
     ;[0.10, 0.28, 0.50, 0.72, 0.90].forEach((pos, i) => {
       const ci = (i + 1) % palette.length
       beams.push({
         ox: W + 5, oy: H * pos,
-        angle: Math.PI + (0.05 + Math.random() * 0.25),
+        angle: Math.PI + (Math.PI * 0.08) + (Math.random() - 0.5) * 0.5, // aponta para esquerda com variação
         spread: 0.035 + Math.random() * 0.030,
-        length: W * (0.45 + Math.random() * 0.40),
+        length: W * (0.55 + Math.random() * 0.40),
         swingRange: 0.04 + Math.random() * 0.12,
         swingSpeed: 0.0018 + Math.random() * 0.0032,
         swingOffset: Math.random() * Math.PI * 2,
@@ -293,24 +293,16 @@ export const HeroSection: React.FC = () => {
         {/* LOGO ANIMADO */}
         <div className="flex justify-center mb-5 sm:mb-7 animate-float">
           <LogoElefante
-            width={72}
-            height={80}
+            width={90}
+            height={100}
             color="#E8DDD0"
             animated
           />
         </div>
 
-        {/* TAGLINE ACIMA — pequena, dourada, espaçada */}
-        <p
-          className="font-accent text-[10px] sm:text-xs tracking-[0.35em] uppercase text-dourado mb-4 animate-fade-up"
-          style={{ textShadow: '0 0 20px rgba(201,168,76,0.6)' }}
-        >
-          O melhor club de Balneário Camboriú
-        </p>
-
-        {/* NOME — display serif, elegante, legível */}
+        {/* NOME */}
         <h1
-          className="font-display text-[13vw] sm:text-8xl md:text-9xl leading-none mb-4 animate-fade-up delay-100"
+          className="font-display text-[13vw] sm:text-8xl md:text-9xl leading-none mb-5 animate-fade-up delay-100"
           style={{
             color: '#F0E8DC',
             textShadow: '0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(201,168,76,0.2)',
@@ -320,17 +312,28 @@ export const HeroSection: React.FC = () => {
           Maandhoo
         </h1>
 
-        {/* SUBTÍTULO — italic serif, leve */}
-        <p
-          className="font-display text-base sm:text-xl md:text-2xl italic mb-8 sm:mb-10 animate-fade-up delay-200"
-          style={{
-            color: 'rgba(232,221,208,0.75)',
-            textShadow: '0 1px 20px rgba(0,0,0,0.9)',
-            letterSpacing: '0.01em',
-          }}
-        >
-          Suas noites são na Maandhoo
-        </p>
+        {/* FRASE COMPLETA — unificada */}
+        <div className="mb-8 sm:mb-10 animate-fade-up delay-200 space-y-1">
+          <p
+            className="font-display text-xl sm:text-2xl md:text-3xl italic"
+            style={{
+              color: 'rgba(240,232,220,0.90)',
+              textShadow: '0 1px 30px rgba(0,0,0,0.95), 0 0 60px rgba(0,0,0,0.8)',
+              letterSpacing: '0.01em',
+            }}
+          >
+            Suas noites são na Maandhoo.
+          </p>
+          <p
+            className="font-accent text-[11px] sm:text-sm tracking-[0.28em] uppercase"
+            style={{
+              color: 'rgba(201,168,76,0.90)',
+              textShadow: '0 0 20px rgba(201,168,76,0.5), 0 1px 20px rgba(0,0,0,0.9)',
+            }}
+          >
+            O melhor club de Balneário Camboriú
+          </p>
+        </div>
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-fade-up delay-300 w-full">
