@@ -288,36 +288,52 @@ export const HeroSection: React.FC = () => {
       />
 
       {/* CONTEÚDO */}
-      <div className="relative z-20 text-center px-5 sm:px-4 max-w-4xl mx-auto w-full">
+      <div className="relative z-20 text-center px-6 sm:px-8 max-w-3xl mx-auto w-full">
 
         {/* LOGO ANIMADO */}
-        <div className="flex justify-center mb-6 sm:mb-8 animate-float">
+        <div className="flex justify-center mb-5 sm:mb-7 animate-float">
           <LogoElefante
-            width={80}
-            height={88}
+            width={72}
+            height={80}
             color="#E8DDD0"
             animated
           />
         </div>
 
-        {/* NOME */}
-        <h1
-          className="font-accent text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.08em] sm:tracking-[0.12em] mb-3 animate-fade-up w-full"
-          style={{ color: '#E8DDD0', textShadow: '0 0 60px rgba(201,168,76,0.3)' }}
+        {/* TAGLINE ACIMA — pequena, dourada, espaçada */}
+        <p
+          className="font-accent text-[10px] sm:text-xs tracking-[0.35em] uppercase text-dourado mb-4 animate-fade-up"
+          style={{ textShadow: '0 0 20px rgba(201,168,76,0.6)' }}
         >
-          maandhoo
-        </h1>
-
-        {/* SUBTÍTULO */}
-        <p className="font-display text-lg md:text-2xl italic text-bege-escuro mb-3 animate-fade-up delay-200">
-          Suas noites são na Maandhoo
-        </p>
-        <p className="font-accent text-xs tracking-[0.3em] sm:tracking-[0.4em] uppercase text-dourado mb-8 sm:mb-10 animate-fade-up delay-300">
           O melhor club de Balneário Camboriú
         </p>
 
+        {/* NOME — display serif, elegante, legível */}
+        <h1
+          className="font-display text-[13vw] sm:text-8xl md:text-9xl leading-none mb-4 animate-fade-up delay-100"
+          style={{
+            color: '#F0E8DC',
+            textShadow: '0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(201,168,76,0.2)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Maandhoo
+        </h1>
+
+        {/* SUBTÍTULO — italic serif, leve */}
+        <p
+          className="font-display text-base sm:text-xl md:text-2xl italic mb-8 sm:mb-10 animate-fade-up delay-200"
+          style={{
+            color: 'rgba(232,221,208,0.75)',
+            textShadow: '0 1px 20px rgba(0,0,0,0.9)',
+            letterSpacing: '0.01em',
+          }}
+        >
+          Suas noites são na Maandhoo
+        </p>
+
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-fade-up delay-400 w-full px-2 sm:px-0">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-fade-up delay-300 w-full">
           <Link href="/#eventos" className="btn-primary w-full sm:w-auto text-center">
             Ver Próximos Eventos
           </Link>
@@ -326,16 +342,26 @@ export const HeroSection: React.FC = () => {
           </Link>
         </div>
 
+        {/* DIVISOR */}
+        <div className="flex items-center justify-center gap-4 mt-10 sm:mt-12 animate-fade-up delay-400">
+          <div className="h-px w-12 bg-dourado/30" />
+          <div className="w-1 h-1 rounded-full bg-dourado/50" />
+          <div className="h-px w-12 bg-dourado/30" />
+        </div>
+
         {/* BADGES INFO */}
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10 sm:mt-12 animate-fade-up delay-500">
+        <div className="flex items-center justify-center gap-6 sm:gap-10 mt-5 animate-fade-up delay-500">
           {[
-            { value: '500–800', label: 'pessoas/noite' },
+            { value: '500–800', label: 'pessoas / noite' },
             { value: 'BC', label: 'Balneário Camboriú' },
-            { value: '15', label: 'camarotes' },
+            { value: '15+', label: 'camarotes' },
           ].map((item) => (
             <div key={item.label} className="text-center">
-              <div className="font-display text-xl sm:text-2xl text-gradient-gold">{item.value}</div>
-              <div className="font-body text-xs text-bege-escuro/60 tracking-wider uppercase mt-0.5">{item.label}</div>
+              <div
+                className="font-display text-2xl sm:text-3xl text-gradient-gold mb-0.5"
+                style={{ letterSpacing: '0.02em' }}
+              >{item.value}</div>
+              <div className="font-body text-[10px] sm:text-xs text-bege-escuro/50 tracking-[0.15em] uppercase">{item.label}</div>
             </div>
           ))}
         </div>
