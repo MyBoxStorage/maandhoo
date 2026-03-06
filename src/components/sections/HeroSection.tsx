@@ -572,7 +572,7 @@ export const HeroSection: React.FC = () => {
         </div>
 
         <h1
-          className="font-brand text-[18vw] sm:text-8xl md:text-9xl leading-none mb-5 animate-fade-up delay-100 maandhoo-title"
+          className="font-brand text-[18vw] sm:text-8xl md:text-9xl leading-none mb-5 animate-fade-up delay-100 maandhoo-title overflow-hidden"
           style={{
             letterSpacing: '-0.01em',
             fontWeight: 600,
