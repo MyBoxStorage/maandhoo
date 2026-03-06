@@ -24,6 +24,7 @@ const config: Config = {
         display: ['Cormorant Garamond', 'serif'],
         accent: ['Cinzel', 'serif'],
         body: ['DM Sans', 'sans-serif'],
+        brand: ['Nunito', 'sans-serif'],
       },
       boxShadow: {
         'gold': '0 0 25px rgba(201, 168, 76, 0.3)',
