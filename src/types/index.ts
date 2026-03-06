@@ -107,15 +107,13 @@ export interface Reserva {
 }
 
 export type CategoriaCardapio =
-  | 'destilados'
-  | 'cervejas'
-  | 'coqueteis'
-  | 'energeticos'
-  | 'refrigerantes'
-  | 'agua'
+  | 'drinks'
+  | 'longneck'
+  | 'doses'
+  | 'soft'
   | 'combos'
-  | 'petiscos'
-  | 'japonesa'
+  | 'espumantes'
+  | 'outros'
 
 export interface ItemCardapio {
   id: string
