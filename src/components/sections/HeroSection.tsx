@@ -567,8 +567,8 @@ export const HeroSection: React.FC = () => {
       {/* CONTEÚDO */}
       <div className="relative z-20 text-center px-6 sm:px-8 max-w-3xl mx-auto w-full">
 
-        <div className="flex justify-center mb-5 sm:mb-7 animate-float">
-          <LogoElefante width={90} height={100} color="#E8DDD0" animated />
+        <div className="flex justify-center mb-6 sm:mb-9 animate-float">
+          <LogoElefante width={120} height={134} color="#E8DDD0" animated />
         </div>
 
         <h1
