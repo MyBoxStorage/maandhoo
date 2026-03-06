@@ -1,0 +1,201 @@
+'use client'
+
+import React, { useState } from 'react'
+import { notFound } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { UserPlus, CheckCircle, ArrowLeft, Mail, User, AlertCircle } from 'lucide-react'
+import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import toast from 'react-hot-toast'
+
+interface PageProps {
+  params: { slug: string }
+}
+
+export default function ListaPage({ params }: PageProps) {
+  const evento = EVENTOS_INICIAIS.find(e => e.slug === params.slug)
+  if (!evento || !evento.temLista) notFound()
+
+  const [genero, setGenero] = useState<'masculino' | 'feminino'>('feminino')
+  const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sucesso, setSucesso] = useState(false)
+
+  const dataFormatada = format(evento.data, "dd 'de' MMMM", { locale: ptBR })
+  const diaHora = format(evento.data, 'EEEE', { locale: ptBR })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nome.trim() || nome.trim().split(' ').length < 2) {
+      toast.error('Informe seu nome completo')
+      return
+    }
+    if (!email.includes('@')) {
+      toast.error('Email inválido')
+      return
+    }
+    setLoading(true)
+    try {
+      // POST /api/lista — gera QR Code e envia email
+      await new Promise(r => setTimeout(r, 1000))
+      setSucesso(true)
+      toast.success('Nome adicionado! Verifique seu email.')
+    } catch {
+      toast.error('Erro ao entrar na lista. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen pt-20">
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <Link href={`/eventos/${evento.slug}`} className="inline-flex items-center gap-2 text-bege-escuro hover:text-bege text-sm mb-8 transition-colors">
+          <ArrowLeft size={16} /> Voltar ao evento
+        </Link>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+          {/* FLYER */}
+          <div className="relative aspect-[9/16] rounded-sm overflow-hidden max-w-xs mx-auto md:mx-0">
+            <Image
+              src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
+              alt={evento.nome}
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* FORMULÁRIO */}
+          <div className="space-y-6">
+            <div>
+              <p className="section-subtitle mb-2">Lista Amiga</p>
+              <h1 className="font-display text-4xl text-bege mb-1">{evento.nome}</h1>
+              <p className="font-body text-sm text-bege-escuro/60 capitalize">
+                {diaHora} · {dataFormatada} · {evento.hora}
+              </p>
+            </div>
+
+            {/* BENEFÍCIOS */}
+            <div className="bg-card border border-gold/20 rounded-sm p-5 space-y-3">
+              <h4 className="font-accent text-xs tracking-widest uppercase text-dourado">Benefícios da Lista</h4>
+              <div className="space-y-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs">♀</span>
+                  </div>
+                  <div>
+                    <p className="font-body text-sm text-bege">Feminino — Entrada Gratuita</p>
+                    <p className="font-body text-xs text-bege-escuro/60">Válido até 00:00 com nome na lista</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs">♂</span>
+                  </div>
+                  <div>
+                    <p className="font-body text-sm text-bege">Masculino — R$ 50,00 fixo</p>
+                    <p className="font-body text-xs text-bege-escuro/60">Válido até 00:00 com nome na lista</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {!sucesso ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Seletor gênero */}
+                <div>
+                  <label className="admin-label">Sua Lista</label>
+                  <div className="flex gap-3">
+                    {(['feminino', 'masculino'] as const).map(g => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setGenero(g)}
+                        className={`flex-1 py-3 text-sm font-accent tracking-wider uppercase rounded-sm border transition-all duration-200
+                          ${genero === g ? 'border-dourado bg-dourado/15 text-dourado' : 'border-white/10 text-bege-escuro hover:border-dourado/40'}`}
+                      >
+                        {g === 'feminino' ? '♀ Feminino' : '♂ Masculino'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">Nome Completo *</label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-bege-escuro/40" />
+                    <input
+                      type="text"
+                      value={nome}
+                      onChange={e => setNome(e.target.value)}
+                      className="admin-input pl-9"
+                      placeholder="Como aparecerá na lista"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">Email *</label>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-bege-escuro/40" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      className="admin-input pl-9"
+                      placeholder="Para receber seu QR Code"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-sm">
+                  <AlertCircle size={14} className="text-amber-500/80 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-bege-escuro/60">
+                    Lista válida até 00:00. Pode ocorrer alteração conforme horário e lotação.
+                    O QR Code é pessoal e intransferível.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {loading ? (
+                    <span className="inline-block w-4 h-4 border-2 border-preto-profundo/30 border-t-preto-profundo rounded-full animate-spin" />
+                  ) : (
+                    <UserPlus size={16} />
+                  )}
+                  {loading ? 'Entrando na lista...' : 'Entrar na Lista'}
+                </button>
+              </form>
+            ) : (
+              /* SUCESSO */
+              <div className="bg-card border border-dourado/50 rounded-sm p-6 text-center space-y-4">
+                <CheckCircle size={48} className="text-dourado mx-auto animate-pulse-gold" />
+                <h3 className="font-display text-2xl text-bege">Você está na lista!</h3>
+                <p className="font-body text-sm text-bege-escuro/70">
+                  <strong className="text-bege">{nome}</strong>, você foi adicionado(a) à lista {genero}.<br />
+                  Enviamos um QR Code para <strong className="text-bege">{email}</strong>
+                </p>
+                <div className="bg-black/30 rounded-sm p-3">
+                  <p className="text-xs text-bege-escuro/60">
+                    Apresente o QR Code ou informe seu nome na portaria até 00:00
+                  </p>
+                </div>
+                <Link href={`/eventos/${evento.slug}`} className="btn-outline block text-center text-xs">
+                  Ver detalhes do evento
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

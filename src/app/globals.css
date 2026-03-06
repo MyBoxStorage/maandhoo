@@ -1,0 +1,411 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   VARIÁVEIS CSS — DESIGN SYSTEM MAANDHOO
+   ============================================ */
+:root {
+  --marrom: #2C1810;
+  --marrom-medio: #3D2215;
+  --marrom-claro: #5C3520;
+  --bege: #E8DDD0;
+  --bege-escuro: #C8B9A8;
+  --dourado: #C9A84C;
+  --dourado-claro: #F0D080;
+  --dourado-escuro: #9A7830;
+  --preto-profundo: #0A0604;
+  --cinza-escuro: #1A1210;
+  --border-gold: rgba(201, 168, 76, 0.25);
+  --glow-gold: 0 0 30px rgba(201, 168, 76, 0.35);
+}
+
+/* ============================================
+   BASE RESET
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--preto-profundo);
+  color: var(--bege);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ============================================
+   SCROLLBAR CUSTOMIZADA
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--preto-profundo);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dourado-escuro);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dourado);
+}
+
+/* ============================================
+   SELEÇÃO DE TEXTO
+   ============================================ */
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--dourado-claro);
+}
+
+/* ============================================
+   TIPOGRAFIA
+   ============================================ */
+.font-display { font-family: 'Cormorant Garamond', serif; }
+.font-accent  { font-family: 'Cinzel', serif; }
+.font-body    { font-family: 'DM Sans', sans-serif; }
+
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
+
+/* ============================================
+   CLASSES UTILITÁRIAS MAANDHOO
+   ============================================ */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--dourado-escuro) 0%, var(--dourado-claro) 50%, var(--dourado-escuro) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+.border-gold {
+  border: 1px solid var(--border-gold);
+}
+
+.border-gold-strong {
+  border: 1px solid var(--dourado);
+}
+
+.glow-gold {
+  box-shadow: var(--glow-gold);
+}
+
+.bg-card {
+  background: linear-gradient(135deg, rgba(44,24,16,0.9) 0%, rgba(26,18,16,0.95) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-gold);
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-dourado-escuro via-dourado to-dourado-escuro;
+  @apply text-preto-profundo font-accent font-semibold tracking-widest uppercase;
+  @apply px-8 py-3 text-sm;
+  @apply transition-all duration-300;
+  @apply hover:shadow-gold-strong hover:scale-105;
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+.btn-outline {
+  @apply border border-dourado text-dourado;
+  @apply font-accent font-medium tracking-widest uppercase;
+  @apply px-8 py-3 text-sm;
+  @apply transition-all duration-300;
+  @apply hover:bg-dourado hover:text-preto-profundo hover:shadow-gold;
+}
+
+.btn-ghost {
+  @apply text-bege-escuro font-body;
+  @apply px-6 py-2 text-sm;
+  @apply transition-all duration-200;
+  @apply hover:text-bege hover:underline;
+}
+
+.section-title {
+  @apply font-display text-4xl md:text-5xl lg:text-6xl;
+  @apply text-bege leading-tight;
+}
+
+.section-subtitle {
+  @apply font-accent text-xs tracking-[0.3em] uppercase;
+  @apply text-dourado;
+}
+
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--dourado), transparent);
+}
+
+/* ============================================
+   NOISE TEXTURE OVERLAY
+   ============================================ */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+}
+
+/* ============================================
+   CARD DE INGRESSO (template)
+   ============================================ */
+.ingresso-card {
+  background: linear-gradient(135deg, #1a0e08 0%, #2C1810 40%, #1a0e08 100%);
+  border: 1px solid var(--dourado);
+  position: relative;
+  overflow: hidden;
+}
+
+.ingresso-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(201, 168, 76, 0.03) 3px,
+    rgba(201, 168, 76, 0.03) 6px
+  );
+  pointer-events: none;
+}
+
+/* ============================================
+   MAPA SVG INTERATIVO
+   ============================================ */
+.mapa-zona {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.mapa-zona:hover {
+  opacity: 0.85;
+  filter: brightness(1.2);
+}
+
+.mapa-camarote {
+  fill: rgba(201, 168, 76, 0.15);
+  stroke: var(--dourado);
+  stroke-width: 1.5;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.mapa-camarote:hover,
+.mapa-camarote.selecionado {
+  fill: rgba(201, 168, 76, 0.35);
+  stroke: var(--dourado-claro);
+  filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.5));
+}
+
+.mapa-mesa {
+  fill: rgba(232, 221, 208, 0.1);
+  stroke: var(--bege-escuro);
+  stroke-width: 1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.mapa-mesa:hover,
+.mapa-mesa.selecionada {
+  fill: rgba(232, 221, 208, 0.3);
+  stroke: var(--bege);
+  filter: drop-shadow(0 0 4px rgba(232, 221, 208, 0.4));
+}
+
+.mapa-pista {
+  fill: rgba(92, 53, 32, 0.2);
+  stroke: var(--marrom-claro);
+  stroke-width: 1;
+}
+
+.mapa-palco {
+  fill: rgba(201, 168, 76, 0.08);
+  stroke: var(--dourado);
+  stroke-width: 2;
+}
+
+/* ============================================
+   ANIMAÇÕES CUSTOM
+   ============================================ */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scanLine {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+@keyframes laser {
+  0%, 100% { opacity: 0.4; transform: rotate(-2deg) scaleY(1); }
+  50% { opacity: 1; transform: rotate(2deg) scaleY(1.05); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(201,168,76,0.6)); }
+  50% { filter: drop-shadow(0 0 20px rgba(240,208,128,0.9)); }
+}
+
+.animate-float { animation: float 5s ease-in-out infinite; }
+.animate-fade-up { animation: fadeUp 0.6s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+.animate-scan { animation: scanLine 2s linear infinite; }
+.animate-pulse-gold { animation: pulse-gold 2.5s ease-in-out infinite; }
+.animate-laser { animation: laser 3s ease-in-out infinite; }
+
+/* Delay utilities */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+
+/* ============================================
+   MODAL
+   ============================================ */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center;
+  @apply bg-black/80 backdrop-blur-sm;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  @apply relative w-full max-w-lg mx-4;
+  @apply rounded-sm bg-card border-gold;
+  @apply max-h-[90vh] overflow-y-auto;
+}
+
+/* ============================================
+   ADMIN PAINEL
+   ============================================ */
+.admin-sidebar {
+  background: linear-gradient(180deg, #0A0604 0%, #1a0e08 100%);
+  border-right: 1px solid var(--border-gold);
+}
+
+.admin-nav-item {
+  @apply flex items-center gap-3 px-4 py-3;
+  @apply text-bege-escuro text-sm font-body;
+  @apply transition-all duration-200;
+  @apply hover:text-bege hover:bg-white/5;
+  border-left: 2px solid transparent;
+}
+
+.admin-nav-item.active {
+  @apply text-dourado;
+  border-left-color: var(--dourado);
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.admin-card {
+  @apply p-6 rounded-sm;
+  background: rgba(44, 24, 16, 0.6);
+  border: 1px solid var(--border-gold);
+}
+
+.admin-input {
+  @apply w-full px-4 py-3 text-sm;
+  @apply bg-black/30 text-bege;
+  @apply border border-white/10 rounded-sm;
+  @apply focus:outline-none focus:border-dourado;
+  @apply transition-colors duration-200;
+  @apply placeholder-bege-escuro/40;
+}
+
+.admin-label {
+  @apply block text-xs font-accent tracking-widest uppercase;
+  @apply text-dourado mb-2;
+}
+
+/* ============================================
+   PORTARIA — SCANNER
+   ============================================ */
+.scanner-frame {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto;
+}
+
+.scanner-frame::before,
+.scanner-frame::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: var(--dourado);
+  border-style: solid;
+}
+
+.scanner-frame::before {
+  top: 0;
+  left: 0;
+  border-width: 3px 0 0 3px;
+}
+
+.scanner-frame::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3px 3px 0;
+}
+
+.scanner-corner-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 3px solid var(--dourado);
+  border-right: 3px solid var(--dourado);
+}
+
+.scanner-corner-bl {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom: 3px solid var(--dourado);
+  border-left: 3px solid var(--dourado);
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+@media (max-width: 768px) {
+  .section-title {
+    @apply text-3xl;
+  }
+}

@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Maandhoo — Editor Completo do Mapa</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a0a04; color: #E8DDD0; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+  #sidebar {
+    width: 260px; min-width: 260px; background: #0d0502; border-right: 1px solid #3a2010;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #sidebar-header { padding: 14px 16px 10px; border-bottom: 1px solid #2a1008; }
+  #sidebar-header h2 { color: #C9A84C; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; }
+  #sidebar-header p { color: #5a3518; font-size: 10px; margin-top: 4px; }
+
+  #tabs { display: flex; border-bottom: 1px solid #2a1008; }
+  .tab { flex: 1; padding: 8px 4px; text-align: center; font-size: 10px; letter-spacing: 1px;
+    color: #5a3518; cursor: pointer; text-transform: uppercase; border-bottom: 2px solid transparent; }
+  .tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
+
+  #panel { flex: 1; overflow-y: auto; padding: 10px; }
+  .item {
+    background: #180c04; border: 1px solid #2a1008; border-radius: 3px;
+    padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .item:hover { border-color: #C9A84C44; }
+  .item.active { border-color: #C9A84C; background: #1f1004; }
+  .item-label { font-size: 11px; color: #C9A84C; font-weight: 600; margin-bottom: 3px; }
+  .item-coords { font-size: 9.5px; color: #5a3518; font-family: monospace; }
+
+  #code-section { padding: 10px; border-top: 1px solid #2a1008; }
+  #code-section h3 { color: #C9A84C; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  #code-output {
+    background: #0a0300; border: 1px solid #2a1008; border-radius: 3px; padding: 8px;
+    font-size: 9px; font-family: monospace; color: #8a6030; white-space: pre;
+    overflow-x: auto; max-height: 160px; overflow-y: auto;
+  }
+  button.copy-btn {
+    background: #C9A84C; color: #0a0300; border: none; padding: 7px;
+    border-radius: 3px; font-size: 10px; font-weight: 700; cursor: pointer; width: 100%;
+    letter-spacing: 1px; margin-top: 6px; text-transform: uppercase;
+  }
+  button.copy-btn:hover { background: #ddb850; }
+
+  button.save-btn {
+    background: #1a6e2a; color: #b0ffb8; border: 1px solid #2aaa40; padding: 8px;
+    border-radius: 3px; font-size: 10px; font-weight: 700; cursor: pointer; width: 100%;
+    letter-spacing: 1px; margin-top: 6px; text-transform: uppercase;
+    transition: background 0.2s;
+  }
+  button.save-btn:hover { background: #228833; }
+  button.save-btn:disabled { background: #0a2e10; color: #3a6040; cursor: not-allowed; }
+
+  #save-status {
+    font-size: 9px; margin-top: 5px; padding: 5px 7px; border-radius: 3px;
+    display: none; text-align: center; font-family: monospace;
+  }
+  #save-status.ok    { display: block; background: #0a2e10; color: #4aee60; border: 1px solid #1a6e2a; }
+  #save-status.error { display: block; background: #2e0a0a; color: #ee4444; border: 1px solid #6e1a1a; }
+
+  #canvas-wrap { flex: 1; overflow: auto; padding: 16px; background: #0a0300; display: flex; align-items: flex-start; justify-content: center; }
+  .draggable { cursor: move; }
+
+  /* Inline coord editor */
+  #coord-editor { padding: 10px; border-top: 1px solid #2a1008; display: none; }
+  #coord-editor.show { display: block; }
+  #coord-editor h3 { color: #C9A84C; font-size: 10px; letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase; }
+  .coord-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .coord-row label { color: #7a5535; font-size: 10px; width: 20px; }
+  .coord-row input {
+    flex: 1; background: #180c04; border: 1px solid #3a2010; color: #E8DDD0;
+    padding: 4px 6px; font-size: 10px; border-radius: 2px; font-family: monospace;
+  }
+  .coord-row input:focus { outline: none; border-color: #C9A84C; }
+
+  /* Toolbar de criação */
+  #toolbar { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #2a1008; flex-wrap: wrap; }
+  .tool-btn {
+    background: #180c04; border: 1px solid #3a2010; color: #7a5535;
+    padding: 5px 8px; border-radius: 3px; font-size: 9.5px; cursor: pointer;
+    letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover { border-color: #C9A84C66; color: #C9A84C; }
+  .tool-btn.active-tool { border-color: #C9A84C; color: #C9A84C; background: #1f1004; }
+
+  /* Handles de resize */
+  .resize-handle { cursor: nwse-resize; }
+  .resize-handle-e { cursor: ew-resize; }
+  .resize-handle-s { cursor: ns-resize; }
+
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h2>Editor do Mapa</h2>
+    <p>Clique → seleciona · <b style="color:#C9A84Caa">Ctrl+Clique</b> → multi-seleção · Arraste → move grupo</p>
+  </div>
+
+
+  <div id="toolbar">
+    <button class="tool-btn" id="tool-select" onclick="setTool('select')" title="Selecionar">✦ Mover</button>
+    <button class="tool-btn" id="tool-wall" onclick="setTool('wall')" title="Nova Parede">▭ Parede</button>
+    <button class="tool-btn" id="tool-area" onclick="setTool('area')" title="Nova Área">⬜ Área</button>
+    <button class="tool-btn" id="tool-stairs" onclick="setTool('stairs')" title="Escadas">▤ Escadas</button>
+    <button class="tool-btn" id="tool-line" onclick="setTool('line')" title="Nova Linha">— Linha</button>
+    <button class="tool-btn" style="color:#c03030;border-color:#5a1010" onclick="deleteSelected()" title="Deletar selecionado">✕ Del</button>
+  </div>
+  <div id="tabs">
+    <div class="tab active" onclick="switchTab('camarotes')">Camarotes</div>
+    <div class="tab" onclick="switchTab('mesas')">Mesas</div>
+    <div class="tab" onclick="switchTab('estrutura')">Estrutura</div>
+  </div>
+
+  <div id="panel"></div>
+
+  <div id="coord-editor">
+    <h3 id="coord-title">Selecionado</h3>
+    <div id="coord-fields"></div>
+  </div>
+
+  <div id="code-section">
+    <h3>Código</h3>
+    <pre id="code-output"></pre>
+    <button class="copy-btn" onclick="copyCode()">📋 Copiar Código JSX</button>
+    <button class="save-btn" id="save-btn" onclick="saveToProject()">💾 Salvar no Projeto</button>
+    <div id="save-status"></div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <svg id="mapa" viewBox="0 0 700 900" width="700" height="900"></svg>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DADOS — todos os elementos do mapa
+// ═══════════════════════════════════════════════════════
+
+const camarotes = [
+  { id:'c4',  label:'Camarote 4',  type:'cam', x:168, y:58,  w:68, h:58 },
+  { id:'c5',  label:'Camarote 5',  type:'cam', x:242, y:58,  w:68, h:58 },
+  { id:'c6',  label:'Camarote 6',  type:'cam', x:316, y:58,  w:68, h:58 },
+  { id:'c7',  label:'Camarote 7',  type:'cam', x:390, y:58,  w:68, h:58 },
+  { id:'c8',  label:'Camarote 8',  type:'cam', x:530, y:165, w:72, h:58 },
+  { id:'c9',  label:'Camarote 9',  type:'cam', x:530, y:232, w:72, h:58 },
+  { id:'c10', label:'Camarote 10', type:'cam', x:530, y:420, w:72, h:58 },
+  { id:'c11', label:'Camarote 11', type:'cam', x:22,  y:348, w:80, h:62 },
+  { id:'c12', label:'Camarote 12', type:'cam', x:22,  y:418, w:80, h:62 },
+  { id:'c13', label:'Camarote 13', type:'cam', x:22,  y:488, w:80, h:62 },
+  { id:'c14', label:'Camarote 14', type:'cam', x:22,  y:558, w:80, h:62 },
+  { id:'c15', label:'Camarote 15', type:'cam', x:22,  y:628, w:80, h:62 },
+]
+
+const sofas = [
+  { id:'s1', label:'Sofá 1', type:'sofa', x:112, y:500, w:72, h:55 },
+  { id:'s2', label:'Sofá 2', type:'sofa', x:112, y:430, w:72, h:55 },
+  { id:'s3', label:'Sofá 3', type:'sofa', x:112, y:360, w:72, h:55 },
+]
+
+const mesas = [
+  { id:'m21', label:'21', type:'mesa', cx:200, cy:184 },
+  { id:'m22', label:'22', type:'mesa', cx:248, cy:184 },
+  { id:'m23', label:'23', type:'mesa', cx:296, cy:184 },
+  { id:'m24', label:'24', type:'mesa', cx:344, cy:184 },
+  { id:'m25', label:'25', type:'mesa', cx:392, cy:184 },
+  { id:'m26', label:'26', type:'mesa', cx:440, cy:184 },
+  { id:'m27', label:'27', type:'mesa', cx:200, cy:224 },
+  { id:'m28', label:'28', type:'mesa', cx:296, cy:224 },
+  { id:'m29', label:'29', type:'mesa', cx:440, cy:224 },
+  { id:'m31', label:'31', type:'mesa', cx:200, cy:290 },
+  { id:'m32', label:'32', type:'mesa', cx:200, cy:340 },
+  { id:'m33', label:'33', type:'mesa', cx:200, cy:390 },
+  { id:'m34', label:'34', type:'mesa', cx:200, cy:440 },
+  { id:'m35', label:'35', type:'mesa', cx:200, cy:490 },
+  { id:'m36', label:'36', type:'mesa', cx:200, cy:540 },
+  { id:'m41', label:'41', type:'mesa', cx:268, cy:290 },
+  { id:'m42', label:'42', type:'mesa', cx:268, cy:340 },
+  { id:'m43', label:'43', type:'mesa', cx:268, cy:390 },
+  { id:'m44', label:'44', type:'mesa', cx:268, cy:440 },
+  { id:'m45', label:'45', type:'mesa', cx:268, cy:490 },
+  { id:'m46', label:'46', type:'mesa', cx:268, cy:540 },
+  { id:'m51', label:'51', type:'mesa', cx:336, cy:290 },
+  { id:'m52', label:'52', type:'mesa', cx:336, cy:340 },
+  { id:'m53', label:'53', type:'mesa', cx:336, cy:390 },
+  { id:'m54', label:'54', type:'mesa', cx:336, cy:440 },
+  { id:'m61', label:'61', type:'mesa', cx:150, cy:620 },
+  { id:'m62', label:'62', type:'mesa', cx:218, cy:620 },
+  { id:'m63', label:'63', type:'mesa', cx:286, cy:620 },
+  { id:'m64', label:'64', type:'mesa', cx:354, cy:620 },
+  { id:'m65', label:'65', type:'mesa', cx:422, cy:620 },
+  { id:'m66', label:'66', type:'mesa', cx:120, cy:690 },
+  { id:'m67', label:'67', type:'mesa', cx:200, cy:690 },
+  { id:'m68', label:'68', type:'mesa', cx:280, cy:690 },
+  { id:'m69', label:'69', type:'mesa', cx:360, cy:690 },
+  { id:'m70', label:'70', type:'mesa', cx:440, cy:690 },
+  { id:'m71', label:'71', type:'mesa', cx:110, cy:290 },
+  { id:'m72', label:'72', type:'mesa', cx:110, cy:340 },
+  { id:'m73', label:'73', type:'mesa', cx:110, cy:390 },
+  { id:'m74', label:'74', type:'mesa', cx:110, cy:440 },
+  { id:'m75', label:'75', type:'mesa', cx:110, cy:490 },
+  { id:'m76', label:'76', type:'mesa', cx:110, cy:540 },
+]
+
+const estrutura = [
+  { id:'palco',       label:'Palco (elipse)',        type:'ellipse', cx:570, cy:360, rx:68, ry:80 },
+  { id:'escadas-blk', label:'Bloco Escadas',          type:'rect',    x:200, y:128, w:260, h:28 },
+  { id:'wall-sup',    label:'Parede Superior',        type:'rect',    x:150, y:48,  w:310, h:148 },
+  { id:'wall-palco',  label:'Área Palco (parede)',    type:'rect',    x:508, y:48,  w:162, h:510 },
+  { id:'div-esq',     label:'Divisória Esq (vert)',   type:'line', x1:108, y1:340, x2:108, y2:700 },
+  { id:'div-esq-h',   label:'Divisória Esq (horiz)',  type:'line', x1:22,  y1:340, x2:108, y2:340 },
+  { id:'div-sofas',   label:'Divisória Sofás',        type:'line', x1:190, y1:340, x2:190, y2:580 },
+  { id:'wall-fundo',  label:'Parede Fundo',           type:'line', x1:22,  y1:660, x2:620, y2:660 },
+  { id:'esc-top',     label:'Escadas → piso (topo)',  type:'line', x1:150, y1:200, x2:508, y2:200 },
+  { id:'esc-esq',     label:'Escadas → piso (esq)',   type:'line', x1:150, y1:200, x2:150, y2:340 },
+  { id:'esc-dir',     label:'Escadas → piso (dir)',   type:'line', x1:508, y1:200, x2:508, y2:340 },
+  { id:'esc-bot',     label:'Escadas → piso (bot)',   type:'line', x1:150, y1:340, x2:508, y2:340 },
+]
+
+// ═══════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════
+let currentTab = 'camarotes'
+let selected = null        // último elemento clicado (para coord editor)
+let selectedIds = new Set() // todos os selecionados
+let dragging = false
+let dragStart = { mx:0, my:0 }
+let dragOriginals = {}     // snapshots de TODOS os selecionados no início do drag
+
+const allElements = () => [...camarotes, ...sofas, ...mesas, ...estrutura]
+const findEl = id => allElements().find(e => e.id === id)
+
+// ═══════════════════════════════════════════
+// SVG
+// ═══════════════════════════════════════════
+const svg = document.getElementById('mapa')
+
+function renderAll() {
+  svg.innerHTML = ''
+
+  // Fundo
+  g(`
+    <rect width="700" height="900" fill="#0d0805" rx="4"/>
+    <rect x="10" y="10" width="680" height="880" fill="#130905" rx="3" stroke="#2a140a" stroke-width="1"/>
+    <text x="350" y="42" text-anchor="middle" fill="#C9A84C" font-size="11" font-family="Cinzel" letter-spacing="5" opacity="0.7">MAANDHOO</text>
+  `, 'bg')
+
+  // Estrutura (paredes primeiro, abaixo de tudo)
+  estrutura.forEach(e => renderElement(e))
+
+  // Camarotes
+  camarotes.forEach(e => renderElement(e))
+  sofas.forEach(e => renderElement(e))
+
+  // Mesas
+  mesas.forEach(e => renderElement(e))
+
+  // Badge de multi-seleção
+  if (selectedIds.size > 1) {
+    const badge = document.createElementNS('http://www.w3.org/2000/svg','g')
+    badge.innerHTML = `
+      <rect x="10" y="860" width="195" height="24" rx="3" fill="rgba(201,168,76,0.15)" stroke="#C9A84C" stroke-width="1"/>
+      <text x="20" y="877" fill="#C9A84C" font-size="10" font-family="DM Sans">✦ ${selectedIds.size} elementos · arraste para mover</text>
+    `
+    svg.appendChild(badge)
+  }
+
+  updateSidebar()
+  updateCode()
+  updateCoordEditor()
+}
+
+function g(html, id) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg','g')
+  if (id) el.id = id
+  el.innerHTML = html
+  svg.appendChild(el)
+}
+
+function renderElement(e) {
+  const isSel = selectedIds.has(e.id)
+  const grp = document.createElementNS('http://www.w3.org/2000/svg','g')
+  grp.setAttribute('data-id', e.id)
+  grp.classList.add('draggable')
+
+  if (e.type === 'cam' || e.type === 'sofa') {
+    const strokeColor = isSel ? '#C9A84C' : e.type === 'cam' ? '#C9A84C88' : '#C9A84C55'
+    const fillColor   = isSel ? 'rgba(201,168,76,0.2)' : 'rgba(201,168,76,0.08)'
+    const dash = e.type === 'sofa' ? ' stroke-dasharray="3,2"' : ''
+    grp.innerHTML = `
+      <rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="3"
+        fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isSel?1.8:1.2}"${dash}/>
+      <circle cx="${e.x+e.w/2}" cy="${e.y+12}" r="9" fill="${strokeColor}" opacity="0.9"/>
+      <text x="${e.x+e.w/2}" y="${e.y+16}" text-anchor="middle" fill="#0a0604"
+        font-size="8" font-family="Cinzel" font-weight="700">${e.label.replace('Camarote ','').replace('Sofá ','')}</text>
+      ${isSel ? `<rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="3" fill="none" stroke="#C9A84C" stroke-width="2" stroke-dasharray="3,2"/>` : ''}
+    `
+  } else if (e.type === 'mesa') {
+    const col = isSel ? '#C9A84C' : '#C9A84C66'
+    grp.innerHTML = `
+      <circle cx="${e.cx}" cy="${e.cy}" r="16"
+        fill="${isSel?'rgba(201,168,76,0.22)':'rgba(201,168,76,0.08)'}"
+        stroke="${col}" stroke-width="${isSel?1.6:1}"/>
+      <text x="${e.cx}" y="${e.cy+4}" text-anchor="middle" fill="${col}"
+        font-size="8" font-family="DM Sans" font-weight="${isSel?700:400}">${e.label}</text>
+    `
+  } else if (e.type === 'ellipse') {
+    grp.innerHTML = `
+      <ellipse cx="${e.cx}" cy="${e.cy}" rx="${e.rx}" ry="${e.ry}"
+        fill="rgba(201,168,76,0.04)"
+        stroke="${isSel?'#C9A84C':'#C9A84C88'}"
+        stroke-width="${isSel?2.2:1.8}" stroke-dasharray="6,3"/>
+      <text x="${e.cx}" y="${e.cy-4}" text-anchor="middle" fill="#C9A84C"
+        font-size="10" font-family="Cinzel" letter-spacing="2">PALCO</text>
+      <text x="${e.cx}" y="${e.cy+12}" text-anchor="middle" fill="#C9A84C"
+        font-size="7.5" font-family="DM Sans" opacity="0.55">DJ BOOTH</text>
+    `
+    if (isSel) addResizeHandles(grp, e)
+  } else if (e.type === 'rect') {
+    const isWall = e.id.startsWith('wall') || e.id === 'esc'
+    grp.innerHTML = `
+      <rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="2"
+        fill="${isSel ? 'rgba(201,168,76,0.12)' : e.id==='escadas-blk'||e.subtype==='stairs' ? 'rgba(100,70,45,0.25)' : e.id==='wall-sup'||e.subtype==='wall' ? 'rgba(60,35,15,0.35)' : 'rgba(45,25,10,0.4)'}"
+        stroke="${isSel?'#C9A84C':'#3a2010'}" stroke-width="${isSel?1.8:1.5}"/>
+      ${(e.id==='escadas-blk'||e.subtype==='stairs') ? `<text x="${e.x+e.w/2}" y="${e.y+e.h/2+4}" text-anchor="middle" fill="#7a5535" font-size="8" font-family="DM Sans" letter-spacing="2">ESCADAS</text>` : e.subtype==='wall' ? `<text x="${e.x+e.w/2}" y="${e.y+e.h/2+4}" text-anchor="middle" fill="#5a3018" font-size="8" font-family="DM Sans" opacity="0.6">${e.label}</text>` : e.subtype==='area' ? `<text x="${e.x+e.w/2}" y="${e.y+e.h/2+4}" text-anchor="middle" fill="#5a3018" font-size="8" font-family="DM Sans" opacity="0.6">${e.label}</text>` : ''}
+    `
+    if (isSel) addResizeHandles(grp, e)
+  } else if (e.type === 'line') {
+    const dash = (e.id === 'div-sofas' || e.subtype === 'dashed') ? ' stroke-dasharray="4,3"' : ''
+    const op = e.id === 'div-sofas' ? ' opacity="0.6"' : ''
+    const mx = (e.x1+e.x2)/2, my = (e.y1+e.y2)/2
+    grp.innerHTML = `
+      <line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}"
+        stroke="${isSel?'#C9A84C':'#3a2010'}" stroke-width="${isSel?2.5:1.5}"${dash}${op}/>
+      <circle cx="${mx}" cy="${my}" r="5"
+        fill="${isSel?'#C9A84C':'#2a1008'}" stroke="${isSel?'#C9A84C':'#5a3518'}" stroke-width="1"/>
+      ${isSel ? `<circle cx="${e.x1}" cy="${e.y1}" r="5" fill="#C9A84C" stroke="#0a0604" stroke-width="1" data-endpoint="1" style="cursor:move"/><circle cx="${e.x2}" cy="${e.y2}" r="5" fill="#C9A84C" stroke="#0a0604" stroke-width="1" data-endpoint="2" style="cursor:move"/>` : ''}
+    `
+    // Endpoint drag para linhas
+    if (isSel) {
+      grp.querySelectorAll('[data-endpoint]').forEach(ep => {
+        ep.addEventListener('mousedown', ev => {
+          ev.stopPropagation()
+          const pt = ev.target.getAttribute('data-endpoint')
+          resizing = true; resizeEl = e
+          resizeHandle = 'ep' + pt
+          resizeOrig = {...e}; resizeStart = svgPos(ev)
+        })
+      })
+    }
+  }
+
+  grp.addEventListener('mousedown', onMouseDown)
+  svg.appendChild(grp)
+}
+
+// ═══════════════════════════════════════════
+// DRAG
+// ═══════════════════════════════════════════
+function svgPos(e) {
+  const r = svg.getBoundingClientRect()
+  return { x: (e.clientX - r.left) * 700 / r.width, y: (e.clientY - r.top) * 900 / r.height }
+}
+
+function onMouseDown(e) {
+  e.stopPropagation()
+  const id = e.currentTarget.getAttribute('data-id')
+  const el = findEl(id)
+
+  if (e.ctrlKey || e.metaKey) {
+    // CTRL+Click: toggle na seleção sem limpar os outros
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id)
+      selected = selectedIds.size > 0 ? [...selectedIds].at(-1) : null
+    } else {
+      selectedIds.add(id)
+      selected = id
+    }
+    dragging = false
+    renderAll()
+    return
+  }
+
+  // Click normal: se clicou em algo já selecionado, mantém grupo e começa drag
+  // Se clicou em algo novo, troca seleção para só esse
+  if (!selectedIds.has(id)) {
+    selectedIds.clear()
+    selectedIds.add(id)
+    selected = id
+  } else {
+    selected = id // apenas atualiza o "principal" para coord editor
+  }
+
+  dragging = true
+  const pos = svgPos(e)
+  dragStart = { mx: pos.x, my: pos.y }
+
+  // Salvar snapshot de TODOS os selecionados
+  dragOriginals = {}
+  for (const sid of selectedIds) {
+    dragOriginals[sid] = { ...findEl(sid) }
+  }
+
+  renderAll()
+}
+
+// ── SNAP MAGNÉTICO ──────────────────────────────────────────
+// Tudo em coordenadas de CENTRO — simples e sem bugs de sistema misto
+const SNAP_DIST = 14
+
+// Retorna {cx, cy} do centro de qualquer elemento
+function elCenter(e) {
+  if (e.type === 'mesa')                          return { cx: e.cx,            cy: e.cy }
+  if (e.type === 'cam' || e.type === 'sofa')      return { cx: e.x + e.w / 2,  cy: e.y + e.h / 2 }
+  if (e.type === 'ellipse')                       return { cx: e.cx,            cy: e.cy }
+  if (e.type === 'rect')                          return { cx: e.x + e.w / 2,  cy: e.y + e.h / 2 }
+  return { cx: 0, cy: 0 }
+}
+
+// Snap de um elemento para os vizinhos. rawCX/rawCY = centro desejado
+// Retorna { cx, cy } após snap (ainda como centro)
+function snapCenter(el, rawCX, rawCY) {
+  const others = [...camarotes, ...sofas, ...mesas].filter(o => o.id !== el.id)
+
+  let snapCX = rawCX, snapCY = rawCY
+  let bestDX = SNAP_DIST + 1, bestDY = SNAP_DIST + 1
+
+  for (const o of others) {
+    const oc = elCenter(o)
+
+    // ── Alinhamento de centros ──
+    const dxCenter = Math.abs(rawCX - oc.cx)
+    const dyCenter = Math.abs(rawCY - oc.cy)
+    if (dxCenter < bestDX) { bestDX = dxCenter; snapCX = oc.cx }
+    if (dyCenter < bestDY) { bestDY = dyCenter; snapCY = oc.cy }
+
+    // ── Alinhamento de bordas (só para rects/cams/sofas) ──
+    if ((el.type === 'cam' || el.type === 'sofa') &&
+        (o.type === 'cam' || o.type === 'sofa')) {
+      const myHW = el.w / 2, myHH = el.h / 2
+      const oHW  = o.w  / 2, oHH  = o.h  / 2
+
+      // Borda esq do meu alinha com borda esq do outro → mesmos x
+      const dxLeft = Math.abs((rawCX - myHW) - (oc.cx - oHW))
+      if (dxLeft < bestDX) { bestDX = dxLeft; snapCX = oc.cx - oHW + myHW }
+
+      // Borda dir do meu alinha com borda dir do outro
+      const dxRight = Math.abs((rawCX + myHW) - (oc.cx + oHW))
+      if (dxRight < bestDX) { bestDX = dxRight; snapCX = oc.cx + oHW - myHW }
+
+      // Borda sup alinha com borda sup
+      const dyTop = Math.abs((rawCY - myHH) - (oc.cy - oHH))
+      if (dyTop < bestDY) { bestDY = dyTop; snapCY = oc.cy - oHH + myHH }
+
+      // Borda inf alinha com borda inf
+      const dyBot = Math.abs((rawCY + myHH) - (oc.cy + oHH))
+      if (dyBot < bestDY) { bestDY = dyBot; snapCY = oc.cy + oHH - myHH }
+    }
+  }
+
+  return { cx: Math.round(snapCX), cy: Math.round(snapCY) }
+}
+
+// Aplica snap e atualiza as coordenadas nativas do elemento
+function applySnap(el, rawCX, rawCY) {
+  const { cx, cy } = snapCenter(el, rawCX, rawCY)
+  if (el.type === 'mesa') {
+    el.cx = cx; el.cy = cy
+  } else if (el.type === 'cam' || el.type === 'sofa') {
+    el.x = cx - el.w / 2; el.y = cy - el.h / 2
+  }
+}
+// ────────────────────────────────────────────────────────────
+
+document.addEventListener('mousemove', e => {
+  if (!dragging || selectedIds.size === 0) return
+  const pos = svgPos(e)
+  const dx = pos.x - dragStart.mx
+  const dy = pos.y - dragStart.my
+  const useSnap = selectedIds.size === 1
+
+  for (const sid of selectedIds) {
+    const el = findEl(sid)
+    const orig = dragOriginals[sid]
+    if (!el || !orig) continue
+
+    if (el.type === 'cam' || el.type === 'sofa') {
+      // orig.x/y = topo-esquerdo → converter para centro
+      const rawCX = (orig.x + el.w / 2) + dx
+      const rawCY = (orig.y + el.h / 2) + dy
+      if (useSnap) { applySnap(el, rawCX, rawCY) }
+      else { el.x = Math.round(orig.x + dx); el.y = Math.round(orig.y + dy) }
+
+    } else if (el.type === 'mesa') {
+      const rawCX = orig.cx + dx
+      const rawCY = orig.cy + dy
+      if (useSnap) { applySnap(el, rawCX, rawCY) }
+      else { el.cx = Math.round(rawCX); el.cy = Math.round(rawCY) }
+
+    } else if (el.type === 'rect') {
+      el.x = Math.round(orig.x + dx); el.y = Math.round(orig.y + dy)
+    } else if (el.type === 'ellipse') {
+      el.cx = Math.round(orig.cx + dx); el.cy = Math.round(orig.cy + dy)
+    } else if (el.type === 'line') {
+      el.x1 = Math.round(orig.x1 + dx); el.y1 = Math.round(orig.y1 + dy)
+      el.x2 = Math.round(orig.x2 + dx); el.y2 = Math.round(orig.y2 + dy)
+    }
+  }
+  renderAll()
+})
+
+document.addEventListener('mouseup', () => { dragging = false })
+
+svg.addEventListener('mousedown', e => {
+  if (e.target === svg) {
+    selected = null
+    selectedIds.clear()
+    renderAll()
+  }
+})
+
+// ═══════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['camarotes','mesas','estrutura'][i] === tab)
+  })
+  updateSidebar()
+}
+
+function updateSidebar() {
+  const panel = document.getElementById('panel')
+  let list = currentTab === 'camarotes' ? [...camarotes, ...sofas]
+           : currentTab === 'mesas'     ? mesas
+           :                              estrutura
+
+  panel.innerHTML = list.map(e => {
+    const coords = e.type === 'mesa'    ? `cx:${e.cx} cy:${e.cy}`
+                 : e.type === 'ellipse' ? `cx:${e.cx} cy:${e.cy} rx:${e.rx} ry:${e.ry}`
+                 : e.type === 'line'    ? `(${e.x1},${e.y1})→(${e.x2},${e.y2})`
+                 :                       `x:${e.x} y:${e.y} w:${e.w} h:${e.h}`
+    return `<div class="item ${selectedIds.has(e.id)?'active':''}" onclick="selectElPanel('${e.id}', event)">
+      <div class="item-label">${e.label}</div>
+      <div class="item-coords">${coords}</div>
+    </div>`
+  }).join('')
+}
+
+function selectElPanel(id, event) {
+  if (event && (event.ctrlKey || event.metaKey)) {
+    if (selectedIds.has(id)) { selectedIds.delete(id); selected = selectedIds.size > 0 ? [...selectedIds].at(-1) : null }
+    else { selectedIds.add(id); selected = id }
+  } else { selectedIds.clear(); selectedIds.add(id); selected = id }
+  renderAll()
+}
+
+// ═══════════════════════════════════════════
+// COORD EDITOR
+// ═══════════════════════════════════════════
+function updateCoordEditor() {
+  const box = document.getElementById('coord-editor')
+  const fields = document.getElementById('coord-fields')
+  const title = document.getElementById('coord-title')
+
+  if (!selected) { box.classList.remove('show'); return }
+  const el = findEl(selected)
+  if (!el) { box.classList.remove('show'); return }
+
+  box.classList.add('show')
+  title.textContent = el.label
+
+  const keys = el.type === 'mesa'    ? ['cx','cy']
+             : el.type === 'ellipse' ? ['cx','cy','rx','ry']
+             : el.type === 'line'    ? ['x1','y1','x2','y2']
+             :                        ['x','y','w','h']
+
+  fields.innerHTML = keys.map(k => `
+    <div class="coord-row">
+      <label>${k}</label>
+      <input type="number" value="${el[k]}" onchange="updateCoord('${selected}','${k}',this.value)"/>
+    </div>
+  `).join('')
+}
+
+function updateCoord(id, key, val) {
+  const el = findEl(id)
+  if (el) { el[key] = parseInt(val); renderAll() }
+}
+
+// ═══════════════════════════════════════════
+// CÓDIGO
+// ═══════════════════════════════════════════
+function updateCode() {
+  if (!selected) {
+    document.getElementById('code-output').textContent = '// Selecione um elemento\n// para ver o código JSX'
+    return
+  }
+  const el = findEl(selected)
+  if (!el) return
+
+  let code = ''
+  if (el.type === 'cam') {
+    code = `{cam(${el.label.replace('Camarote ','')}, ${el.x}, ${el.y}, ${el.w}, ${el.h})}`
+  } else if (el.type === 'sofa') {
+    code = `<Cam zona={M(${el.label.replace('Sofá ','')})} x={${el.x}} y={${el.y}} w={${el.w}} h={${el.h}} .../>`
+  } else if (el.type === 'mesa') {
+    code = `{m(${el.label}, ${el.cx}, ${el.cy})}`
+  } else if (el.type === 'ellipse') {
+    code = `<ellipse cx={${el.cx}} cy={${el.cy}} rx={${el.rx}} ry={${el.ry}}\n  fill="rgba(201,168,76,0.04)" stroke="#C9A84C"\n  strokeWidth="1.8" strokeDasharray="6,3"/>`
+  } else if (el.type === 'rect') {
+    code = `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="2"\n  .../>`
+  } else if (el.type === 'line') {
+    code = `<line x1="${el.x1}" y1="${el.y1}" x2="${el.x2}" y2="${el.y2}"\n  stroke="#3a2010" strokeWidth="${el.id==='div-esq'||el.id==='div-esq-h'?2:1.5}"/>`
+  }
+  document.getElementById('code-output').textContent = code
+}
+
+function copyCode() {
+  // Gera código completo de todos os elementos
+  let lines = []
+
+  lines.push('// ── CAMAROTES ──')
+  camarotes.forEach(e => lines.push(`{cam(${e.label.replace('Camarote ','')}, ${e.x}, ${e.y}, ${e.w}, ${e.h})}`))
+
+  lines.push('\n// ── SOFÁS ──')
+  sofas.forEach(e => lines.push(`<Cam zona={M(${e.label.replace('Sofá ','')})} x={${e.x}} y={${e.y}} w={${e.w}} h={${e.h}} .../>`))
+
+  lines.push('\n// ── MESAS ──')
+  mesas.forEach(e => lines.push(`{m(${e.label}, ${e.cx}, ${e.cy})}`))
+
+  lines.push('\n// ── PALCO ──')
+  const p = estrutura.find(e => e.id === 'palco')
+  lines.push(`<ellipse cx={${p.cx}} cy={${p.cy}} rx={${p.rx}} ry={${p.ry}} .../>`)
+
+  lines.push('\n// ── ESTRUTURA ──')
+  estrutura.filter(e => e.id !== 'palco').forEach(e => {
+    if (e.type === 'rect') lines.push(`<rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="2" .../>`)
+    else if (e.type === 'line') lines.push(`<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" ... />\n  {/* ${e.label} */}`)
+  })
+
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = document.querySelector('.copy-btn')
+    btn.textContent = '✅ Copiado!'
+    setTimeout(() => btn.textContent = '📋 Copiar Código JSX', 2000)
+  })
+}
+
+
+// ═══════════════════════════════════════════
+// FERRAMENTAS DE CRIAÇÃO
+// ═══════════════════════════════════════════
+let activeTool = 'select'
+let drawStart = null
+let drawPreview = null
+let nextCustomId = 1
+
+function setTool(tool) {
+  activeTool = tool
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active-tool'))
+  const btn = document.getElementById('tool-' + tool)
+  if (btn) btn.classList.add('active-tool')
+  document.getElementById('tool-select').classList.toggle('active-tool', tool === 'select')
+  svg.style.cursor = tool === 'select' ? 'default' : 'crosshair'
+}
+
+function deleteSelected() {
+  for (const id of selectedIds) {
+    // Remove de estrutura
+    const idx = estrutura.findIndex(e => e.id === id)
+    if (idx !== -1) { estrutura.splice(idx, 1); continue }
+    // Remove de camarotes
+    const ic = camarotes.findIndex(e => e.id === id)
+    if (ic !== -1) { camarotes.splice(ic, 1); continue }
+    // Remove de sofas
+    const is = sofas.findIndex(e => e.id === id)
+    if (is !== -1) { sofas.splice(is, 1); continue }
+    // Remove de mesas
+    const im = mesas.findIndex(e => e.id === id)
+    if (im !== -1) { mesas.splice(im, 1) }
+  }
+  selectedIds.clear(); selected = null
+  renderAll()
+}
+
+// Desenho no canvas (para ferramentas de criação)
+svg.addEventListener('mousedown', e => {
+  if (activeTool === 'select') {
+    if (e.target === svg) { selected = null; selectedIds.clear(); renderAll() }
+    return
+  }
+  e.preventDefault()
+  drawStart = svgPos(e)
+})
+
+svg.addEventListener('mousemove', e => {
+  if (activeTool === 'select' || !drawStart) return
+  const pos = svgPos(e)
+  const x = Math.min(drawStart.x, pos.x), y = Math.min(drawStart.y, pos.y)
+  const w = Math.abs(pos.x - drawStart.x), h = Math.abs(pos.y - drawStart.y)
+
+  // Remove preview anterior
+  const prev = document.getElementById('draw-preview')
+  if (prev) prev.remove()
+
+  const previewG = document.createElementNS('http://www.w3.org/2000/svg','g')
+  previewG.id = 'draw-preview'
+
+  if (activeTool === 'line') {
+    previewG.innerHTML = `<line x1="${drawStart.x}" y1="${drawStart.y}" x2="${pos.x}" y2="${pos.y}"
+      stroke="#C9A84C" stroke-width="2" stroke-dasharray="5,3" opacity="0.7"/>`
+  } else {
+    const fillMap = { wall:'rgba(60,35,15,0.4)', area:'rgba(45,25,10,0.3)', stairs:'rgba(100,70,45,0.3)' }
+    previewG.innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2"
+      fill="${fillMap[activeTool]||'rgba(201,168,76,0.1)'}"
+      stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.8"/>`
+  }
+  svg.appendChild(previewG)
+})
+
+svg.addEventListener('mouseup', e => {
+  if (activeTool === 'select' || !drawStart) return
+  const pos = svgPos(e)
+  const prev = document.getElementById('draw-preview')
+  if (prev) prev.remove()
+
+  const dx = Math.abs(pos.x - drawStart.x), dy = Math.abs(pos.y - drawStart.y)
+  if (dx < 6 && dy < 6) { drawStart = null; return } // clique sem arrastar
+
+  const id = 'custom-' + (nextCustomId++)
+  const x = Math.min(drawStart.x, pos.x), y = Math.min(drawStart.y, pos.y)
+  const w = Math.abs(pos.x - drawStart.x), h = Math.abs(pos.y - drawStart.y)
+
+  const labelMap = { wall:'Parede', area:'Área', stairs:'Escadas', line:'Linha' }
+
+  if (activeTool === 'line') {
+    estrutura.push({
+      id, label: labelMap[activeTool] + ' ' + nextCustomId,
+      type: 'line',
+      x1: Math.round(drawStart.x), y1: Math.round(drawStart.y),
+      x2: Math.round(pos.x),       y2: Math.round(pos.y)
+    })
+  } else {
+    estrutura.push({
+      id, label: labelMap[activeTool] + ' ' + nextCustomId,
+      type: 'rect',
+      x: Math.round(x), y: Math.round(y),
+      w: Math.round(w), h: Math.round(h),
+      subtype: activeTool
+    })
+  }
+
+  drawStart = null
+  selectedIds.clear(); selectedIds.add(id); selected = id
+  setTool('select')
+  renderAll()
+})
+
+
+// ── RESIZE HANDLES ─────────────────────────────────────────
+let resizing = false
+let resizeHandle = null  // 'se' | 'e' | 's' | 'n' | 'w' | 'ne' | 'sw' | 'nw'
+let resizeEl = null
+let resizeOrig = {}
+let resizeStart = {}
+
+function addResizeHandles(grp, e) {
+  const hs = 7 // handle size
+
+  const handles = e.type === 'ellipse'
+    ? [ // só leste e sul para elipse (rx, ry)
+        { id:'e',  x: e.cx+e.rx,      y: e.cy,        cursor:'ew-resize'   },
+        { id:'s',  x: e.cx,           y: e.cy+e.ry,   cursor:'ns-resize'   },
+      ]
+    : [ // 8 handles para rects
+        { id:'se', x: e.x+e.w,  y: e.y+e.h,  cursor:'nwse-resize' },
+        { id:'sw', x: e.x,      y: e.y+e.h,  cursor:'nesw-resize' },
+        { id:'ne', x: e.x+e.w,  y: e.y,      cursor:'nesw-resize' },
+        { id:'nw', x: e.x,      y: e.y,      cursor:'nwse-resize' },
+        { id:'e',  x: e.x+e.w,  y: e.y+e.h/2, cursor:'ew-resize' },
+        { id:'w',  x: e.x,      y: e.y+e.h/2, cursor:'ew-resize' },
+        { id:'s',  x: e.x+e.w/2, y: e.y+e.h, cursor:'ns-resize'  },
+        { id:'n',  x: e.x+e.w/2, y: e.y,     cursor:'ns-resize'  },
+      ]
+
+  handles.forEach(h => {
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect')
+    r.setAttribute('x', h.x - hs/2); r.setAttribute('y', h.y - hs/2)
+    r.setAttribute('width', hs); r.setAttribute('height', hs)
+    r.setAttribute('rx', '1')
+    r.setAttribute('fill', '#C9A84C')
+    r.setAttribute('stroke', '#0a0604')
+    r.setAttribute('stroke-width', '0.8')
+    r.style.cursor = h.cursor
+    r.setAttribute('data-handle', h.id)
+    r.setAttribute('data-elid', e.id)
+    r.addEventListener('mousedown', onResizeMouseDown)
+    grp.appendChild(r)
+  })
+}
+
+function onResizeMouseDown(ev) {
+  ev.stopPropagation()
+  ev.preventDefault()
+  resizing = true
+  resizeHandle = ev.target.getAttribute('data-handle')
+  const id = ev.target.getAttribute('data-elid')
+  resizeEl = findEl(id)
+  resizeOrig = { ...resizeEl }
+  resizeStart = svgPos(ev)
+}
+
+document.addEventListener('mousemove', ev => {
+  if (!resizing || !resizeEl) return
+  const pos = svgPos(ev)
+  const dx = pos.x - resizeStart.x
+  const dy = pos.y - resizeStart.y
+
+  if (resizeEl.type === 'line' && resizeHandle.startsWith('ep')) {
+    if (resizeHandle === 'ep1') { resizeEl.x1 = Math.round(pos.x); resizeEl.y1 = Math.round(pos.y) }
+    else { resizeEl.x2 = Math.round(pos.x); resizeEl.y2 = Math.round(pos.y) }
+  } else if (resizeEl.type === 'ellipse') {
+    if (resizeHandle === 'e') resizeEl.rx = Math.max(10, Math.round(resizeOrig.rx + dx))
+    if (resizeHandle === 's') resizeEl.ry = Math.max(10, Math.round(resizeOrig.ry + dy))
+  } else {
+    // rect
+    const o = resizeOrig
+    if (resizeHandle === 'se') {
+      resizeEl.w = Math.max(10, Math.round(o.w + dx))
+      resizeEl.h = Math.max(10, Math.round(o.h + dy))
+    } else if (resizeHandle === 'sw') {
+      const newW = Math.max(10, Math.round(o.w - dx))
+      resizeEl.x = Math.round(o.x + o.w - newW); resizeEl.w = newW
+      resizeEl.h = Math.max(10, Math.round(o.h + dy))
+    } else if (resizeHandle === 'ne') {
+      resizeEl.w = Math.max(10, Math.round(o.w + dx))
+      const newH = Math.max(10, Math.round(o.h - dy))
+      resizeEl.y = Math.round(o.y + o.h - newH); resizeEl.h = newH
+    } else if (resizeHandle === 'nw') {
+      const newW = Math.max(10, Math.round(o.w - dx))
+      const newH = Math.max(10, Math.round(o.h - dy))
+      resizeEl.x = Math.round(o.x + o.w - newW); resizeEl.w = newW
+      resizeEl.y = Math.round(o.y + o.h - newH); resizeEl.h = newH
+    } else if (resizeHandle === 'e') {
+      resizeEl.w = Math.max(10, Math.round(o.w + dx))
+    } else if (resizeHandle === 'w') {
+      const newW = Math.max(10, Math.round(o.w - dx))
+      resizeEl.x = Math.round(o.x + o.w - newW); resizeEl.w = newW
+    } else if (resizeHandle === 's') {
+      resizeEl.h = Math.max(10, Math.round(o.h + dy))
+    } else if (resizeHandle === 'n') {
+      const newH = Math.max(10, Math.round(o.h - dy))
+      resizeEl.y = Math.round(o.y + o.h - newH); resizeEl.h = newH
+    }
+  }
+  renderAll()
+}, true)
+
+document.addEventListener('mouseup', () => { resizing = false; resizeEl = null }, true)
+// ──────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════
+// SALVAR NO PROJETO (chama a API do Next.js)
+// ═══════════════════════════════════════════
+async function saveToProject() {
+  const btn = document.getElementById('save-btn')
+  const status = document.getElementById('save-status')
+  btn.disabled = true
+  btn.textContent = '⏳ Salvando...'
+  status.className = ''
+  status.style.display = 'none'
+
+  try {
+    const payload = { camarotes, sofas, mesas, estrutura }
+    const res = await fetch('http://localhost:3000/api/mapa/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const json = await res.json()
+
+    if (res.ok && json.ok) {
+      btn.textContent = '✅ Salvo!'
+      status.className = 'ok'
+      status.textContent = json.message || 'MapaInterativo.tsx atualizado!'
+      setTimeout(() => { btn.textContent = '💾 Salvar no Projeto'; btn.disabled = false }, 3000)
+    } else {
+      throw new Error(json.error || `HTTP ${res.status}`)
+    }
+  } catch (err) {
+    btn.textContent = '❌ Erro ao salvar'
+    status.className = 'error'
+    status.textContent = err.message || 'Erro desconhecido'
+    btn.disabled = false
+    console.error('Save error:', err)
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+setTool('select')
+renderAll()
+</script>
+</body>
+</html>
