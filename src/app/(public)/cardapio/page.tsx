@@ -4,14 +4,14 @@ import React, { useState } from 'react'
 import { Wine, Beer, Zap, Coffee, Droplets, Package, Sparkles } from 'lucide-react'
 
 const categorias = [
-  { id: 'todos', label: 'Todos', icon: <Sparkles size={14} /> },
+  { id: 'combos', label: 'Combos', icon: <Package size={14} /> },
+  { id: 'espumantes', label: 'Espumantes', icon: <Sparkles size={14} /> },
   { id: 'drinks', label: 'Drinks', icon: <Coffee size={14} /> },
   { id: 'longneck', label: 'Long Neck', icon: <Beer size={14} /> },
   { id: 'doses', label: 'Doses', icon: <Wine size={14} /> },
   { id: 'soft', label: 'Soft Menu', icon: <Droplets size={14} /> },
-  { id: 'combos', label: 'Combos', icon: <Package size={14} /> },
-  { id: 'espumantes', label: 'Espumantes', icon: <Sparkles size={14} /> },
-  { id: 'outros', label: 'Outros', icon: <Zap size={14} /> },
+  { id: 'outros', label: 'Bomboniere', icon: <Zap size={14} /> },
+  { id: 'todos', label: 'Todos', icon: <Sparkles size={14} /> },
 ]
 
 const cardapio = [
@@ -90,7 +90,7 @@ const cardapio = [
 ]
 
 export default function CardapioPage() {
-  const [cat, setCat] = useState('todos')
+  const [cat, setCat] = useState('combos')
 
   const itens = cat === 'todos' ? cardapio : cardapio.filter(i => i.cat === cat)
 
