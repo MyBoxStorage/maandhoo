@@ -157,8 +157,13 @@ export const MapaInterativo: React.FC = () => {
           ))}
         </div>
 
-        <div className="relative bg-card rounded-sm border border-gold/20 p-2 overflow-x-auto">
-          <svg viewBox="0 0 700 900" className="w-full max-w-2xl mx-auto block" style={{ minWidth: '280px', minHeight: '360px' }}>
+        <div className="relative bg-card rounded-sm border border-gold/20 p-2 overflow-hidden">
+          <svg
+            viewBox="20 30 660 860"
+            className="w-full mx-auto block"
+            preserveAspectRatio="xMidYMid meet"
+            style={{ maxHeight: '75vh', minHeight: '300px' }}
+          >
 
             {/* FUNDO */}
             <rect width="700" height="900" fill="#0d0805" rx="4" />
