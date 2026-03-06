@@ -114,18 +114,18 @@ const EventoCard: React.FC<{ evento: Evento; index: number }> = ({ evento, index
 
 export const EventosSection: React.FC = () => {
   return (
-    <section id="eventos" className="py-24 px-4 relative">
+    <section id="eventos" className="py-16 sm:py-24 px-4 relative">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 sm:mb-16">
           <p className="section-subtitle mb-3">Agenda</p>
           <h2 className="section-title mb-4">Próximos Eventos</h2>
           <div className="divider-gold w-24 mx-auto" />
         </div>
 
         {/* CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {EVENTOS_INICIAIS.map((evento, i) => (
             <EventoCard key={evento.id} evento={evento} index={i} />
           ))}

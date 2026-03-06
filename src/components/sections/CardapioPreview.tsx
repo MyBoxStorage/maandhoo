@@ -40,7 +40,7 @@ const cardapioDestaque: (ItemCardapio & { icone: React.ReactNode })[] = [
 
 export const CardapioPreview: React.FC = () => {
   return (
-    <section id="cardapio" className="py-24 px-4">
+    <section id="cardapio" className="py-16 sm:py-24 px-4">
       <div className="max-w-7xl mx-auto">
 
         <div className="text-center mb-16">

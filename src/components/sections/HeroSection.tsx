@@ -288,13 +288,13 @@ export const HeroSection: React.FC = () => {
       />
 
       {/* CONTEÚDO */}
-      <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-20 text-center px-5 sm:px-4 max-w-4xl mx-auto w-full">
 
         {/* LOGO ANIMADO */}
-        <div className="flex justify-center mb-8 animate-float">
+        <div className="flex justify-center mb-6 sm:mb-8 animate-float">
           <LogoElefante
-            width={100}
-            height={110}
+            width={80}
+            height={88}
             color="#E8DDD0"
             animated
           />
@@ -302,39 +302,39 @@ export const HeroSection: React.FC = () => {
 
         {/* NOME */}
         <h1
-          className="font-accent text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.12em] mb-3 animate-fade-up"
+          className="font-accent text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.08em] sm:tracking-[0.12em] mb-3 animate-fade-up w-full"
           style={{ color: '#E8DDD0', textShadow: '0 0 60px rgba(201,168,76,0.3)' }}
         >
           maandhoo
         </h1>
 
         {/* SUBTÍTULO */}
-        <p className="font-display text-xl md:text-2xl italic text-bege-escuro mb-3 animate-fade-up delay-200">
+        <p className="font-display text-lg md:text-2xl italic text-bege-escuro mb-3 animate-fade-up delay-200">
           Suas noites são na Maandhoo
         </p>
-        <p className="font-accent text-xs tracking-[0.4em] uppercase text-dourado mb-10 animate-fade-up delay-300">
+        <p className="font-accent text-xs tracking-[0.3em] sm:tracking-[0.4em] uppercase text-dourado mb-8 sm:mb-10 animate-fade-up delay-300">
           O melhor club de Balneário Camboriú
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-400">
-          <Link href="/#eventos" className="btn-primary">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-fade-up delay-400 w-full px-2 sm:px-0">
+          <Link href="/#eventos" className="btn-primary w-full sm:w-auto text-center">
             Ver Próximos Eventos
           </Link>
-          <Link href="/reservas" className="btn-outline">
+          <Link href="/reservas" className="btn-outline w-full sm:w-auto text-center">
             Fazer Reserva
           </Link>
         </div>
 
         {/* BADGES INFO */}
-        <div className="flex flex-wrap items-center justify-center gap-6 mt-12 animate-fade-up delay-500">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10 sm:mt-12 animate-fade-up delay-500">
           {[
-            { value: '500–800', label: 'pessoas por noite' },
+            { value: '500–800', label: 'pessoas/noite' },
             { value: 'BC', label: 'Balneário Camboriú' },
             { value: '15', label: 'camarotes' },
           ].map((item) => (
             <div key={item.label} className="text-center">
-              <div className="font-display text-2xl text-gradient-gold">{item.value}</div>
+              <div className="font-display text-xl sm:text-2xl text-gradient-gold">{item.value}</div>
               <div className="font-body text-xs text-bege-escuro/60 tracking-wider uppercase mt-0.5">{item.label}</div>
             </div>
           ))}

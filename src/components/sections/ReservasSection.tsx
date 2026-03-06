@@ -39,7 +39,7 @@ export const ReservasSection: React.FC = () => {
   const [hovered, setHovered] = useState<string | null>(null)
 
   return (
-    <section id="reservas" className="py-24 px-4 relative">
+    <section id="reservas" className="py-16 sm:py-24 px-4 relative">
       {/* BG decorativo */}
       <div className="absolute inset-0 bg-gradient-to-b from-preto-profundo via-marrom/5 to-preto-profundo pointer-events-none" />
 

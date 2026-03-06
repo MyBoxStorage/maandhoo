@@ -408,4 +408,15 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
   .section-title {
     @apply text-3xl;
   }
+
+  .btn-primary,
+  .btn-outline {
+    @apply px-6 py-3 text-xs;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    @apply text-2xl;
+  }
 }

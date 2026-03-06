@@ -13,7 +13,7 @@ const fotos = [
 
 export const GaleriaPreview: React.FC = () => {
   return (
-    <section id="galeria" className="py-24 px-4 bg-cinza-escuro/20 relative overflow-hidden">
+    <section id="galeria" className="py-16 sm:py-24 px-4 bg-cinza-escuro/20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
 
         <div className="text-center mb-16">
