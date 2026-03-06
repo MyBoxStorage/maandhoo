@@ -594,10 +594,11 @@ export const HeroSection: React.FC = () => {
             Suas noites são na Maandhoo.
           </p>
           <p
-            className="font-accent text-[11px] sm:text-sm tracking-[0.28em] uppercase"
+            className="font-accent text-sm sm:text-base tracking-[0.22em] uppercase"
             style={{
-              color: 'rgba(201,168,76,0.90)',
-              textShadow: '0 0 20px rgba(201,168,76,0.5), 0 1px 20px rgba(0,0,0,0.9)',
+              color: 'rgba(220,190,90,1)',
+              textShadow: '0 0 30px rgba(201,168,76,0.8), 0 1px 30px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,1)',
+              fontWeight: 600,
             }}
           >
             O melhor club de Balneário Camboriú
