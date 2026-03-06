@@ -241,8 +241,32 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
 }
 
 /* ============================================
-   ANIMAÇÕES CUSTOM
+   MAANDHOO TITLE — SHIMMER ÚNICO + GRADIENTE ESTÁTICO
    ============================================ */
+.maandhoo-title {
+  background: linear-gradient(
+    105deg,
+    #c8b99a 0%,
+    #F0E8DC 30%,
+    #e8c97a 48%,
+    #F0E8DC 66%,
+    #c8b99a 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-position: 100% center;
+  animation: maandhoo-reveal 1.6s cubic-bezier(0.22, 0.6, 0.36, 1) 0.4s forwards;
+  filter: drop-shadow(0 2px 30px rgba(0,0,0,0.7)) drop-shadow(0 0 60px rgba(201,168,76,0.12));
+}
+
+@keyframes maandhoo-reveal {
+  0%   { background-position: 200% center; }
+  100% { background-position: 20% center; }
+}
+
+
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
