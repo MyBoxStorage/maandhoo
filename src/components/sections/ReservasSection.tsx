@@ -53,7 +53,7 @@ export const ReservasSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           {tiposReserva.map((tipo) => (
             <div
               key={tipo.id}
@@ -61,7 +61,7 @@ export const ReservasSection: React.FC = () => {
               onMouseLeave={() => setHovered(null)}
               className={`relative rounded-sm border transition-all duration-500 overflow-hidden
                 ${tipo.destaque
-                  ? 'border-dourado shadow-gold scale-[1.02]'
+                  ? 'border-dourado shadow-gold'
                   : 'border-gold/20 hover:border-gold/50 hover:-translate-y-1'
                 }
               `}

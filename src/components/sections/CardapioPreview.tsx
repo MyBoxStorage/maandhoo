@@ -52,11 +52,11 @@ export const CardapioPreview: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
           {cardapioDestaque.map(item => (
             <div
               key={item.id}
-              className="bg-card border border-gold/15 hover:border-gold/40 p-5 rounded-sm transition-all duration-300 group"
+              className="bg-card border border-gold/15 hover:border-gold/40 p-6 rounded-sm transition-all duration-300 group hover:-translate-y-0.5"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
