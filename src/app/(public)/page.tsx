@@ -5,6 +5,7 @@ import { MapaInterativo } from '@/components/sections/MapaInterativo'
 import { CardapioPreview } from '@/components/sections/CardapioPreview'
 import { GaleriaPreview } from '@/components/sections/GaleriaPreview'
 import { ReservasSection } from '@/components/sections/ReservasSection'
+import { LocalizacaoSection } from '@/components/sections/LocalizacaoSection'
 import { PopupLista } from '@/components/ui/PopupLista'
 
 export default function HomePage() {
@@ -17,6 +18,7 @@ export default function HomePage() {
       <ReservasSection />
       <CardapioPreview />
       <GaleriaPreview />
+      <LocalizacaoSection />
     </>
   )
 }
