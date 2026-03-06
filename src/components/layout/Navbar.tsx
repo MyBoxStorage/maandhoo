@@ -49,7 +49,7 @@ export const Navbar: React.FC = () => {
                 color="#E8DDD0"
                 className="group-hover:animate-pulse-gold transition-all duration-300"
               />
-              <span className="font-brand text-xl text-bege group-hover:text-gradient-gold transition-all duration-300" style={{ fontWeight: 300, letterSpacing: '0.02em' }}>
+              <span className="font-brand text-xl text-bege group-hover:text-gradient-gold transition-all duration-300" style={{ fontWeight: 600, letterSpacing: '0.02em' }}>
                 maandhoo
               </span>
             </Link>

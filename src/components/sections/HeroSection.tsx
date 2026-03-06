@@ -577,7 +577,7 @@ export const HeroSection: React.FC = () => {
             color: '#F0E8DC',
             textShadow: '0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(201,168,76,0.2)',
             letterSpacing: '-0.01em',
-            fontWeight: 300,
+            fontWeight: 600,
           }}
         >
           Maandhoo
