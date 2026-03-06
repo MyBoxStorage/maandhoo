@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import React, { useEffect, useRef, useState } from 'react'import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 
@@ -91,6 +90,8 @@ const strobeAlpha = (life: number) =>
 export const HeroSection: React.FC = () => {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const paletaRef  = useRef<RGB[]>(PALETAS[0])
+  const tituloRef  = useRef<HTMLHeadingElement>(null)
+  const shineRef   = useRef<HTMLCanvasElement>(null)
 
   const [fotoAtual,  setFotoAtual]  = useState(0)
   const [fotoProxima, setFotoProxima] = useState(1)
@@ -518,6 +519,72 @@ export const HeroSection: React.FC = () => {
     return () => clearInterval(interval)
   }, [])
 
+  /* ── Shine canvas sobre o título ── */
+  useEffect(() => {
+    const h1 = tituloRef.current
+    const cv = shineRef.current
+    if (!h1 || !cv) return
+
+    const rect = h1.getBoundingClientRect()
+    cv.width  = rect.width
+    cv.height = rect.height
+
+    const ctx = cv.getContext('2d')
+    if (!ctx) return
+
+    // Aguarda o fade-up do título (~0.7s delay-100 + 0.6s anim)
+    let raf: number
+    let start: number | null = null
+    const DURATION = 2600  // ms — duração total do sweep
+    const DELAY    = 900   // ms — espera antes de começar
+
+    const draw = (ts: number) => {
+      if (!start) start = ts
+      const elapsed = ts - start
+
+      ctx.clearRect(0, 0, cv.width, cv.height)
+
+      if (elapsed < DELAY) {
+        raf = requestAnimationFrame(draw)
+        return
+      }
+
+      const t = Math.min((elapsed - DELAY) / DURATION, 1)
+
+      // Posição do raio: começa em -30% e vai até 130%
+      const x = (t * 1.6 - 0.3) * cv.width
+
+      // Opacity: fade in nos primeiros 8%, fade out nos últimos 8%
+      const fadeIn  = Math.min(t / 0.08, 1)
+      const fadeOut = Math.min((1 - t) / 0.08, 1)
+      const alpha   = fadeIn * fadeOut
+
+      if (alpha > 0) {
+        const bw = cv.width * 0.22  // largura do feixe
+        const grad = ctx.createLinearGradient(x - bw, 0, x + bw, 0)
+        grad.addColorStop(0,    `rgba(255,255,255,0)`)
+        grad.addColorStop(0.35, `rgba(255,255,255,${0.06 * alpha})`)
+        grad.addColorStop(0.48, `rgba(220,185,80,${0.70 * alpha})`)
+        grad.addColorStop(0.52, `rgba(255,240,180,${0.85 * alpha})`)
+        grad.addColorStop(0.65, `rgba(255,255,255,${0.06 * alpha})`)
+        grad.addColorStop(1,    `rgba(255,255,255,0)`)
+
+        // Skew via transform
+        ctx.save()
+        ctx.transform(1, 0, -0.18, 1, cv.height * 0.18, 0)
+        ctx.fillStyle = grad
+        ctx.fillRect(x - bw * 1.5, 0, bw * 3, cv.height)
+        ctx.restore()
+      }
+
+      if (t < 1) raf = requestAnimationFrame(draw)
+      // Quando t === 1: canvas fica transparente — texto volta limpo
+    }
+
+    raf = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
   /* ─────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────── */
@@ -571,18 +638,19 @@ export const HeroSection: React.FC = () => {
           <LogoElefante width={120} height={134} color="#E8DDD0" animated />
         </div>
 
-        <div className="relative inline-block mb-5 animate-fade-up delay-100 maandhoo-title-wrap">
+        <div className="relative mb-5 animate-fade-up delay-100">
           <h1
+            ref={tituloRef}
             className="font-brand text-[18vw] sm:text-8xl md:text-9xl leading-none maandhoo-title"
-            style={{
-              letterSpacing: '-0.01em',
-              fontWeight: 600,
-              color: '#F0E8DC',
-              textShadow: '0 2px 40px rgba(0,0,0,0.85), 0 0 80px rgba(0,0,0,0.5)',
-            }}
+            style={{ letterSpacing: '-0.01em', fontWeight: 600 }}
           >
             Maandhoo
           </h1>
+          <canvas
+            ref={shineRef}
+            className="absolute inset-0 pointer-events-none"
+            style={{ mixBlendMode: 'screen' }}
+          />
         </div>
 
         <div className="mb-8 sm:mb-10 animate-fade-up delay-200 space-y-1">
