@@ -146,6 +146,21 @@ export const Footer: React.FC = () => {
               Cancelamento
             </Link>
           </div>
+
+          {/* CRÉDITOS */}
+          <div className="mt-4 text-center">
+            <p className="font-body text-xs text-bege-escuro/30">
+              Desenvolvido por{' '}
+              <a
+                href="https://globallanding.com.br"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-bege-escuro/50 hover:text-dourado transition-colors duration-200"
+              >
+                Global Landing
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
