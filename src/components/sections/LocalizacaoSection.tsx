@@ -6,9 +6,9 @@ import { MapPin, Navigation, X, ExternalLink, Clock, Car } from 'lucide-react'
 const GMAPS_LINK =
   'https://www.google.com/maps/search/?api=1&query=Rua+Br%C3%A1s+Cubas+35+Nova+Esperan%C3%A7a+Balne%C3%A1rio+Cambori%C3%BA+SC'
 
-// Embed real do endereço — tema dark via filtro CSS
+// Embed via Google Maps iframe padrão (mais compatível)
 const EMBED_URL =
-  'https://maps.google.com/maps?q=Rua+Br%C3%A1s+Cubas,+35,+Nova+Esperan%C3%A7a,+Balne%C3%A1rio+Cambori%C3%BA,+SC,+Brasil&z=17&output=embed'
+  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3567.3!2d-48.6389!3d-26.9912!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94d8e6b3b3b3b3b3%3A0x0!2sRua+Br%C3%A1s+Cubas%2C+35%2C+Nova+Esperan%C3%A7a%2C+Balne%C3%A1rio+Cambori%C3%BA+-+SC!5e0!3m2!1spt-BR!2sbr!4v1'
 
 export function LocalizacaoSection() {
   const [modalOpen, setModalOpen] = useState(false)
@@ -51,7 +51,7 @@ export function LocalizacaoSection() {
                 pointerEvents: 'none',
               }}
               allowFullScreen
-              loading="lazy"
+              loading="eager"
               referrerPolicy="no-referrer-when-downgrade"
               title="Localização Maandhoo Club"
             />
@@ -178,7 +178,7 @@ export function LocalizacaoSection() {
                 height="100%"
                 style={{ border: 0, display: 'block' }}
                 allowFullScreen
-                loading="lazy"
+                loading="eager"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Maandhoo Club — Google Maps"
               />
