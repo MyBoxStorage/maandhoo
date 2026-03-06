@@ -571,15 +571,19 @@ export const HeroSection: React.FC = () => {
           <LogoElefante width={120} height={134} color="#E8DDD0" animated />
         </div>
 
-        <h1
-          className="font-brand text-[18vw] sm:text-8xl md:text-9xl leading-none mb-5 animate-fade-up delay-100 maandhoo-title overflow-hidden"
-          style={{
-            letterSpacing: '-0.01em',
-            fontWeight: 600,
-          }}
-        >
-          Maandhoo
-        </h1>
+        <div className="relative inline-block mb-5 animate-fade-up delay-100 maandhoo-title-wrap">
+          <h1
+            className="font-brand text-[18vw] sm:text-8xl md:text-9xl leading-none maandhoo-title"
+            style={{
+              letterSpacing: '-0.01em',
+              fontWeight: 600,
+              color: '#F0E8DC',
+              textShadow: '0 2px 40px rgba(0,0,0,0.85), 0 0 80px rgba(0,0,0,0.5)',
+            }}
+          >
+            Maandhoo
+          </h1>
+        </div>
 
         <div className="mb-8 sm:mb-10 animate-fade-up delay-200 space-y-1">
           <p
