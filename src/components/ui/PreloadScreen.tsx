@@ -17,11 +17,11 @@ export const PreloadScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
   const [phase, setPhase] = useState<'enter' | 'draw' | 'text' | 'tagline' | 'exit'>('enter')
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('draw'),    300)
-    const t2 = setTimeout(() => setPhase('text'),   2000)
-    const t3 = setTimeout(() => setPhase('tagline'),2600)
-    const t4 = setTimeout(() => setPhase('exit'),   2900)
-    const t5 = setTimeout(() => onComplete(),       3500)
+    const t1 = setTimeout(() => setPhase('draw'),    400)
+    const t2 = setTimeout(() => setPhase('text'),   2400)
+    const t3 = setTimeout(() => setPhase('tagline'),3100)
+    const t4 = setTimeout(() => setPhase('exit'),   3500)
+    const t5 = setTimeout(() => onComplete(),       4000)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5) }
   }, [onComplete])
 
