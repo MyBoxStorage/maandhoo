@@ -177,15 +177,15 @@ const EventoCardSecundario: React.FC<{ evento: Evento }> = ({ evento }) => {
         <div className="flex gap-2 mt-1">
           <Link
             href={`/eventos/${evento.slug}`}
-            className="btn-primary flex-1 text-center text-[10px] py-2 flex items-center justify-center gap-1.5"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-dourado/90 hover:bg-dourado text-preto-profundo font-accent font-semibold tracking-[0.12em] uppercase text-[9px] py-2 px-3 transition-all duration-200 hover:shadow-gold"
           >
-            <Ticket size={11} />
+            <Ticket size={10} />
             Comprar Ingresso
           </Link>
           {evento.temLista && (
             <Link
               href={`/lista/${evento.slug}`}
-              className="btn-outline text-[10px] py-2 px-3 flex-shrink-0"
+              className="flex items-center justify-center border border-dourado/50 text-dourado hover:bg-dourado/10 font-accent tracking-[0.12em] uppercase text-[9px] py-2 px-3 transition-all duration-200 flex-shrink-0"
             >
               Lista
             </Link>
