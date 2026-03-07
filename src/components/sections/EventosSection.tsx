@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Ticket, ChevronRight } from 'lucide-react'
+import { Ticket } from 'lucide-react'
 import { EVENTOS_INICIAIS, getLoteAtivo } from '@/lib/eventos-data'
 import { Evento } from '@/types'
 import { format } from 'date-fns'
@@ -173,14 +173,24 @@ const EventoCardSecundario: React.FC<{ evento: Evento }> = ({ evento }) => {
           )}
         </div>
 
-        {/* CTA */}
-        <Link
-          href={`/eventos/${evento.slug}`}
-          className="inline-flex items-center gap-1 text-[10px] font-accent tracking-widest uppercase text-bege-escuro/45 hover:text-dourado transition-colors duration-200 group/link mt-1"
-        >
-          Ver e Comprar
-          <ChevronRight size={10} className="transition-transform duration-200 group-hover/link:translate-x-0.5" />
-        </Link>
+        {/* CTAs */}
+        <div className="flex gap-2 mt-1">
+          <Link
+            href={`/eventos/${evento.slug}`}
+            className="btn-primary flex-1 text-center text-[10px] py-2 flex items-center justify-center gap-1.5"
+          >
+            <Ticket size={11} />
+            Comprar Ingresso
+          </Link>
+          {evento.temLista && (
+            <Link
+              href={`/lista/${evento.slug}`}
+              className="btn-outline text-[10px] py-2 px-3 flex-shrink-0"
+            >
+              Lista
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   )
