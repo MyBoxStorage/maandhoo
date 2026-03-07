@@ -25,7 +25,7 @@ const EventoCardHero: React.FC<{ evento: Evento }> = ({ evento }) => {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dourado to-transparent z-10" />
 
       {/* FLYER — altura controlada, não cresce infinitamente */}
-      <div className="relative w-full h-full min-h-[420px] max-h-[520px] overflow-hidden">
+      <div className="relative w-full h-full min-h-[460px] max-h-[600px] overflow-hidden">
         <Image
           src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
           alt={`Flyer ${evento.nome}`}
