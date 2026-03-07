@@ -108,73 +108,82 @@ const EventoCardHero: React.FC<{ evento: Evento }> = ({ evento }) => {
 }
 
 /* ─────────────────────────────────────────────
-   CARD SECUNDÁRIO — cresce para preencher
-   a metade da altura do hero
+   CARD SECUNDÁRIO — flyer como fundo completo
+   com overlay e conteúdo sobreposto
 ───────────────────────────────────────────── */
 const EventoCardSecundario: React.FC<{ evento: Evento }> = ({ evento }) => {
   const loteAtivo = getLoteAtivo(evento)
   const dataFormatada = format(evento.data, "dd 'de' MMMM", { locale: ptBR })
-  const diaSemana   = format(evento.data, 'EEE',            { locale: ptBR })
+  const diaSemana   = format(evento.data, 'EEEE', { locale: ptBR })
 
   return (
-    <div className="group flex overflow-hidden rounded-sm border border-gold/15 hover:border-gold/40 transition-all duration-300 hover:-translate-y-0.5 flex-1 min-h-0">
+    <div className="group relative overflow-hidden rounded-sm border border-gold/15 hover:border-gold/40 transition-all duration-300 flex-1 min-h-0">
 
-      {/* FLYER — ocupa altura total do card, largura fixa */}
-      <div className="relative w-[90px] sm:w-[110px] flex-shrink-0 overflow-hidden">
+      {/* FLYER — fundo full */}
+      <div className="absolute inset-0">
         <Image
           src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
           alt={`Flyer ${evento.nome}`}
           fill
-          className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
-          sizes="110px"
+          className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 1024px) 100vw, 50vw"
         />
-        <div className="absolute inset-0 bg-preto-profundo/25" />
+        {/* Esquerda clara (flyer visível) → direita escura (texto legível) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-preto-profundo/10 via-preto-profundo/70 to-preto-profundo/95" />
+        {/* Base escura geral para contraste */}
+        <div className="absolute inset-0 bg-preto-profundo/50" />
       </div>
 
-      {/* CONTEÚDO */}
-      <div className="flex flex-col justify-center flex-1 bg-card px-4 py-4 min-w-0 gap-1.5">
-        {/* Data e lote */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-accent text-[9px] tracking-[0.15em] uppercase text-dourado/60 capitalize truncate">
-            {diaSemana} · {dataFormatada} · {evento.hora}
-          </p>
-          <span className="flex-shrink-0 font-accent text-[9px] tracking-wider text-bege-escuro/35 border border-bege-escuro/10 px-2 py-0.5">
-            {loteAtivo.numero}º Lote
-          </span>
+      {/* CONTEÚDO — sobre o flyer */}
+      <div className="relative z-10 flex items-center h-full">
+
+        {/* Coluna vazia — deixa o flyer aparecer à esquerda */}
+        <div className="w-[120px] sm:w-[150px] flex-shrink-0 self-stretch" />
+
+        {/* Info + CTA */}
+        <div className="flex flex-col justify-center flex-1 px-5 py-5 min-w-0 gap-2">
+
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-accent text-[9px] tracking-[0.18em] uppercase text-dourado/70 capitalize">
+              {diaSemana} · {dataFormatada}
+            </p>
+            <span className="flex-shrink-0 font-accent text-[9px] tracking-wider text-bege-escuro/40 border border-bege-escuro/10 px-2 py-0.5">
+              {loteAtivo.numero}º Lote
+            </span>
+          </div>
+
+          <h3 className="font-display text-xl sm:text-2xl text-bege leading-tight">
+            {evento.nome}
+          </h3>
+
+          <p className="font-body text-xs text-bege-escuro/50">{evento.hora}</p>
+
+          <div className="flex items-center gap-2.5">
+            <span className="font-body text-xs text-bege-escuro/60">
+              Masc <span className="text-bege font-medium">R$ {loteAtivo.precoMasculino}</span>
+            </span>
+            <span className="text-bege-escuro/20">·</span>
+            <span className="font-body text-xs text-bege-escuro/60">
+              Fem <span className="text-dourado/80 font-medium">R$ {loteAtivo.precoFeminino}</span>
+            </span>
+            {evento.temLista && (
+              <>
+                <span className="text-bege-escuro/20">·</span>
+                <span className="font-body text-[10px] text-dourado/60 border border-dourado/25 px-1.5 py-0.5 leading-none">
+                  Lista
+                </span>
+              </>
+            )}
+          </div>
+
+          <Link
+            href={`/eventos/${evento.slug}`}
+            className="inline-flex items-center gap-1.5 text-[10px] font-accent tracking-widest uppercase text-bege-escuro/50 hover:text-dourado transition-colors duration-200 group/link mt-1"
+          >
+            Ver e Comprar
+            <ChevronRight size={10} className="transition-transform duration-200 group-hover/link:translate-x-0.5" />
+          </Link>
         </div>
-
-        {/* Nome */}
-        <h3 className="font-display text-lg sm:text-xl text-bege/80 leading-tight truncate">
-          {evento.nome}
-        </h3>
-
-        {/* Preços */}
-        <div className="flex items-center gap-2">
-          <span className="font-body text-[11px] text-bege-escuro/50">
-            M <span className="text-bege-escuro/70">R$ {loteAtivo.precoMasculino}</span>
-          </span>
-          <span className="text-bege-escuro/20">·</span>
-          <span className="font-body text-[11px] text-bege-escuro/50">
-            F <span className="text-dourado/70">R$ {loteAtivo.precoFeminino}</span>
-          </span>
-          {evento.temLista && (
-            <>
-              <span className="text-bege-escuro/20">·</span>
-              <span className="font-body text-[10px] text-dourado/50 border border-dourado/20 px-1.5 py-0.5 leading-none">
-                Lista
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* CTA */}
-        <Link
-          href={`/eventos/${evento.slug}`}
-          className="inline-flex items-center gap-1 text-[10px] font-accent tracking-widest uppercase text-bege-escuro/50 hover:text-dourado transition-colors duration-200 group/link mt-0.5"
-        >
-          Ver e Comprar
-          <ChevronRight size={10} className="transition-transform duration-200 group-hover/link:translate-x-0.5" />
-        </Link>
       </div>
     </div>
   )
