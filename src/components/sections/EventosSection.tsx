@@ -108,89 +108,87 @@ const EventoCardHero: React.FC<{ evento: Evento }> = ({ evento }) => {
 }
 
 /* ─────────────────────────────────────────────
-   CARD SECUNDÁRIO — flyer lateral + info separada
-   Flyer ocupa ~40% à esquerda, info 60% à direita
+   CARD SECUNDÁRIO
+   Layout: flyer miniatura à esq + info à dir
+   Altura fixa para preencher a coluna do hero
 ───────────────────────────────────────────── */
 const EventoCardSecundario: React.FC<{ evento: Evento }> = ({ evento }) => {
   const loteAtivo = getLoteAtivo(evento)
-  const dataFormatada = format(evento.data, "dd 'de' MMMM", { locale: ptBR })
-  const diaSemana   = format(evento.data, 'EEEE', { locale: ptBR })
+  const dataFormatada = format(evento.data, "dd/MM", { locale: ptBR })
+  const diaSemana   = format(evento.data, 'EEE', { locale: ptBR })
 
   return (
-    <div className="group flex overflow-hidden rounded-sm border border-gold/15 hover:border-dourado/35 transition-all duration-300 flex-1 min-h-0 hover:shadow-[0_0_20px_rgba(196,160,80,0.08)]">
+    <div className="group flex overflow-hidden rounded-sm border border-dourado/15 hover:border-dourado/40 bg-[#100d0a] transition-all duration-300 flex-1">
 
-      {/* FLYER — coluna esquerda, altura total do card, sem overlay */}
-      <div className="relative w-[38%] flex-shrink-0 overflow-hidden">
-        <Image
-          src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
-          alt={`Flyer ${evento.nome}`}
-          fill
-          className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
-          sizes="200px"
-        />
+      {/* FLYER — proporção 9:14, largura fixa */}
+      <div className="relative w-[90px] sm:w-[110px] flex-shrink-0">
+        <div className="absolute inset-0">
+          <Image
+            src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
+            alt={`Flyer ${evento.nome}`}
+            fill
+            className="object-cover object-top"
+            sizes="110px"
+          />
+        </div>
       </div>
 
-      {/* SEPARADOR vertical dourado */}
-      <div className="w-px flex-shrink-0 bg-gradient-to-b from-transparent via-dourado/20 to-transparent" />
+      {/* DIVISOR */}
+      <div className="w-px flex-shrink-0 bg-dourado/10" />
 
-      {/* INFO — coluna direita, fundo sólido escuro */}
-      <div className="flex flex-col justify-center flex-1 bg-[#0e0b09] px-4 sm:px-5 py-4 min-w-0 gap-2">
+      {/* INFO */}
+      <div className="flex flex-col flex-1 min-w-0 px-4 py-3 gap-1.5 justify-between">
 
-        {/* Data + lote */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-accent text-[9px] tracking-[0.16em] uppercase text-dourado/60 capitalize leading-none">
-            {diaSemana} · {dataFormatada}
-          </p>
-          <span className="flex-shrink-0 font-accent text-[9px] tracking-wider text-bege-escuro/35 border border-bege-escuro/10 px-1.5 py-0.5 leading-none">
+        {/* Topo: data + lote */}
+        <div className="flex items-center justify-between gap-1">
+          <span className="font-accent text-[9px] tracking-[0.15em] uppercase text-dourado/50 capitalize">
+            {diaSemana} · {dataFormatada} · {evento.hora}
+          </span>
+          <span className="font-accent text-[9px] text-bege-escuro/25 border border-bege-escuro/10 px-1.5 py-0.5 flex-shrink-0">
             {loteAtivo.numero}º Lote
           </span>
         </div>
 
         {/* Nome */}
-        <h3 className="font-display text-lg sm:text-xl text-bege leading-snug">
+        <h3 className="font-display text-lg sm:text-[22px] text-bege leading-tight">
           {evento.nome}
         </h3>
 
-        {/* Horário */}
-        <p className="font-body text-[11px] text-bege-escuro/45 leading-none">{evento.hora}</p>
-
-        {/* Divisor */}
-        <div className="w-8 h-px bg-dourado/20" />
-
         {/* Preços */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-body text-[11px] text-bege-escuro/55">
-            Masc <span className="text-bege font-medium">R$ {loteAtivo.precoMasculino}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-body text-[11px] text-bege-escuro/50">
+            Masc <span className="text-bege/80">R$ {loteAtivo.precoMasculino}</span>
           </span>
-          <span className="text-bege-escuro/20 text-xs">·</span>
-          <span className="font-body text-[11px] text-bege-escuro/55">
-            Fem <span className="text-dourado/80 font-medium">R$ {loteAtivo.precoFeminino}</span>
+          <span className="text-bege-escuro/15">·</span>
+          <span className="font-body text-[11px] text-bege-escuro/50">
+            Fem <span className="text-dourado/70">R$ {loteAtivo.precoFeminino}</span>
           </span>
           {evento.temLista && (
-            <span className="font-body text-[10px] text-dourado/55 border border-dourado/20 px-1.5 py-0.5 leading-none">
+            <span className="font-body text-[9px] text-dourado/50 border border-dourado/20 px-1.5 py-0.5">
               Lista
             </span>
           )}
         </div>
 
-        {/* CTAs */}
-        <div className="flex gap-2 mt-1">
+        {/* CTA */}
+        <div className="flex items-center gap-2 pt-0.5">
           <Link
             href={`/eventos/${evento.slug}`}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-dourado/90 hover:bg-dourado text-preto-profundo font-accent font-semibold tracking-[0.12em] uppercase text-[9px] py-2 px-3 transition-all duration-200 hover:shadow-gold"
+            className="inline-flex items-center gap-1.5 bg-dourado/85 hover:bg-dourado text-preto-profundo font-accent font-semibold tracking-[0.10em] uppercase text-[9px] px-3 py-1.5 transition-colors duration-200"
           >
-            <Ticket size={10} />
+            <Ticket size={9} />
             Comprar Ingresso
           </Link>
           {evento.temLista && (
             <Link
               href={`/lista/${evento.slug}`}
-              className="flex items-center justify-center border border-dourado/50 text-dourado hover:bg-dourado/10 font-accent tracking-[0.12em] uppercase text-[9px] py-2 px-3 transition-all duration-200 flex-shrink-0"
+              className="inline-flex items-center border border-dourado/30 text-dourado/70 hover:border-dourado/60 hover:text-dourado font-accent tracking-[0.10em] uppercase text-[9px] px-3 py-1.5 transition-colors duration-200"
             >
               Lista
             </Link>
           )}
         </div>
+
       </div>
     </div>
   )
