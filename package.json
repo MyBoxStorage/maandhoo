@@ -21,6 +21,7 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^11.18.2",
     "html2canvas": "^1.4.1",
+    "html5-qrcode": "^2.3.8",
     "jspdf": "^2.5.2",
     "lucide-react": "^0.378.0",
     "mercadopago": "^2.12.0",
