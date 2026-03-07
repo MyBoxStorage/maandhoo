@@ -14,11 +14,17 @@ const Divisor = () => (
   </div>
 )
 
+// Transição do hero para o primeiro conteúdo — fade de volta ao preto
+const HeroFade = () => (
+  <div className="h-12 bg-gradient-to-b from-preto-profundo/0 to-preto-profundo pointer-events-none -mt-12 relative z-10" />
+)
+
 export default function HomePage() {
   return (
     <>
       <PopupLista />
       <HeroSection />
+      <HeroFade />
       <EventosSection />
       <Divisor />
       <MapaInterativo />

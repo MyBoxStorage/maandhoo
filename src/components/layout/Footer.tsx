@@ -8,6 +8,8 @@ import { LogoElefante } from '@/components/ui/LogoElefante'
 export const Footer: React.FC = () => {
   return (
     <footer className="relative bg-preto-profundo border-t border-gold/20 pt-16 pb-8">
+      {/* Linha decorativa dourada no topo */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dourado/40 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* TOP */}
@@ -15,22 +17,26 @@ export const Footer: React.FC = () => {
 
           {/* MARCA */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-3 mb-4">
-              <LogoElefante width={40} height={44} color="#C9A84C" />
-              <span className="font-accent text-xl tracking-[0.15em] text-bege">maandhoo</span>
+            <Link href="/" className="flex items-center gap-3 mb-5 group">
+              <LogoElefante width={48} height={54} color="#C9A84C" className="group-hover:animate-pulse-gold transition-all duration-300" />
+              <div>
+                <span className="font-brand text-2xl tracking-[0.05em] text-bege block" style={{ fontWeight: 600 }}>maandhoo</span>
+                <span className="font-accent text-[9px] tracking-[0.35em] uppercase text-dourado/60">Club · Balneário Camboriú</span>
+              </div>
             </Link>
-            <p className="font-body text-sm text-bege-escuro leading-relaxed mb-5">
+            <p className="font-body text-sm text-bege-escuro/70 leading-relaxed mb-6">
               Suas noites são na Maandhoo,<br />
               o melhor club de Balneário Camboriú.
             </p>
+            {/* Instagram destacado */}
             <a
               href="https://www.instagram.com/maandhoo_club/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-bege-escuro hover:text-dourado transition-colors text-sm"
+              className="inline-flex items-center gap-2.5 border border-dourado/30 hover:border-dourado text-bege-escuro hover:text-dourado transition-all duration-200 text-sm px-4 py-2 rounded-sm"
             >
-              <Instagram size={16} />
-              @maandhoo_club
+              <Instagram size={15} />
+              <span className="font-body">@maandhoo_club</span>
             </a>
           </div>
 
