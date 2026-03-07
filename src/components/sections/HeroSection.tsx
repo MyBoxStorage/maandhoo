@@ -700,10 +700,10 @@ export const HeroSection: React.FC = () => {
           ].map((item) => (
             <div key={item.label} className="text-center">
               <div
-                className="font-display text-2xl sm:text-3xl text-gradient-gold mb-0.5"
+                className="font-display text-xl sm:text-2xl md:text-3xl text-gradient-gold mb-0.5"
                 style={{ letterSpacing: '0.02em' }}
               >{item.value}</div>
-              <div className="font-body text-[10px] sm:text-xs text-bege-escuro/50 tracking-[0.15em] uppercase">
+              <div className="font-body text-[9px] sm:text-xs text-bege-escuro/50 tracking-[0.10em] sm:tracking-[0.15em] uppercase">
                 {item.label}
               </div>
             </div>

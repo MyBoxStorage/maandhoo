@@ -22,10 +22,10 @@ export const GaleriaPreview: React.FC = () => {
           <div className="divider-gold w-24 mx-auto" />
         </div>
 
-        {/* GRID ASSIMÉTRICO */}
-        <div className="grid grid-cols-12 grid-rows-2 gap-3 h-[520px] mb-8">
+        {/* GRID ASSIMÉTRICO — mobile: coluna única; desktop: grid 12 col */}
+        <div className="flex flex-col md:grid md:grid-cols-12 md:grid-rows-2 gap-3 md:h-[520px] mb-8">
           {/* Foto grande esquerda */}
-          <div className="col-span-12 md:col-span-7 row-span-2 relative rounded-sm overflow-hidden group">
+          <div className="md:col-span-7 md:row-span-2 relative rounded-sm overflow-hidden group h-64 md:h-auto">
             <Image
               src={fotos[0].src}
               alt={fotos[0].alt}
@@ -36,7 +36,7 @@ export const GaleriaPreview: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
           {/* Fotos direita */}
-          <div className="col-span-12 md:col-span-5 row-span-1 relative rounded-sm overflow-hidden group">
+          <div className="md:col-span-5 md:row-span-1 relative rounded-sm overflow-hidden group h-44 md:h-auto">
             <Image
               src={fotos[1].src}
               alt={fotos[1].alt}
@@ -46,7 +46,7 @@ export const GaleriaPreview: React.FC = () => {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
-          <div className="col-span-12 md:col-span-5 row-span-1 relative rounded-sm overflow-hidden group">
+          <div className="md:col-span-5 md:row-span-1 relative rounded-sm overflow-hidden group h-44 md:h-auto">
             <Image
               src={fotos[2].src}
               alt={fotos[2].alt}

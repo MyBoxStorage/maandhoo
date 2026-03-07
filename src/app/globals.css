@@ -111,7 +111,7 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
 .btn-primary {
   @apply bg-gradient-to-r from-dourado-escuro via-dourado to-dourado-escuro;
   @apply text-preto-profundo font-accent font-semibold tracking-widest uppercase;
-  @apply px-8 py-3 text-sm;
+  @apply px-5 sm:px-8 py-3 text-xs sm:text-sm;
   @apply transition-all duration-300;
   @apply hover:shadow-gold-strong hover:scale-105;
   background-size: 200% auto;
@@ -121,7 +121,7 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
 .btn-outline {
   @apply border border-dourado text-dourado;
   @apply font-accent font-medium tracking-widest uppercase;
-  @apply px-8 py-3 text-sm;
+  @apply px-5 sm:px-8 py-3 text-xs sm:text-sm;
   @apply transition-all duration-300;
   @apply hover:bg-dourado hover:text-preto-profundo hover:shadow-gold;
 }
@@ -414,11 +414,6 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
 @media (max-width: 768px) {
   .section-title {
     @apply text-3xl;
-  }
-
-  .btn-primary,
-  .btn-outline {
-    @apply px-6 py-3 text-xs;
   }
 }
 

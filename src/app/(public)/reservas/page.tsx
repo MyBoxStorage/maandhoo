@@ -77,17 +77,17 @@ function ReservasContent() {
           <button
             key={t}
             onClick={() => { setTipo(t); setEnviado(false) }}
-            className={`flex items-center gap-2 flex-1 justify-center py-3 text-xs font-accent tracking-wider uppercase rounded-sm border transition-all duration-200
+            className={`flex items-center gap-1.5 flex-1 justify-center py-3 text-[10px] sm:text-xs font-accent tracking-wider uppercase rounded-sm border transition-all duration-200
               ${tipo === t ? 'border-dourado bg-dourado/10 text-dourado' : 'border-white/10 text-bege-escuro hover:border-dourado/30'}`}
           >
             {tiposConfig[t].icon}
-            <span className="hidden sm:inline">{t === 'aniversario' ? 'Aniversário' : t.charAt(0).toUpperCase() + t.slice(1)}</span>
+            <span>{t === 'aniversario' ? 'Aniver.' : t.charAt(0).toUpperCase() + t.slice(1)}</span>
           </button>
         ))}
       </div>
 
       {!enviado ? (
-        <div className="bg-card border border-gold/20 rounded-sm p-8">
+        <div className="bg-card border border-gold/20 rounded-sm p-5 sm:p-8">
           <h2 className="font-display text-2xl text-bege mb-1">{config.titulo}</h2>
           <p className="font-body text-sm text-bege-escuro/60 mb-6">{config.descricao}</p>
 

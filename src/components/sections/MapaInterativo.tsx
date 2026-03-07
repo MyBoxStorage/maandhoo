@@ -144,7 +144,7 @@ export const MapaInterativo: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8">
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-8 px-2">
           {[
             { cor: '#C9A84C', label: 'Disponível' },
             { cor: '#FFA040', label: 'Reservado' },

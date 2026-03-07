@@ -33,7 +33,7 @@ export function LocalizacaoSection() {
           {/* MAPA GOOGLE — ocupa 2/3 */}
           <div
             className="lg:col-span-2 relative rounded-sm overflow-hidden border border-dourado/20 cursor-pointer group"
-            style={{ minHeight: '260px' }}
+            style={{ minHeight: '220px', height: '280px' }}
             onClick={() => setModalOpen(true)}
           >
             {/* Iframe com filtro dark */}
@@ -46,7 +46,7 @@ export function LocalizacaoSection() {
                 display: 'block',
                 width: '100%',
                 height: '100%',
-                minHeight: '260px',
+                minHeight: '220px',
                 filter: 'invert(92%) hue-rotate(180deg) saturate(0.75) brightness(0.88) contrast(0.95)',
                 pointerEvents: 'none',
               }}

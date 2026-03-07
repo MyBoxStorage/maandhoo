@@ -70,7 +70,7 @@ export const ReservasSection: React.FC = () => {
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-dourado to-transparent" />
               )}
 
-              <div className="bg-card p-8 h-full flex flex-col">
+              <div className="bg-card p-6 sm:p-8 h-full flex flex-col">
                 {tipo.destaque && (
                   <div className="mb-4">
                     <span className="font-accent text-xs tracking-widest text-dourado border border-dourado/50 px-3 py-1">
