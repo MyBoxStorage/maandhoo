@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Calendar, Clock, Ticket, Users } from 'lucide-react'
+import { Calendar, Clock, Ticket } from 'lucide-react'
 import { EVENTOS_INICIAIS, getLoteAtivo } from '@/lib/eventos-data'
 import { Evento } from '@/types'
 import { format } from 'date-fns'
@@ -16,11 +16,11 @@ const EventoCard: React.FC<{ evento: Evento; index: number }> = ({ evento, index
 
   return (
     <div
-      className="group relative overflow-hidden rounded-sm border border-gold/20 hover:border-gold/60 transition-all duration-500 hover:-translate-y-2 hover:shadow-gold"
+      className="group relative overflow-hidden rounded-sm border border-gold/20 hover:border-gold/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-gold"
       style={{ animationDelay: `${index * 0.15}s` }}
     >
-      {/* FLYER */}
-      <div className="relative aspect-[9/16] overflow-hidden">
+      {/* FLYER — protagonista absoluto */}
+      <div className="relative aspect-[9/14] overflow-hidden">
         <Image
           src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
           alt={`Flyer ${evento.nome}`}
@@ -28,84 +28,64 @@ const EventoCard: React.FC<{ evento: Evento; index: number }> = ({ evento, index
           className="object-cover transition-transform duration-700 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, 33vw"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo via-preto-profundo/30 to-transparent" />
 
-        {/* BADGE LOTE */}
-        <div className="absolute top-4 right-4 bg-dourado text-preto-profundo px-3 py-1 text-xs font-accent tracking-wider">
-          {loteAtivo.numero}º LOTE
-        </div>
+        {/* Gradiente base — sempre visível no rodapé */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-        {/* BADGE LISTA */}
-        {evento.temLista && (
-          <div className="absolute top-4 left-4 bg-preto-profundo/80 border border-bege/20 text-bege px-3 py-1 text-xs font-body tracking-wider">
-            Lista Disponível
+        {/* BADGES TOPO */}
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+          <div className="bg-preto-profundo/80 backdrop-blur-sm border border-bege/10 text-bege px-2.5 py-1 text-[10px] font-accent tracking-widest uppercase">
+            {loteAtivo.numero}º Lote
           </div>
-        )}
-      </div>
-
-      {/* INFO */}
-      <div className="p-6 bg-card">
-        {/* DATA */}
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar size={14} className="text-dourado" />
-          <span className="font-body text-xs text-bege-escuro capitalize">
-            {diaSemana} · {dataFormatada}
-          </span>
-          <Clock size={14} className="text-dourado ml-2" />
-          <span className="font-body text-xs text-bege-escuro">{evento.hora}</span>
-        </div>
-
-        {/* NOME */}
-        <h3 className="font-display text-2xl text-bege mb-2 leading-tight">
-          {evento.nome}
-        </h3>
-        <p className="font-body text-sm text-bege-escuro/70 mb-5 leading-relaxed line-clamp-2">
-          {evento.descricao}
-        </p>
-
-        {/* PREÇOS */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-black/30 rounded-sm p-3 border border-white/5">
-            <div className="font-body text-xs text-bege-escuro/60 mb-1 flex items-center gap-1">
-              <Users size={11} /> Masculino
-            </div>
-            <div className="font-display text-lg text-bege">
-              R$ {loteAtivo.precoMasculino.toFixed(2).replace('.', ',')}
-            </div>
-          </div>
-          <div className="bg-black/30 rounded-sm p-3 border border-white/5">
-            <div className="font-body text-xs text-bege-escuro/60 mb-1 flex items-center gap-1">
-              <Users size={11} /> Feminino
-            </div>
-            <div className="font-display text-lg text-dourado">
-              R$ {loteAtivo.precoFeminino.toFixed(2).replace('.', ',')}
-            </div>
-          </div>
-        </div>
-
-        {/* BACKSTAGE */}
-        <div className="flex items-center justify-between text-xs text-bege-escuro/50 mb-5 pb-4 border-b border-white/5">
-          <span>Backstage Masc: <span className="text-bege/70">R$ 120,00</span></span>
-          <span>Fem: <span className="text-dourado">R$ 60,00</span></span>
-        </div>
-
-        {/* CTAs */}
-        <div className="flex gap-3">
-          <Link
-            href={`/eventos/${evento.slug}`}
-            className="btn-primary flex-1 text-center text-xs py-2.5 flex items-center justify-center gap-2"
-          >
-            <Ticket size={14} />
-            Comprar Ingresso
-          </Link>
           {evento.temLista && (
-            <Link
-              href={`/lista/${evento.slug}`}
-              className="btn-outline flex-shrink-0 text-xs py-2.5 px-4"
-            >
-              Lista
-            </Link>
+            <div className="bg-dourado/90 text-preto-profundo px-2.5 py-1 text-[10px] font-accent tracking-widest uppercase">
+              Lista aberta
+            </div>
           )}
+        </div>
+
+        {/* INFO SOBRE O GRADIENTE — sempre visível */}
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <p className="font-accent text-[10px] tracking-widest uppercase text-dourado/80 mb-1 capitalize">
+            {diaSemana} · {dataFormatada} · {evento.hora}
+          </p>
+          <h3 className="font-display text-2xl sm:text-3xl text-bege leading-tight mb-3">
+            {evento.nome}
+          </h3>
+
+          {/* PREÇOS — inline e discretos */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="font-body text-xs text-bege-escuro/70">
+              Masc <span className="text-bege font-medium">R$ {loteAtivo.precoMasculino}</span>
+            </span>
+            <span className="text-bege-escuro/30">·</span>
+            <span className="font-body text-xs text-bege-escuro/70">
+              Fem <span className="text-dourado font-medium">R$ {loteAtivo.precoFeminino}</span>
+            </span>
+            <span className="text-bege-escuro/30">·</span>
+            <span className="font-body text-xs text-bege-escuro/50">
+              VIP R$ 120/60
+            </span>
+          </div>
+
+          {/* CTAs */}
+          <div className="flex gap-2">
+            <Link
+              href={`/eventos/${evento.slug}`}
+              className="btn-primary flex-1 text-center text-[11px] py-2.5 flex items-center justify-center gap-1.5"
+            >
+              <Ticket size={13} />
+              Comprar Ingresso
+            </Link>
+            {evento.temLista && (
+              <Link
+                href={`/lista/${evento.slug}`}
+                className="btn-outline text-[11px] py-2.5 px-4 flex-shrink-0"
+              >
+                Lista
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>

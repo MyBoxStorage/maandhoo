@@ -90,7 +90,11 @@ export const Navbar: React.FC = () => {
               </a>
               <Link
                 href="/#eventos"
-                className="btn-primary text-xs px-5 py-2.5"
+                className={`text-xs px-5 py-2.5 font-accent tracking-widest uppercase transition-all duration-300 ${
+                  scrolled
+                    ? 'btn-primary'
+                    : 'border border-dourado/70 text-dourado hover:bg-dourado hover:text-preto-profundo'
+                }`}
               >
                 Comprar Ingresso
               </Link>
