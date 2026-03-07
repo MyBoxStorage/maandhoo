@@ -119,14 +119,14 @@ export const CookieBanner: React.FC = () => {
 
         {/* BARRA INFERIOR — sempre visível */}
         <div className="px-4 py-3 sm:py-4">
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
 
             {/* ÍCONE + TEXTO */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Cookie size={16} className="text-dourado flex-shrink-0" />
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <Cookie size={15} className="text-dourado flex-shrink-0 mt-0.5" />
               <p className="font-body text-xs text-bege-escuro/65 leading-relaxed">
                 Usamos cookies conforme a{' '}
-                <span className="text-dourado font-medium">LGPD — Lei nº 13.709/2018</span>.{' '}
+                <span className="text-dourado font-medium">LGPD</span>.{' '}
                 <Link href="/politicas#privacidade" className="underline underline-offset-2 hover:text-dourado transition-colors">
                   Política de Privacidade
                 </Link>
@@ -134,47 +134,53 @@ export const CookieBanner: React.FC = () => {
               </p>
             </div>
 
-            {/* BOTÕES */}
-            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1 font-accent text-[10px] tracking-widest uppercase text-bege-escuro/45 hover:text-dourado transition-colors px-3 py-2 border border-white/10 hover:border-dourado/30 rounded-sm"
-              >
-                {expanded ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
-                <span className="hidden sm:inline">Personalizar</span>
-                <span className="sm:hidden">Opções</span>
-              </button>
+            {/* BOTÕES — mobile: 2 colunas; desktop: linha */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 flex-shrink-0">
 
-              {expanded ? (
+              {/* Linha 1 mobile: Personalizar + Só essenciais/Salvar */}
+              <div className="flex gap-2">
                 <button
-                  onClick={salvarPreferencias}
-                  className="btn-outline text-[10px] py-2 px-4 flex-1 sm:flex-none text-center"
+                  onClick={() => setExpanded(!expanded)}
+                  className="flex items-center justify-center gap-1 font-accent text-[10px] tracking-widest uppercase text-bege-escuro/45 hover:text-dourado transition-colors px-3 py-2.5 border border-white/10 hover:border-dourado/30 rounded-sm flex-1 sm:flex-none"
                 >
-                  Salvar
+                  {expanded ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+                  {expanded ? 'Fechar' : 'Personalizar'}
                 </button>
-              ) : (
+
+                {expanded ? (
+                  <button
+                    onClick={salvarPreferencias}
+                    className="btn-outline text-[10px] py-2.5 px-4 flex-1 sm:flex-none text-center"
+                  >
+                    Salvar preferências
+                  </button>
+                ) : (
+                  <button
+                    onClick={recusarOpcionais}
+                    className="font-accent text-[10px] tracking-widest uppercase text-bege-escuro/45 hover:text-bege transition-colors px-3 py-2.5 border border-white/10 hover:border-white/20 rounded-sm flex-1 sm:flex-none text-center"
+                  >
+                    Só essenciais
+                  </button>
+                )}
+              </div>
+
+              {/* Linha 2 mobile: Aceitar todos (destaque) */}
+              <div className="flex gap-2">
+                <button
+                  onClick={aceitarTodos}
+                  className="btn-primary text-[10px] py-2.5 px-5 flex-1 sm:flex-none text-center"
+                >
+                  Aceitar todos
+                </button>
+
                 <button
                   onClick={recusarOpcionais}
-                  className="font-accent text-[10px] tracking-widest uppercase text-bege-escuro/45 hover:text-bege transition-colors px-3 py-2 border border-white/10 hover:border-white/20 rounded-sm flex-1 sm:flex-none text-center"
+                  className="text-bege-escuro/30 hover:text-bege-escuro/70 transition-colors p-2 flex-shrink-0 border border-white/5 rounded-sm sm:border-0"
+                  aria-label="Fechar"
                 >
-                  Só essenciais
+                  <X size={15} />
                 </button>
-              )}
-
-              <button
-                onClick={aceitarTodos}
-                className="btn-primary text-[10px] py-2 px-5 flex-1 sm:flex-none text-center"
-              >
-                Aceitar todos
-              </button>
-
-              <button
-                onClick={recusarOpcionais}
-                className="text-bege-escuro/30 hover:text-bege-escuro/70 transition-colors p-1.5 flex-shrink-0"
-                aria-label="Fechar"
-              >
-                <X size={15} />
-              </button>
+              </div>
             </div>
           </div>
         </div>
