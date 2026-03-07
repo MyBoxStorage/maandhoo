@@ -144,17 +144,26 @@ export const MapaInterativo: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-6 mb-8">
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8">
           {[
             { cor: '#C9A84C', label: 'Disponível' },
             { cor: '#FFA040', label: 'Reservado' },
             { cor: '#c03030', label: 'Ocupado' },
           ].map(it => (
             <div key={it.label} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ background: it.cor }} />
+              <div className="w-3 h-3 rounded-full border" style={{ background: it.cor + '30', borderColor: it.cor }} />
               <span className="font-body text-xs text-bege-escuro">{it.label}</span>
             </div>
           ))}
+          <div className="w-px h-4 bg-dourado/20 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-3.5 rounded-sm border border-dourado/60 bg-dourado/10" />
+            <span className="font-body text-xs text-bege-escuro/60">Camarote</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full border border-bege-escuro/40 bg-bege-escuro/10" />
+            <span className="font-body text-xs text-bege-escuro/60">Mesa</span>
+          </div>
         </div>
 
         <div className="relative bg-card rounded-sm border border-gold/20 p-2 overflow-hidden">
