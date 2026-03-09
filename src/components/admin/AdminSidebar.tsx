@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, CalendarDays, Ticket, Users, ListChecks,
-  BookMarked, UtensilsCrossed, Image, LogOut, Menu, X, QrCode, UserPlus
+  BookMarked, UtensilsCrossed, Image, LogOut, Menu, X, QrCode, UserPlus, ShieldCheck
 } from 'lucide-react'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 
@@ -13,12 +13,14 @@ const navAdmin = [
   { href: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={17} />, roles: ['admin'] },
   { href: '/admin/eventos', label: 'Eventos', icon: <CalendarDays size={17} />, roles: ['admin', 'operador'] },
   { href: '/admin/ingressos', label: 'Ingressos', icon: <Ticket size={17} />, roles: ['admin'] },
+  { href: '/admin/camarotes', label: 'Camarotes', icon: <ShieldCheck size={17} />, roles: ['admin', 'operador'] },
+  { href: '/admin/porteiros', label: 'Porteiros', icon: <Users size={17} />, roles: ['admin'] },
   { href: '/admin/listas', label: 'Listas Amigas', icon: <ListChecks size={17} />, roles: ['admin', 'operador'] },
   { href: '/admin/reservas', label: 'Reservas', icon: <BookMarked size={17} />, roles: ['admin'] },
   { href: '/admin/leads', label: 'Leads & Contatos', icon: <UserPlus size={17} />, roles: ['admin'] },
+  { href: '/admin/usuarios', label: 'Usuários / CRM', icon: <Users size={17} />, roles: ['admin'] },
   { href: '/admin/cardapio', label: 'Cardápio', icon: <UtensilsCrossed size={17} />, roles: ['admin'] },
-  { href: '/admin/galeria', label: 'Galeria', icon: <Image size={17} />, roles: ['admin', 'operador'] },
-  { href: '/admin/usuarios', label: 'Usuários', icon: <Users size={17} />, roles: ['admin'] },
+  { href: '/admin/galeria', label: 'Galeria', icon: <Image size={17} />, roles: ['admin'] },
   { href: '/portaria', label: 'Portaria (QR)', icon: <QrCode size={17} />, roles: ['admin', 'porteiro'] },
 ]
 

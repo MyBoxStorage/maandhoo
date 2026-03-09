@@ -1,187 +1,250 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Plus, Edit2, Trash2, Upload, Eye, EyeOff, ChevronDown, ChevronUp, X } from 'lucide-react'
-import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
-import { Evento, Lote } from '@/types'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Plus, Edit2, Eye, EyeOff, ChevronDown, ChevronUp, X, Upload, RefreshCw, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
+import type { EventoDB, LoteDB } from '@/types/ingressos'
+
+// ─── TIPOS LOCAIS ─────────────────────────────────────────────
+
+type EventoComLotes = EventoDB & { lotes: LoteDB[] }
+
+// ─── HELPERS ─────────────────────────────────────────────────
+
+const fmtMoeda = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
+
+// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────
 
 export default function AdminEventosPage() {
-  const [eventos, setEventos] = useState<Evento[]>(EVENTOS_INICIAIS)
-  const [modalAberto, setModalAberto] = useState(false)
-  const [eventoEditando, setEventoEditando] = useState<Evento | null>(null)
+  const [eventos, setEventos] = useState<EventoComLotes[]>([])
+  const [carregando, setCarregando] = useState(true)
   const [expandido, setExpandido] = useState<string | null>(null)
+  const [modalAberto, setModalAberto] = useState(false)
+  const [eventoEditando, setEventoEditando] = useState<EventoComLotes | null>(null)
 
-  const abrirNovo = () => {
-    setEventoEditando(null)
-    setModalAberto(true)
-  }
+  const carregar = useCallback(async () => {
+    setCarregando(true)
+    try {
+      const res = await fetch('/api/admin/eventos')
+      const data = await res.json()
+      if (data.eventos) setEventos(data.eventos)
+    } catch { toast.error('Erro ao carregar eventos') }
+    finally { setCarregando(false) }
+  }, [])
 
-  const abrirEditar = (evento: Evento) => {
-    setEventoEditando(evento)
-    setModalAberto(true)
-  }
+  useEffect(() => { carregar() }, [carregar])
 
-  const toggleStatus = (id: string) => {
-    setEventos(prev => prev.map(e =>
-      e.id === id ? { ...e, status: e.status === 'publicado' ? 'rascunho' : 'publicado' } : e
-    ))
-    toast.success('Status atualizado!')
+  const toggleAtivo = async (id: string, atual: boolean) => {
+    const res = await fetch(`/api/admin/eventos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: !atual }),
+    })
+    if (res.ok) {
+      setEventos(prev => prev.map(e => e.id === id ? { ...e, ativo: !atual } : e))
+      toast.success(!atual ? 'Evento publicado!' : 'Evento despublicado!')
+    } else {
+      toast.error('Erro ao atualizar status')
+    }
   }
 
   return (
     <div className="space-y-6">
+      <Toaster position="top-right" toastOptions={{ style: { background: '#1a1208', color: '#e8ddd0', border: '1px solid rgba(201,168,76,0.3)' } }} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-4xl text-bege">Eventos</h1>
-          <p className="font-body text-sm text-bege-escuro/60 mt-1">Gerencie os eventos e ingressos</p>
+          <p className="font-body text-sm text-bege-escuro/60 mt-1">
+            {eventos.length} evento{eventos.length !== 1 ? 's' : ''} cadastrado{eventos.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <button onClick={abrirNovo} className="btn-primary flex items-center gap-2 text-xs">
-          <Plus size={14} /> Novo Evento
-        </button>
+        <div className="flex gap-2">
+          <button onClick={carregar} className="btn-outline p-2.5" title="Recarregar">
+            <RefreshCw size={14} className={carregando ? 'animate-spin' : ''} />
+          </button>
+          <button onClick={() => { setEventoEditando(null); setModalAberto(true) }} className="btn-primary flex items-center gap-2 text-xs">
+            <Plus size={14} /> Novo Evento
+          </button>
+        </div>
       </div>
 
       {/* LISTA */}
-      <div className="space-y-4">
-        {eventos.map(evento => {
-          const loteAtivo = evento.lotes.find(l => l.ativo)
-          const totalVendido = evento.lotes.reduce((a, l) => a + l.vendidoMasculino + l.vendidoFeminino, 0)
-          const totalIngressos = evento.lotes.reduce((a, l) => a + l.qtdMasculino + l.qtdFeminino, 0)
-          const aberto = expandido === evento.id
+      {carregando ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={28} className="animate-spin text-dourado/50" />
+        </div>
+      ) : eventos.length === 0 ? (
+        <div className="admin-card text-center py-16">
+          <p className="font-body text-bege-escuro/40">Nenhum evento cadastrado.</p>
+          <button onClick={() => { setEventoEditando(null); setModalAberto(true) }} className="btn-primary text-xs mt-4">
+            Criar primeiro evento
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {eventos.map(evento => {
+            const loteAtivo = evento.lotes?.find(l => l.ativo)
+            const totalVendido = (evento.lotes || []).reduce((a, l) => a + l.vendidos_masc + l.vendidos_fem, 0)
+            const totalCap = evento.capacidade_total
+            const pct = totalCap > 0 ? Math.min(100, Math.round((totalVendido / totalCap) * 100)) : 0
+            const aberto = expandido === evento.id
 
-          return (
-            <div key={evento.id} className="admin-card">
-              {/* HEADER */}
-              <div className="flex items-start gap-4">
-                {/* FLYER THUMBNAIL */}
-                <div className="relative w-16 h-24 flex-shrink-0 rounded-sm overflow-hidden bg-black/30">
-                  {evento.flyerUrl && (
-                    <Image src={evento.flyerUrl} alt={evento.nome} fill className="object-cover" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${evento.status === 'publicado' ? 'bg-green-400' : 'bg-amber-400'}`} />
-                        <span className="font-body text-xs text-bege-escuro/60 capitalize">{evento.status}</span>
-                      </div>
-                      <h3 className="font-display text-2xl text-bege">{evento.nome}</h3>
-                      <p className="font-body text-xs text-bege-escuro/60 mt-0.5 capitalize">
-                        {format(evento.data, "EEEE, dd 'de' MMMM", { locale: ptBR })} · {evento.hora}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button onClick={() => toggleStatus(evento.id)}
-                        className="p-2 border border-white/10 hover:border-dourado/40 text-bege-escuro hover:text-dourado rounded-sm transition-all"
-                        title={evento.status === 'publicado' ? 'Despublicar' : 'Publicar'}>
-                        {evento.status === 'publicado' ? <Eye size={15} /> : <EyeOff size={15} />}
-                      </button>
-                      <button onClick={() => abrirEditar(evento)}
-                        className="p-2 border border-white/10 hover:border-dourado/40 text-bege-escuro hover:text-dourado rounded-sm transition-all">
-                        <Edit2 size={15} />
-                      </button>
-                      <button onClick={() => setExpandido(aberto ? null : evento.id)}
-                        className="p-2 border border-white/10 hover:border-white/20 text-bege-escuro rounded-sm transition-all">
-                        {aberto ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                      </button>
-                    </div>
+            return (
+              <div key={evento.id} className="admin-card">
+                <div className="flex items-start gap-4">
+                  {/* FLYER */}
+                  <div className="relative w-14 h-20 flex-shrink-0 rounded-sm overflow-hidden bg-black/30">
+                    {evento.flyer_url && (
+                      <Image src={evento.flyer_url} alt={evento.nome} fill className="object-cover object-top" />
+                    )}
                   </div>
 
-                  {/* STATS RÁPIDOS */}
-                  <div className="flex flex-wrap gap-4 mt-3">
-                    <div className="text-xs">
-                      <span className="text-bege-escuro/50">Lote atual: </span>
-                      <span className="text-bege">{loteAtivo?.nome || 'Esgotado'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${evento.ativo ? 'bg-green-400 animate-pulse' : 'bg-bege-escuro/30'}`} />
+                          <span className="font-body text-xs text-bege-escuro/50">{evento.ativo ? 'Publicado' : 'Rascunho'}</span>
+                        </div>
+                        <h3 className="font-display text-xl text-bege">{evento.nome}</h3>
+                        <p className="font-body text-xs text-bege-escuro/50 mt-0.5 capitalize">
+                          {format(new Date(evento.data_evento), "EEEE, dd 'de' MMMM", { locale: ptBR })} · {evento.hora_abertura}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button onClick={() => toggleAtivo(evento.id, evento.ativo)}
+                          className="p-2 border border-white/10 hover:border-dourado/40 text-bege-escuro/50 hover:text-dourado rounded-sm transition-all"
+                          title={evento.ativo ? 'Despublicar' : 'Publicar'}>
+                          {evento.ativo ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                        <button onClick={() => { setEventoEditando(evento); setModalAberto(true) }}
+                          className="p-2 border border-white/10 hover:border-dourado/40 text-bege-escuro/50 hover:text-dourado rounded-sm transition-all">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => setExpandido(aberto ? null : evento.id)}
+                          className="p-2 border border-white/10 hover:border-white/20 text-bege-escuro/50 rounded-sm transition-all">
+                          {aberto ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs">
-                      <span className="text-bege-escuro/50">Masc: </span>
-                      <span className="text-bege">R$ {loteAtivo?.precoMasculino || '-'}</span>
-                    </div>
-                    <div className="text-xs">
-                      <span className="text-bege-escuro/50">Fem: </span>
-                      <span className="text-dourado">R$ {loteAtivo?.precoFeminino || '-'}</span>
-                    </div>
-                    <div className="text-xs">
-                      <span className="text-bege-escuro/50">Vendidos: </span>
-                      <span className="text-bege">{totalVendido}/{totalIngressos}</span>
-                    </div>
-                    <div className="text-xs">
-                      <span className="text-bege-escuro/50">Lista: </span>
-                      <span className={evento.temLista ? 'text-green-400' : 'text-bege-escuro/40'}>
-                        {evento.temLista ? 'Ativa' : 'Inativa'}
+
+                    {/* STATS */}
+                    <div className="flex flex-wrap gap-4 mt-2.5 mb-2">
+                      <span className="text-xs text-bege-escuro/50">
+                        Lote ativo: <span className="text-bege">{loteAtivo?.nome ?? '—'}</span>
+                      </span>
+                      {loteAtivo && (
+                        <>
+                          <span className="text-xs text-bege-escuro/50">
+                            Masc: <span className="text-bege">{fmtMoeda(loteAtivo.preco_masc)}</span>
+                          </span>
+                          <span className="text-xs text-bege-escuro/50">
+                            Fem: <span className="text-dourado">{fmtMoeda(loteAtivo.preco_fem)}</span>
+                          </span>
+                        </>
+                      )}
+                      <span className="text-xs text-bege-escuro/50">
+                        Vendidos: <span className="text-bege">{totalVendido}/{totalCap}</span>
                       </span>
                     </div>
+
+                    {/* BARRA DE PROGRESSO */}
+                    <div className="h-1 bg-black/40 rounded-full overflow-hidden w-full max-w-xs">
+                      <div className="h-full bg-dourado rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-xs text-bege-escuro/35 mt-0.5">{pct}% vendido</p>
                   </div>
                 </div>
+
+                {/* EXPANDIDO — LOTES */}
+                {aberto && (
+                  <div className="mt-5 pt-5 border-t border-white/5">
+                    <LotesEditor
+                      eventoId={evento.id}
+                      lotes={evento.lotes || []}
+                      onAtualizar={(lotes) => {
+                        setEventos(prev => prev.map(e => e.id === evento.id ? { ...e, lotes } : e))
+                      }}
+                    />
+                  </div>
+                )}
               </div>
+            )
+          })}
+        </div>
+      )}
 
-              {/* EXPANDIDO — LOTES */}
-              {aberto && (
-                <div className="mt-5 pt-5 border-t border-white/5">
-                  <LotesEditor evento={evento} onSave={(lotes) => {
-                    setEventos(prev => prev.map(e => e.id === evento.id ? { ...e, lotes } : e))
-                    toast.success('Lotes salvos!')
-                  }} />
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* MODAL CRIAR/EDITAR */}
+      {/* MODAL */}
       {modalAberto && (
         <EventoModal
           evento={eventoEditando}
           onClose={() => setModalAberto(false)}
-          onSave={(novoEvento) => {
-            if (eventoEditando) {
-              setEventos(prev => prev.map(e => e.id === eventoEditando.id ? novoEvento : e))
-            } else {
-              setEventos(prev => [...prev, novoEvento])
-            }
-            setModalAberto(false)
-            toast.success(eventoEditando ? 'Evento atualizado!' : 'Evento criado!')
-          }}
+          onSalvo={() => { setModalAberto(false); carregar() }}
         />
       )}
     </div>
   )
 }
 
-// ── LOTES EDITOR ──
-const LotesEditor: React.FC<{ evento: Evento; onSave: (lotes: Lote[]) => void }> = ({ evento, onSave }) => {
-  const [lotes, setLotes] = useState<Lote[]>(evento.lotes)
+// ─── EDITOR DE LOTES ─────────────────────────────────────────
+
+const LotesEditor: React.FC<{
+  eventoId: string
+  lotes: LoteDB[]
+  onAtualizar: (lotes: LoteDB[]) => void
+}> = ({ eventoId, lotes: lotesIniciais, onAtualizar }) => {
+  const [lotes, setLotes] = useState<LoteDB[]>(lotesIniciais)
+  const [salvando, setSalvando] = useState(false)
 
   const addLote = () => {
-    const novo: Lote = {
-      id: `lote-${Date.now()}`,
-      eventoId: evento.id,
+    const novo = {
+      id: `new-${Date.now()}`,
+      evento_id: eventoId,
       numero: lotes.length + 1,
       nome: `${lotes.length + 1}º Lote`,
-      precoMasculino: 0,
-      precoFeminino: 0,
-      qtdMasculino: 100,
-      qtdFeminino: 100,
-      vendidoMasculino: 0,
-      vendidoFeminino: 0,
+      preco_masc: 50,
+      preco_fem: 20,
+      limite_masc: 100,
+      limite_fem: 100,
+      vendidos_masc: 0,
+      vendidos_fem: 0,
       ativo: false,
-      ordem: lotes.length + 1,
-    }
+      created_at: '',
+      updated_at: '',
+    } as LoteDB
     setLotes(p => [...p, novo])
   }
 
-  const updateLote = (id: string, field: keyof Lote, value: any) => {
+  const update = (id: string, field: keyof LoteDB, value: unknown) => {
     setLotes(p => p.map(l => l.id === id ? { ...l, [field]: value } : l))
   }
 
-  const ativarLote = (id: string) => {
+  const ativar = (id: string) => {
     setLotes(p => p.map(l => ({ ...l, ativo: l.id === id })))
+  }
+
+  const salvar = async () => {
+    setSalvando(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${eventoId}/lotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lotes }),
+      })
+      const data = await res.json()
+      if (data.lotes) {
+        setLotes(data.lotes)
+        onAtualizar(data.lotes)
+        toast.success('Lotes salvos com sucesso!')
+      } else {
+        toast.error(data.erro ?? 'Erro ao salvar lotes')
+      }
+    } catch { toast.error('Erro de conexão') }
+    finally { setSalvando(false) }
   }
 
   return (
@@ -192,204 +255,161 @@ const LotesEditor: React.FC<{ evento: Evento; onSave: (lotes: Lote[]) => void }>
           <Plus size={12} /> Adicionar Lote
         </button>
       </div>
+
       <div className="space-y-3">
         {lotes.map(lote => (
-          <div key={lote.id} className={`p-4 rounded-sm border ${lote.ativo ? 'border-dourado/40 bg-dourado/5' : 'border-white/5 bg-black/20'}`}>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-center">
-              <div>
-                <label className="admin-label text-xs">Nome</label>
-                <input className="admin-input text-xs py-2"
-                  value={lote.nome}
-                  onChange={e => updateLote(lote.id, 'nome', e.target.value)} />
+          <div key={lote.id} className={`p-4 rounded-sm border transition-colors ${lote.ativo ? 'border-dourado/40 bg-dourado/5' : 'border-white/5 bg-black/20'}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
+              <div className="sm:col-span-2">
+                <label className="admin-label">Nome</label>
+                <input className="admin-input text-xs py-2" value={lote.nome ?? ''} onChange={e => update(lote.id, 'nome', e.target.value)} />
               </div>
               <div>
-                <label className="admin-label text-xs">Preço Masc (R$)</label>
-                <input type="number" className="admin-input text-xs py-2"
-                  value={lote.precoMasculino}
-                  onChange={e => updateLote(lote.id, 'precoMasculino', Number(e.target.value))} />
+                <label className="admin-label">Masc (R$)</label>
+                <input type="number" className="admin-input text-xs py-2" value={lote.preco_masc}
+                  onChange={e => update(lote.id, 'preco_masc', Number(e.target.value))} />
               </div>
               <div>
-                <label className="admin-label text-xs">Preço Fem (R$)</label>
-                <input type="number" className="admin-input text-xs py-2"
-                  value={lote.precoFeminino}
-                  onChange={e => updateLote(lote.id, 'precoFeminino', Number(e.target.value))} />
+                <label className="admin-label">Fem (R$)</label>
+                <input type="number" className="admin-input text-xs py-2" value={lote.preco_fem}
+                  onChange={e => update(lote.id, 'preco_fem', Number(e.target.value))} />
               </div>
               <div>
-                <label className="admin-label text-xs">Qtd Masc</label>
-                <input type="number" className="admin-input text-xs py-2"
-                  value={lote.qtdMasculino}
-                  onChange={e => updateLote(lote.id, 'qtdMasculino', Number(e.target.value))} />
+                <label className="admin-label">Limite Masc</label>
+                <input type="number" className="admin-input text-xs py-2" value={lote.limite_masc ?? 100}
+                  onChange={e => update(lote.id, 'limite_masc', Number(e.target.value))} />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="admin-label text-xs">Ações</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => ativarLote(lote.id)}
-                    className={`flex-1 py-2 text-xs rounded-sm border transition-all ${lote.ativo ? 'border-dourado bg-dourado/20 text-dourado' : 'border-white/10 text-bege-escuro hover:border-dourado/40'}`}
-                  >
-                    {lote.ativo ? 'Ativo' : 'Ativar'}
-                  </button>
-                </div>
+              <div>
+                <label className="admin-label">Limite Fem</label>
+                <input type="number" className="admin-input text-xs py-2" value={lote.limite_fem ?? 100}
+                  onChange={e => update(lote.id, 'limite_fem', Number(e.target.value))} />
               </div>
             </div>
-            <div className="mt-2 text-xs text-bege-escuro/40">
-              Vendidos: {lote.vendidoMasculino}M / {lote.vendidoFeminino}F · Restam: {lote.qtdMasculino - lote.vendidoMasculino}M / {lote.qtdFeminino - lote.vendidoFeminino}F
+
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-xs text-bege-escuro/35">
+                Vendidos: {lote.vendidos_masc}M · {lote.vendidos_fem}F
+              </p>
+              <button onClick={() => ativar(lote.id)}
+                className={`px-4 py-1.5 text-xs rounded-sm border transition-all ${lote.ativo ? 'border-dourado bg-dourado/20 text-dourado' : 'border-white/10 text-bege-escuro/60 hover:border-dourado/40'}`}>
+                {lote.ativo ? '✓ Lote Ativo' : 'Ativar este Lote'}
+              </button>
             </div>
           </div>
         ))}
+
+        {lotes.length === 0 && (
+          <p className="text-xs text-bege-escuro/30 text-center py-4">Nenhum lote. Clique em "Adicionar Lote" para começar.</p>
+        )}
       </div>
-      <button onClick={() => onSave(lotes)} className="btn-primary text-xs mt-4">
-        Salvar Lotes
+
+      <button onClick={salvar} disabled={salvando} className="btn-primary text-xs mt-4 flex items-center gap-2">
+        {salvando ? <><Loader2 size={12} className="animate-spin" /> Salvando...</> : 'Salvar Lotes'}
       </button>
     </div>
   )
 }
 
-// ── MODAL EVENTO ──
+// ─── MODAL EVENTO ─────────────────────────────────────────────
+
 const EventoModal: React.FC<{
-  evento: Evento | null;
-  onClose: () => void;
-  onSave: (e: Evento) => void;
-}> = ({ evento, onClose, onSave }) => {
+  evento: EventoComLotes | null
+  onClose: () => void
+  onSalvo: () => void
+}> = ({ evento, onClose, onSalvo }) => {
   const [form, setForm] = useState({
-    nome: evento?.nome || '',
-    data: evento ? format(evento.data, 'yyyy-MM-dd') : '',
-    hora: evento?.hora || '22:00',
-    descricao: evento?.descricao || '',
-    status: evento?.status || 'rascunho',
-    temLista: evento?.temLista || false,
-    limiteListaMasc: evento?.limiteListaMasc || 200,
-    limiteListaFem: evento?.limiteListaFem || 200,
-    flyerUrl: evento?.flyerUrl || '',
+    nome: evento?.nome ?? '',
+    data_evento: evento?.data_evento?.slice(0, 10) ?? '',
+    hora_abertura: evento?.hora_abertura?.slice(0, 5) ?? '22:00',
+    descricao: evento?.descricao ?? '',
+    ativo: evento?.ativo ?? false,
+    capacidade_total: evento?.capacidade_total ?? 500,
+    lista_encerra_as: evento?.lista_encerra_as?.slice(0, 5) ?? '00:00',
+    flyer_url: evento?.flyer_url ?? '',
   })
-  const [flyerPreview, setFlyerPreview] = useState(evento?.flyerUrl || '')
+  const [salvando, setSalvando] = useState(false)
 
-  const handleFlyerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setFlyerPreview(url)
-      setForm(p => ({ ...p, flyerUrl: url }))
-      toast.success('Flyer carregado! Será enviado ao salvar.')
-    }
+  const salvar = async () => {
+    if (!form.nome || !form.data_evento) { toast.error('Nome e data são obrigatórios'); return }
+    setSalvando(true)
+    try {
+      const url = evento ? `/api/admin/eventos/${evento.id}` : '/api/admin/eventos'
+      const method = evento ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (data.erro) { toast.error(data.erro); return }
+      toast.success(evento ? 'Evento atualizado!' : 'Evento criado!')
+      onSalvo()
+    } catch { toast.error('Erro de conexão') }
+    finally { setSalvando(false) }
   }
 
-  const handleSave = () => {
-    if (!form.nome || !form.data) {
-      toast.error('Nome e data são obrigatórios')
-      return
-    }
-    const novoEvento: Evento = {
-      id: evento?.id || `evt-${Date.now()}`,
-      slug: evento?.slug || form.nome.toLowerCase().replace(/\s+/g, '-'),
-      nome: form.nome,
-      data: new Date(form.data),
-      hora: form.hora,
-      descricao: form.descricao,
-      flyerUrl: form.flyerUrl,
-      status: form.status as any,
-      temLista: form.temLista,
-      limiteListaMasc: form.limiteListaMasc,
-      limiteListaFem: form.limiteListaFem,
-      prazoLista: new Date(form.data),
-      lotes: evento?.lotes || [],
-      criadoEm: evento?.criadoEm || new Date(),
-      atualizadoEm: new Date(),
-    }
-    onSave(novoEvento)
-  }
+  const f = (field: string, value: unknown) => setForm(p => ({ ...p, [field]: value }))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-      <div className="relative w-full max-w-2xl mx-4 bg-card border border-gold rounded-sm max-h-[90vh] overflow-y-auto animate-fade-up" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-gold/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-xl bg-[#0f0c07] border border-dourado/30 rounded-sm max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-dourado/15">
           <h3 className="font-display text-2xl text-bege">{evento ? 'Editar Evento' : 'Novo Evento'}</h3>
-          <button onClick={onClose} className="text-bege-escuro hover:text-bege"><X size={20} /></button>
+          <button onClick={onClose} className="text-bege-escuro/50 hover:text-bege"><X size={18} /></button>
         </div>
+
         <div className="p-6 space-y-5">
-          {/* FLYER UPLOAD */}
           <div>
-            <label className="admin-label">Flyer do Evento</label>
-            <div className="flex items-start gap-4">
-              <div className="relative w-24 h-36 bg-black/30 border border-white/10 rounded-sm overflow-hidden flex-shrink-0">
-                {flyerPreview ? (
-                  <Image src={flyerPreview} alt="Flyer" fill className="object-cover" />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-bege-escuro/30">
-                    <Upload size={20} />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="flex items-center gap-2 border border-dourado/30 hover:border-dourado px-4 py-3 rounded-sm text-sm text-bege-escuro hover:text-bege cursor-pointer transition-all duration-200">
-                  <Upload size={15} /> Enviar Flyer (WebP, JPG, PNG)
-                  <input type="file" accept="image/*" onChange={handleFlyerUpload} className="hidden" />
-                </label>
-                <p className="text-xs text-bege-escuro/40 mt-2">Formatos aceitos: WebP, JPG, PNG. Proporção recomendada: 9:16</p>
-              </div>
+            <label className="admin-label">Nome do Evento *</label>
+            <input className="admin-input" value={form.nome} onChange={e => f('nome', e.target.value)} placeholder="Ex: Me Leva Pro Pagode" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="admin-label">Data *</label>
+              <input type="date" className="admin-input" value={form.data_evento} onChange={e => f('data_evento', e.target.value)} />
+            </div>
+            <div>
+              <label className="admin-label">Abertura</label>
+              <input type="time" className="admin-input" value={form.hora_abertura} onChange={e => f('hora_abertura', e.target.value)} />
+            </div>
+            <div>
+              <label className="admin-label">Capacidade Total</label>
+              <input type="number" className="admin-input" value={form.capacidade_total} onChange={e => f('capacidade_total', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="admin-label">Lista encerra às</label>
+              <input type="time" className="admin-input" value={form.lista_encerra_as} onChange={e => f('lista_encerra_as', e.target.value)} />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="admin-label">Nome do Evento *</label>
-              <input className="admin-input" value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Me Leva Pro Pagode" />
-            </div>
-            <div>
-              <label className="admin-label">Data *</label>
-              <input type="date" className="admin-input" value={form.data} onChange={e => setForm(p => ({ ...p, data: e.target.value }))} />
-            </div>
-            <div>
-              <label className="admin-label">Horário</label>
-              <input type="time" className="admin-input" value={form.hora} onChange={e => setForm(p => ({ ...p, hora: e.target.value }))} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="admin-label">Descrição</label>
-              <textarea className="admin-input min-h-[70px] resize-none" value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Atrações, estilo musical..." />
-            </div>
-            <div>
-              <label className="admin-label">Status</label>
-              <select className="admin-input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as any }))}>
-                <option value="rascunho">Rascunho</option>
-                <option value="publicado">Publicado</option>
-                <option value="encerrado">Encerrado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-            </div>
-            <div>
-              <label className="admin-label">Lista Amiga</label>
-              <div className="flex items-center gap-3 h-[46px]">
-                <button
-                  onClick={() => setForm(p => ({ ...p, temLista: !p.temLista }))}
-                  className={`w-12 h-6 rounded-full transition-all duration-200 relative ${form.temLista ? 'bg-dourado' : 'bg-white/10'}`}
-                >
-                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${form.temLista ? 'left-6' : 'left-0.5'}`} />
-                </button>
-                <span className="text-sm text-bege-escuro">{form.temLista ? 'Ativa' : 'Inativa'}</span>
-              </div>
-            </div>
-            {form.temLista && (
-              <>
-                <div>
-                  <label className="admin-label">Limite Lista Masculino</label>
-                  <input type="number" className="admin-input" value={form.limiteListaMasc}
-                    onChange={e => setForm(p => ({ ...p, limiteListaMasc: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="admin-label">Limite Lista Feminino</label>
-                  <input type="number" className="admin-input" value={form.limiteListaFem}
-                    onChange={e => setForm(p => ({ ...p, limiteListaFem: Number(e.target.value) }))} />
-                </div>
-              </>
-            )}
+          <div>
+            <label className="admin-label">Descrição</label>
+            <textarea className="admin-input min-h-[70px] resize-none" value={form.descricao}
+              onChange={e => f('descricao', e.target.value)} placeholder="Atrações, estilo musical..." />
+          </div>
+
+          <div>
+            <label className="admin-label">URL do Flyer</label>
+            <input className="admin-input font-mono text-xs" value={form.flyer_url}
+              onChange={e => f('flyer_url', e.target.value)} placeholder="/images/flyers/flyer.webp" />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button onClick={() => f('ativo', !form.ativo)}
+              className={`w-11 h-6 rounded-full transition-all relative ${form.ativo ? 'bg-dourado' : 'bg-white/10'}`}>
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${form.ativo ? 'left-5' : 'left-0.5'}`} />
+            </button>
+            <span className="font-body text-sm text-bege-escuro/70">{form.ativo ? 'Publicado' : 'Rascunho'}</span>
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button onClick={handleSave} className="btn-primary flex-1">
-              {evento ? 'Salvar Alterações' : 'Criar Evento'}
+            <button onClick={salvar} disabled={salvando} className="btn-primary flex-1 flex items-center justify-center gap-2">
+              {salvando ? <><Loader2 size={13} className="animate-spin" /> Salvando...</> : (evento ? 'Salvar Alterações' : 'Criar Evento')}
             </button>
-            <button onClick={onClose} className="btn-outline flex-shrink-0">Cancelar</button>
+            <button onClick={onClose} className="btn-outline">Cancelar</button>
           </div>
         </div>
       </div>

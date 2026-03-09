@@ -1,28 +1,108 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Ticket, Users, BookMarked, TrendingUp, CalendarDays, ArrowRight, CheckCircle2, Clock, UserPlus } from 'lucide-react'
-import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
+import {
+  Ticket, Users, BookMarked, TrendingUp, CalendarDays,
+  ArrowRight, CheckCircle2, Clock, UserPlus, Loader2, RefreshCw
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const stats = [
-  { label: 'Ingressos Vendidos', valor: '247', sub: 'Este mês', icon: <Ticket size={20} />, cor: 'text-dourado' },
-  { label: 'Receita Total', valor: 'R$ 12.350', sub: 'Este mês', icon: <TrendingUp size={20} />, cor: 'text-green-400' },
-  { label: 'Reservas Pendentes', valor: '8', sub: 'Aguardando confirmação', icon: <BookMarked size={20} />, cor: 'text-amber-400' },
-  { label: 'Leads Capturados', valor: '6', sub: 'Novos esta semana', icon: <UserPlus size={20} />, cor: 'text-blue-400' },
-]
+type StatData = {
+  ingressosAtivos: number
+  ingressosUtilizados: number
+  reservasPendentes: number
+  leadsNovos: number
+  totalIngressos: number
+}
 
-const ultimasVendas = [
-  { nome: 'João S.', ingresso: 'Pista Masc', evento: 'Fluxou 14/03', valor: 50, status: 'pago' },
-  { nome: 'Maria L.', ingresso: 'Backstage Fem', evento: 'Me Leva 07/03', valor: 60, status: 'pago' },
-  { nome: 'Carlos M.', ingresso: 'Pista Masc', evento: 'DJ Narru 21/03', valor: 50, status: 'pendente' },
-  { nome: 'Ana P.', ingresso: 'Backstage Masc', evento: 'Fluxou 14/03', valor: 120, status: 'pago' },
-  { nome: 'Pedro R.', ingresso: 'Pista Fem', evento: 'DJ Narru 21/03', valor: 20, status: 'pago' },
-]
+type EventoResumo = {
+  id: string
+  nome: string
+  data_evento: string
+  hora_abertura: string
+  capacidade_total: number
+  ativo: boolean
+  lotes: { ativo: boolean; nome: string | null; preco_masc: number; preco_fem: number; vendidos_masc: number; vendidos_fem: number }[]
+}
+
+type IngressoRecente = {
+  id: string
+  tipo: string
+  status: string
+  preco_pago: number
+  created_at: string
+  cadastro: { nome_completo: string; email: string } | null
+  evento: { nome: string } | null
+}
+
+const TIPO_LABEL: Record<string, string> = {
+  lista_masc: 'Lista Masc',
+  lista_fem: 'Lista Fem',
+  pista_masc: 'Pista Masc',
+  pista_fem: 'Pista Fem',
+  camarote: 'Camarote',
+  cortesia: 'Cortesia',
+}
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<StatData | null>(null)
+  const [eventos, setEventos] = useState<EventoResumo[]>([])
+  const [recentes, setRecentes] = useState<IngressoRecente[]>([])
+  const [carregando, setCarregando] = useState(true)
+
+  const carregar = async () => {
+    setCarregando(true)
+    try {
+      const [resIng, resEv, resRes, resLeads] = await Promise.all([
+        fetch('/api/admin/ingressos'),
+        fetch('/api/admin/eventos'),
+        fetch('/api/reservas'),
+        fetch('/api/leads'),
+      ])
+
+      const [dataIng, dataEv, dataRes, dataLeads] = await Promise.all([
+        resIng.json(), resEv.json(), resRes.json(), resLeads.json(),
+      ])
+
+      const ingressos: IngressoRecente[] = dataIng.ingressos ?? []
+      setRecentes(
+        ingressos
+          .filter(i => i.status === 'ativo' || i.status === 'utilizado')
+          .slice(0, 6)
+      )
+
+      const reservas = dataRes.reservas ?? []
+      const leads = dataLeads.leads ?? []
+
+      setStats({
+        ingressosAtivos:    ingressos.filter(i => i.status === 'ativo').length,
+        ingressosUtilizados: ingressos.filter(i => i.status === 'utilizado').length,
+        totalIngressos:     ingressos.length,
+        reservasPendentes:  reservas.filter((r: { status: string }) => r.status === 'pendente').length,
+        leadsNovos:         leads.filter((l: { status: string }) => l.status === 'novo').length,
+      })
+
+      setEventos(dataEv.eventos ?? [])
+    } catch (err) {
+      console.error('[dashboard]', err)
+    } finally {
+      setCarregando(false)
+    }
+  }
+
+  useEffect(() => { carregar() }, [])
+
+  const statCards = stats
+    ? [
+        { label: 'Ingressos Ativos', valor: String(stats.ingressosAtivos), sub: `${stats.ingressosUtilizados} utilizados · ${stats.totalIngressos} total`, icon: <Ticket size={20} />, cor: 'text-dourado' },
+        { label: 'Receita Total', valor: `R$ ${recentes.reduce((a, i) => a + (i.preco_pago ?? 0), 0).toLocaleString('pt-BR')}`, sub: 'Ingressos pagos', icon: <TrendingUp size={20} />, cor: 'text-green-400' },
+        { label: 'Reservas Pendentes', valor: String(stats.reservasPendentes), sub: 'Aguardando confirmação', icon: <BookMarked size={20} />, cor: 'text-amber-400' },
+        { label: 'Leads Novos', valor: String(stats.leadsNovos), sub: 'Sem contato ainda', icon: <UserPlus size={20} />, cor: 'text-blue-400' },
+      ]
+    : []
+
   return (
     <div className="space-y-8">
       {/* HEADER */}
@@ -33,108 +113,137 @@ export default function AdminDashboard() {
             {format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
-        <Link href="/admin/eventos" className="btn-primary text-xs flex items-center gap-2">
-          <CalendarDays size={14} /> Novo Evento
-        </Link>
-      </div>
-
-      {/* STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(s => (
-          <div key={s.label} className="admin-card">
-            <div className={`${s.cor} mb-3`}>{s.icon}</div>
-            <div className="font-display text-3xl text-bege mb-1">{s.valor}</div>
-            <div className="font-body text-xs text-bege font-medium">{s.label}</div>
-            <div className="font-body text-xs text-bege-escuro/50 mt-0.5">{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* PRÓXIMOS EVENTOS */}
-        <div className="admin-card">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-accent text-xs tracking-widest uppercase text-dourado">Próximos Eventos</h3>
-            <Link href="/admin/eventos" className="text-xs text-bege-escuro/60 hover:text-bege flex items-center gap-1 transition-colors">
-              Ver todos <ArrowRight size={12} />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {EVENTOS_INICIAIS.map(evento => {
-              const loteAtivo = evento.lotes.find(l => l.ativo)
-              const vendidos = evento.lotes.reduce((acc, l) => acc + l.vendidoMasculino + l.vendidoFeminino, 0)
-              const total = evento.lotes.reduce((acc, l) => acc + l.qtdMasculino + l.qtdFeminino, 0)
-              const pct = Math.round((vendidos / total) * 100)
-
-              return (
-                <div key={evento.id} className="flex items-start gap-3 p-3 rounded-sm bg-black/20 border border-white/5">
-                  <div className="flex-1">
-                    <p className="font-body text-sm text-bege">{evento.nome}</p>
-                    <p className="font-body text-xs text-bege-escuro/50">
-                      {format(evento.data, "dd/MM", { locale: ptBR })} · {loteAtivo?.nome || 'Esgotado'}
-                    </p>
-                    <div className="mt-2 h-1.5 bg-black/40 rounded-full overflow-hidden">
-                      <div className="h-full bg-dourado rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                    </div>
-                    <p className="text-xs text-bege-escuro/40 mt-0.5">{vendidos}/{total} ingressos · {pct}%</p>
-                  </div>
-                  <Link href={`/admin/eventos?editar=${evento.id}`}
-                    className="text-xs text-dourado/70 hover:text-dourado border border-dourado/20 hover:border-dourado/50 px-2 py-1 rounded-sm transition-all">
-                    Editar
-                  </Link>
-                </div>
-              )
-            })}
-          </div>
+        <div className="flex gap-2">
+          <button onClick={carregar} className="btn-outline p-2.5" title="Recarregar">
+            <RefreshCw size={14} className={carregando ? 'animate-spin' : ''} />
+          </button>
+          <Link href="/admin/eventos" className="btn-primary text-xs flex items-center gap-2">
+            <CalendarDays size={14} /> Novo Evento
+          </Link>
         </div>
+      </div>
 
-        {/* ÚLTIMAS VENDAS */}
-        <div className="admin-card">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-accent text-xs tracking-widest uppercase text-dourado">Últimas Vendas</h3>
-            <Link href="/admin/ingressos" className="text-xs text-bege-escuro/60 hover:text-bege flex items-center gap-1 transition-colors">
-              Ver todas <ArrowRight size={12} />
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {ultimasVendas.map((v, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-sm bg-black/20 border border-white/5">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
-                  ${v.status === 'pago' ? 'bg-green-500/15' : 'bg-amber-500/15'}`}>
-                  {v.status === 'pago'
-                    ? <CheckCircle2 size={14} className="text-green-400" />
-                    : <Clock size={14} className="text-amber-400" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body text-xs text-bege truncate">{v.nome} — {v.ingresso}</p>
-                  <p className="font-body text-xs text-bege-escuro/50 truncate">{v.evento}</p>
-                </div>
-                <span className="font-display text-sm text-dourado flex-shrink-0">R$ {v.valor}</span>
+      {carregando ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={28} className="animate-spin text-dourado/50" />
+        </div>
+      ) : (
+        <>
+          {/* STATS */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map(s => (
+              <div key={s.label} className="admin-card">
+                <div className={`${s.cor} mb-3`}>{s.icon}</div>
+                <div className="font-display text-3xl text-bege mb-1">{s.valor}</div>
+                <div className="font-body text-xs text-bege font-medium">{s.label}</div>
+                <div className="font-body text-xs text-bege-escuro/50 mt-0.5">{s.sub}</div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* AÇÕES RÁPIDAS */}
-      <div className="admin-card">
-        <h3 className="font-accent text-xs tracking-widest uppercase text-dourado mb-4">Ações Rápidas</h3>
-        <div className="flex flex-wrap gap-3">
-          {[
-            { href: '/admin/listas', label: 'Exportar Listas', icon: <Users size={14} /> },
-            { href: '/admin/reservas', label: 'Ver Reservas', icon: <BookMarked size={14} /> },
-            { href: '/admin/ingressos', label: 'Validar Ingresso', icon: <Ticket size={14} /> },
-            { href: '/portaria', label: 'Abrir Portaria', icon: <CheckCircle2 size={14} /> },
-          ].map(a => (
-            <Link key={a.href} href={a.href}
-              className="flex items-center gap-2 border border-white/10 hover:border-dourado/40 px-4 py-2.5 rounded-sm text-xs text-bege-escuro hover:text-bege transition-all duration-200">
-              <span className="text-dourado/70">{a.icon}</span>
-              {a.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* PRÓXIMOS EVENTOS */}
+            <div className="admin-card">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-accent text-xs tracking-widest uppercase text-dourado">Próximos Eventos</h3>
+                <Link href="/admin/eventos" className="text-xs text-bege-escuro/60 hover:text-bege flex items-center gap-1 transition-colors">
+                  Ver todos <ArrowRight size={12} />
+                </Link>
+              </div>
+              {eventos.length === 0 ? (
+                <p className="text-sm text-bege-escuro/40 text-center py-6">Nenhum evento cadastrado.</p>
+              ) : (
+                <div className="space-y-3">
+                  {eventos.slice(0, 4).map(evento => {
+                    const loteAtivo = evento.lotes?.find(l => l.ativo)
+                    const vendidos = (evento.lotes ?? []).reduce((a, l) => a + l.vendidos_masc + l.vendidos_fem, 0)
+                    const cap = evento.capacidade_total || 500
+                    const pct = Math.min(100, Math.round((vendidos / cap) * 100))
+
+                    return (
+                      <div key={evento.id} className="flex items-start gap-3 p-3 rounded-sm bg-black/20 border border-white/5">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${evento.ativo ? 'bg-green-400' : 'bg-bege-escuro/30'}`} />
+                            <p className="font-body text-sm text-bege">{evento.nome}</p>
+                          </div>
+                          <p className="font-body text-xs text-bege-escuro/50">
+                            {format(new Date(evento.data_evento), "dd/MM", { locale: ptBR })} · {loteAtivo?.nome ?? '—'}
+                          </p>
+                          <div className="mt-2 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                            <div className="h-full bg-dourado rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                          <p className="text-xs text-bege-escuro/40 mt-0.5">{vendidos}/{cap} ingressos · {pct}%</p>
+                        </div>
+                        <Link href="/admin/eventos"
+                          className="text-xs text-dourado/70 hover:text-dourado border border-dourado/20 hover:border-dourado/50 px-2 py-1 rounded-sm transition-all whitespace-nowrap">
+                          Editar
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* INGRESSOS RECENTES */}
+            <div className="admin-card">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-accent text-xs tracking-widest uppercase text-dourado">Ingressos Recentes</h3>
+                <Link href="/admin/ingressos" className="text-xs text-bege-escuro/60 hover:text-bege flex items-center gap-1 transition-colors">
+                  Ver todos <ArrowRight size={12} />
+                </Link>
+              </div>
+              {recentes.length === 0 ? (
+                <p className="text-sm text-bege-escuro/40 text-center py-6">Nenhum ingresso ativo ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {recentes.map(i => (
+                    <div key={i.id} className="flex items-center gap-3 p-3 rounded-sm bg-black/20 border border-white/5">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
+                        ${i.status === 'utilizado' ? 'bg-blue-500/15' : 'bg-green-500/15'}`}>
+                        {i.status === 'utilizado'
+                          ? <CheckCircle2 size={14} className="text-blue-400" />
+                          : <Clock size={14} className="text-green-400" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body text-xs text-bege truncate">
+                          {i.cadastro?.nome_completo ?? <span className="text-bege-escuro/40 italic">Sem cadastro</span>} — {TIPO_LABEL[i.tipo] ?? i.tipo}
+                        </p>
+                        <p className="font-body text-xs text-bege-escuro/50 truncate">{i.evento?.nome ?? '—'}</p>
+                      </div>
+                      <span className="font-display text-sm text-dourado flex-shrink-0">
+                        {i.preco_pago > 0 ? `R$ ${i.preco_pago}` : 'Grátis'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* AÇÕES RÁPIDAS */}
+          <div className="admin-card">
+            <h3 className="font-accent text-xs tracking-widest uppercase text-dourado mb-4">Ações Rápidas</h3>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { href: '/admin/listas', label: 'Ver Listas', icon: <Users size={14} /> },
+                { href: '/admin/reservas', label: 'Reservas', icon: <BookMarked size={14} /> },
+                { href: '/admin/camarotes', label: 'Camarotes', icon: <Ticket size={14} /> },
+                { href: '/admin/porteiros', label: 'Porteiros', icon: <Users size={14} /> },
+                { href: '/portaria', label: 'Abrir Portaria', icon: <CheckCircle2 size={14} /> },
+              ].map(a => (
+                <Link key={a.href} href={a.href}
+                  className="flex items-center gap-2 border border-white/10 hover:border-dourado/40 px-4 py-2.5 rounded-sm text-xs text-bege-escuro hover:text-bege transition-all duration-200">
+                  <span className="text-dourado/70">{a.icon}</span>
+                  {a.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -1,14 +1,9 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { Lead, OrigemLead, StatusLead } from '@/types'
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // ============================================
-// API: /api/leads
-// Captura e armazena leads com consentimento LGPD
+// API: /api/leads — Supabase
 // ============================================
-
-// Simulação de banco em memória (substituir por Supabase)
-// Em produção: await supabase.from('leads').insert(leadData)
-const leadsDB: Lead[] = []
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,34 +18,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Consentimento LGPD obrigatório' }, { status: 400 })
     }
 
-    if (!email && !whatsapp) {
-      return NextResponse.json({ error: 'Email ou WhatsApp obrigatório' }, { status: 400 })
+    const { data, error } = await supabaseAdmin
+      .from('leads')
+      .insert({
+        nome: nome.trim(),
+        email: email?.trim()?.toLowerCase() ?? null,
+        whatsapp: whatsapp?.replace(/\D/g, '') ?? null,
+        origem,
+        evento_id: eventoId ?? null,
+        evento_nome: eventoNome ?? null,
+        observacoes: observacoes ?? null,
+        status: 'novo',
+        consentimento_lgpd: true,
+        data_consentimento: new Date().toISOString(),
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('[leads] Erro ao salvar:', error)
+      // Não bloquear o usuário por erro de DB
+      return NextResponse.json({ success: true, leadId: null })
     }
 
-    const lead: Lead = {
-      id: `lead_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      nome: nome.trim(),
-      email: email?.trim().toLowerCase(),
-      whatsapp: whatsapp?.trim(),
-      origem: origem as OrigemLead,
-      eventoId,
-      eventoNome,
-      observacoes,
-      status: 'novo' as StatusLead,
-      consentimentoLGPD: true,
-      dataConsentimento: new Date(),
-      criadoEm: new Date(),
-      atualizadoEm: new Date(),
-    }
-
-    // TODO: Supabase
-    // const { error } = await supabase.from('leads').insert(lead)
-    // if (error) throw error
-    leadsDB.push(lead)
-
-    console.log('[Lead Capturado]', { nome: lead.nome, origem: lead.origem, email: lead.email })
-
-    return NextResponse.json({ success: true, leadId: lead.id })
+    return NextResponse.json({ success: true, leadId: data.id })
   } catch (error) {
     console.error('[API Leads POST]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -59,27 +50,37 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // TODO: autenticação admin
-    // const session = await getServerSession()
-    // if (!session?.user?.role === 'admin') return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
     const { searchParams } = new URL(req.url)
     const origem = searchParams.get('origem')
     const status = searchParams.get('status')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
 
-    let leads = [...leadsDB]
+    let query = supabaseAdmin
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    if (origem) leads = leads.filter(l => l.origem === origem)
-    if (status) leads = leads.filter(l => l.status === status)
+    if (origem) query = query.eq('origem', origem)
+    if (status) query = query.eq('status', status)
 
-    leads.sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+    const { data, error } = await query
+    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
 
-    const total = leads.length
-    const paginated = leads.slice((page - 1) * limit, page * limit)
+    // Normalizar campos para compatibilidade com o frontend
+    const leads = (data ?? []).map(l => ({
+      id: l.id,
+      nome: l.nome,
+      email: l.email,
+      whatsapp: l.whatsapp,
+      origem: l.origem,
+      evento_nome: l.evento_nome,
+      eventoId: l.evento_id,
+      observacoes: l.observacoes,
+      status: l.status,
+      consentimento_lgpd: l.consentimento_lgpd,
+      created_at: l.created_at,
+    }))
 
-    return NextResponse.json({ leads: paginated, total, page, limit })
+    return NextResponse.json({ leads, total: leads.length })
   } catch (error) {
     console.error('[API Leads GET]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -89,14 +90,19 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
-    const { leadId, status } = body
+    const { leadId, id, status } = body
+    const resolvedId = id ?? leadId
 
-    const lead = leadsDB.find(l => l.id === leadId)
-    if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
+    if (!resolvedId || !status) {
+      return NextResponse.json({ error: 'id e status são obrigatórios' }, { status: 400 })
+    }
 
-    lead.status = status
-    lead.atualizadoEm = new Date()
+    const { error } = await supabaseAdmin
+      .from('leads')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', resolvedId)
 
+    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[API Leads PATCH]', error)

@@ -1,65 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { enviarEmailCamarote } from '@/lib/email-ingresso'
 import type { GerarCamarotePayload } from '@/types/ingressos'
 
 /**
  * POST /api/ingressos/camarote
- * Gera N ingressos de camarote, reserva o camarote e envia email com links
- * Apenas admins autorizados (verificado via porteiro_id + nivel)
+ * Gera N ingressos de camarote, reserva o camarote e retorna os links únicos
+ * Aceita gerado_por opcional — se não enviado, usa service_role direto
  */
 export async function POST(req: NextRequest) {
   try {
-    const body: GerarCamarotePayload = await req.json()
+    const body: Partial<GerarCamarotePayload> = await req.json()
     const { camarote_id, gerado_por, reservado_por } = body
 
-    if (!camarote_id || !gerado_por || !reservado_por) {
-      return NextResponse.json({ erro: 'Dados incompletos' }, { status: 400 })
+    if (!camarote_id) {
+      return NextResponse.json({ erro: 'camarote_id é obrigatório' }, { status: 400 })
     }
 
-    // ── Verificar se quem gerou tem permissão de admin_saida ────
-    const { data: porteiro } = await supabaseAdmin
-      .from('porteiros')
-      .select('nivel, ativo')
-      .eq('id', gerado_por)
-      .single()
+    // Se gerado_por foi enviado, verificar permissão
+    if (gerado_por) {
+      const { data: porteiro } = await supabaseAdmin
+        .from('porteiros')
+        .select('nivel, ativo')
+        .eq('id', gerado_por)
+        .single()
 
-    if (!porteiro || !porteiro.ativo || porteiro.nivel === 'porteiro') {
-      return NextResponse.json({ erro: 'Sem permissão para gerar ingressos de camarote' }, { status: 403 })
+      if (!porteiro || !porteiro.ativo || porteiro.nivel === 'porteiro') {
+        return NextResponse.json({ erro: 'Sem permissão para gerar ingressos de camarote' }, { status: 403 })
+      }
     }
 
-    // ── Chama função SQL que gera os ingressos ──────────────────
+    // Chama função SQL que gera os ingressos
     const { data, error } = await supabaseAdmin.rpc('gerar_ingressos_camarote', {
       p_camarote_id: camarote_id,
-      p_gerado_por: gerado_por,
+      p_gerado_por: gerado_por ?? null,
     })
 
     if (error || !data) {
       console.error('[camarote] Erro RPC:', error)
-      return NextResponse.json({ erro: data?.erro ?? 'Erro ao gerar ingressos' }, { status: 500 })
+      return NextResponse.json({ erro: 'Erro ao gerar ingressos. Verifique se o camarote existe e não está reservado.' }, { status: 500 })
     }
 
     if (data.erro) {
       return NextResponse.json({ erro: data.erro }, { status: 400 })
     }
 
-    // ── Salvar quem reservou ────────────────────────────────────
-    await supabaseAdmin
-      .from('camarotes')
-      .update({ reservado_por })
-      .eq('id', camarote_id)
+    // Salvar quem reservou (se informado)
+    if (reservado_por) {
+      await supabaseAdmin
+        .from('camarotes')
+        .update({ reservado_por })
+        .eq('id', camarote_id)
+    }
 
-    // ── Montar URLs de cadastro para cada link ──────────────────
+    // Montar URLs de cadastro para cada link
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-    const linksComUrl = (data.links as Array<{ numero: number; link_token: string; ingresso_id: string }>)
-      .map(l => ({
-        numero: l.numero,
-        url: `${baseUrl}/cadastro-ingresso/${l.link_token}`,
-      }))
-
-    // ── Buscar email do camarote para envio (se disponível) ─────
-    // Por enquanto retorna os links — o admin envia manualmente via WhatsApp
-    // O email será enviado quando implementarmos o campo de email do responsável
+    const linksArray = Array.isArray(data.links) ? data.links : []
+    const linksComUrl = linksArray.map((l: { numero: number; link_token: string; ingresso_id: string }) => ({
+      numero: l.numero,
+      url: `${baseUrl}/cadastro-ingresso/${l.link_token}`,
+    }))
 
     return NextResponse.json({
       sucesso: true,
@@ -76,13 +75,28 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/ingressos/camarote?evento_id=xxx
- * Lista camarotes de um evento (disponíveis e reservados)
+ * Lista camarotes com stats de ingressos
  */
 export async function GET(req: NextRequest) {
   const evento_id = req.nextUrl.searchParams.get('evento_id')
 
   if (!evento_id) {
-    return NextResponse.json({ erro: 'evento_id obrigatório' }, { status: 400 })
+    // Sem evento_id: retorna todos para o admin
+    const { data, error } = await supabaseAdmin
+      .from('camarotes')
+      .select('*, evento:eventos(id, nome, data_evento), ingressos(id, status)')
+      .order('created_at', { ascending: false })
+
+    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+
+    const camarotes = (data || []).map(c => ({
+      ...c,
+      total_ingressos: c.ingressos?.length ?? 0,
+      cadastros_completos: c.ingressos?.filter((i: { status: string }) => i.status !== 'aguardando_cadastro' && i.status !== 'pendente_pagamento').length ?? 0,
+      ingressos: undefined,
+    }))
+
+    return NextResponse.json({ camarotes })
   }
 
   const { data, error } = await supabaseAdmin

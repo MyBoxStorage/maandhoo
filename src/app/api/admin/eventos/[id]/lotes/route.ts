@@ -1,0 +1,68 @@
+import { NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+
+// POST /api/admin/eventos/[id]/lotes — salvar/sincronizar lotes
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+  const { lotes } = await req.json()
+  const eventoId = params.id
+
+  if (!Array.isArray(lotes)) return NextResponse.json({ erro: 'Lotes inválidos' }, { status: 400 })
+
+  // Separar novos dos existentes
+  const novos = lotes.filter(l => l.id.startsWith('new-'))
+  const existentes = lotes.filter(l => !l.id.startsWith('new-'))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ops: PromiseLike<any>[] = []
+
+  // Upsert existentes
+  if (existentes.length > 0) {
+    ops.push(
+      supabaseAdmin.from('lotes').upsert(
+        existentes.map(l => ({
+          id: l.id,
+          evento_id: eventoId,
+          nome: l.nome,
+          preco_masc: l.preco_masc,
+          preco_fem: l.preco_fem,
+          limite_masc: l.limite_masc ?? 100,
+          limite_fem: l.limite_fem ?? 100,
+          ativo: l.ativo,
+          updated_at: new Date().toISOString(),
+        }))
+      ).then(r => r)
+    )
+  }
+
+  // Inserir novos
+  if (novos.length > 0) {
+    ops.push(
+      supabaseAdmin.from('lotes').insert(
+        novos.map(l => ({
+          evento_id: eventoId,
+          nome: l.nome,
+          preco_masc: l.preco_masc,
+          preco_fem: l.preco_fem,
+          limite_masc: l.limite_masc ?? 100,
+          limite_fem: l.limite_fem ?? 100,
+          ativo: l.ativo,
+        }))
+      ).then(r => r)
+    )
+  }
+
+  const resultados = await Promise.all(ops as Promise<{ error: { message: string } | null }>[])
+  for (const r of resultados) {
+    if (r?.error) return NextResponse.json({ erro: r.error.message }, { status: 500 })
+  }
+
+  // Retornar lotes atualizados
+  const { data: lotesAtualizados, error } = await supabaseAdmin
+    .from('lotes')
+    .select('*')
+    .eq('evento_id', eventoId)
+    .order('created_at', { ascending: true })
+
+  if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+  return NextResponse.json({ lotes: lotesAtualizados })
+}

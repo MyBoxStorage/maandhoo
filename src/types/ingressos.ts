@@ -71,14 +71,17 @@ export interface LoteDB {
 export interface CamaroteDB {
   id: string
   evento_id: string
-  identificador: string
+  identificador?: string
+  nome?: string
+  descricao?: string
   capacidade: number
-  preco_total: number
-  disponivel: boolean
+  preco_total?: number
+  disponivel?: boolean
+  ativo?: boolean
   reservado_por?: string
   reservado_em?: string
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
 export interface IngressoDB {
@@ -86,16 +89,19 @@ export interface IngressoDB {
   evento_id: string
   lote_id?: string
   camarote_id?: string
+  cadastro_id?: string
   tipo: TipoIngresso
   status: StatusIngresso
   qr_token: string
-  preco_pago: number
+  serial?: string
+  preco_pago?: number
   expira_em?: string
   link_token?: string
-  link_usado: boolean
+  link_usado?: boolean
+  qr_enviado?: boolean
   gerado_por?: string
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
 export interface CadastroDB {

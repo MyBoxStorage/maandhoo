@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // ============================================
 // API: /api/reservas
-// Recebe solicitações de mesa/camarote/aniversário
-// Notifica equipe via WhatsApp
 // ============================================
 
 export async function POST(req: NextRequest) {
@@ -15,46 +14,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dados obrigatórios faltando' }, { status: 400 })
     }
 
-    // TODO: 1. Salvar reserva no Supabase
-    // await supabase.from('reservas').insert({...})
+    // Salvar reserva no Supabase
+    const { data: reserva, error } = await supabaseAdmin
+      .from('reservas')
+      .insert({
+        tipo,
+        nome: nome.trim(),
+        email: email?.trim()?.toLowerCase() ?? null,
+        whatsapp: whatsapp.replace(/\D/g, ''),
+        numero_pessoas: numeroPessoas ?? 1,
+        area_desejada: areaDesejada ?? null,
+        data_aniversario: dataAniversario ?? null,
+        observacoes: observacoes ?? null,
+        status: 'pendente',
+      })
+      .select()
+      .single()
 
-    // 2. Captura lead automaticamente
+    if (error) {
+      console.error('[reservas] Erro ao salvar:', error)
+      // Não bloquear o usuário por erro de DB — captura lead mesmo assim
+    }
+
+    // Capturar lead automaticamente
     try {
       const origemMap: Record<string, string> = {
         mesa: 'reserva_mesa',
         camarote: 'reserva_camarote',
         aniversario: 'reserva_aniversario',
       }
-      await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/leads`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome, email, whatsapp,
-          origem: origemMap[tipo] || 'contato',
-          observacoes: `Reserva ${tipo} · ${numeroPessoas} pessoas · ${areaDesejada || ''}`,
-          consentimentoLGPD: true,
-        }),
+      await supabaseAdmin.from('leads').insert({
+        nome: nome.trim(),
+        email: email?.trim()?.toLowerCase() ?? null,
+        whatsapp: whatsapp.replace(/\D/g, ''),
+        origem: origemMap[tipo] ?? 'contato',
+        observacoes: `Reserva ${tipo} · ${numeroPessoas} pessoas · ${areaDesejada ?? ''}`,
+        consentimento_lgpd: true,
+        status: 'novo',
       })
     } catch (e) {
       console.warn('[Leads] Falha ao capturar lead da reserva:', e)
     }
 
-    // TODO: 2. Enviar email para contato@maandhoo.com com os dados da reserva
-    // await transporter.sendMail({
-    //   from: process.env.EMAIL_FROM,
-    //   to: 'contato@maandhoo.com',
-    //   subject: `Nova reserva de ${tipo} — ${nome}`,
-    //   html: `<b>${nome}</b><br>Tipo: ${tipo}<br>WhatsApp: ${whatsapp}<br>Pessoas: ${numeroPessoas}<br>Área: ${areaDesejada}<br>Obs: ${observacoes}`
-    // })
-
-    // TODO: 3. Enviar confirmação via WhatsApp para o cliente
-    // Link de API do WhatsApp ou integração com Cloud API
-    const whatsappLink = `https://wa.me/${process.env.WHATSAPP_NUMBER}?text=Olá! Recebi a solicitação de reserva de ${nome}. Entraremos em contato em breve!`
-
     return NextResponse.json({
       success: true,
       message: 'Solicitação de reserva recebida',
-      whatsappLink,
+      reservaId: reserva?.id ?? null,
     })
   } catch (error) {
     console.error('[API Reservas]', error)
@@ -62,7 +67,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
-  // TODO: listar reservas para o admin (com autenticação)
-  return NextResponse.json({ reservas: [] })
+export async function GET() {
+  const { data, error } = await supabaseAdmin
+    .from('reservas')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+  return NextResponse.json({ reservas: data ?? [] })
+}
+
+export async function PATCH(req: NextRequest) {
+  const { id, status, observacoes_admin } = await req.json()
+  if (!id || !status) return NextResponse.json({ erro: 'id e status são obrigatórios' }, { status: 400 })
+
+  const { data, error } = await supabaseAdmin
+    .from('reservas')
+    .update({ status, observacoes_admin: observacoes_admin ?? null, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+  return NextResponse.json({ reserva: data })
 }
