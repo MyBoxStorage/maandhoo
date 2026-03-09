@@ -35,12 +35,10 @@ export const supabase = {
   get auth() { return getSupabase().auth },
   from: (...args: Parameters<SupabaseClient['from']>) => getSupabase().from(...args),
   rpc: (...args: Parameters<SupabaseClient['rpc']>) => getSupabase().rpc(...args),
-  storage: { get buckets() { return getSupabase().storage.buckets } },
 } as unknown as SupabaseClient
 
 export const supabaseAdmin = {
   get auth() { return getSupabaseAdmin().auth },
   from: (...args: Parameters<SupabaseClient['from']>) => getSupabaseAdmin().from(...args),
   rpc: (...args: Parameters<SupabaseClient['rpc']>) => getSupabaseAdmin().rpc(...args),
-  storage: { get buckets() { return getSupabaseAdmin().storage.buckets } },
 } as unknown as SupabaseClient
