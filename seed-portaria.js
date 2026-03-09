@@ -10,9 +10,12 @@ const bcrypt = require('bcryptjs')
 const DATABASE_URL =
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
-  "postgresql://postgres.hrprcdbkgujvcrppmtcv:641984maandhoo6841654@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
+  ""
 
 async function main() {
+  if (!DATABASE_URL) {
+    throw new Error('Defina DATABASE_URL ou POSTGRES_URL antes de executar o seed')
+  }
   const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } })
 
   console.log('🔌 Conectando ao Supabase...')

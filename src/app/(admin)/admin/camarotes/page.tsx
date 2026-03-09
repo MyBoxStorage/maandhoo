@@ -113,17 +113,14 @@ export default function AdminCamarotesPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full ${camarote.ativo ? 'bg-green-400' : 'bg-bege-escuro/30'}`} />
+                      <span className={`w-2 h-2 rounded-full ${camarote.disponivel ? 'bg-green-400' : 'bg-bege-escuro/30'}`} />
                       <span className="font-body text-xs text-bege-escuro/50 capitalize">
                         {camarote.evento?.nome ?? 'Evento'} · {camarote.evento?.data_evento
                           ? format(new Date(camarote.evento.data_evento), "dd/MM", { locale: ptBR })
                           : '—'}
                       </span>
                     </div>
-                    <h3 className="font-display text-xl text-bege">{camarote.nome}</h3>
-                    {camarote.descricao && (
-                      <p className="font-body text-xs text-bege-escuro/50 mt-1">{camarote.descricao}</p>
-                    )}
+                    <h3 className="font-display text-xl text-bege">{camarote.identificador}</h3>
 
                     {/* STATS */}
                     <div className="flex gap-5 mt-3 mb-3">
