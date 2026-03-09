@@ -11,7 +11,7 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       _supabase = createClient(url, key)
     }
-    const value = (_supabase as Record<string | symbol, unknown>)[prop]
+    const value = (_supabase as unknown as Record<string | symbol, unknown>)[prop]
     return typeof value === 'function' ? value.bind(_supabase) : value
   },
 })
@@ -28,7 +28,7 @@ export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
         },
       })
     }
-    const value = (_supabaseAdmin as Record<string | symbol, unknown>)[prop]
+    const value = (_supabaseAdmin as unknown as Record<string | symbol, unknown>)[prop]
     return typeof value === 'function' ? value.bind(_supabaseAdmin) : value
   },
 })
