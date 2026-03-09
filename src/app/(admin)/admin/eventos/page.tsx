@@ -317,9 +317,29 @@ const EventoModal: React.FC<{
   onClose: () => void
   onSalvo: () => void
 }> = ({ evento, onClose, onSalvo }) => {
+  // Converte ISO (yyyy-mm-dd) → display (dd/mm/yyyy)
+  const isoParaDisplay = (iso: string) => {
+    if (!iso) return ''
+    const [y, m, d] = iso.split('-')
+    return `${d}/${m}/${y}`
+  }
+  // Converte display (dd/mm/yyyy) → ISO (yyyy-mm-dd)
+  const displayParaIso = (display: string) => {
+    const limpo = display.replace(/\D/g, '')
+    if (limpo.length !== 8) return display
+    return `${limpo.slice(4)}-${limpo.slice(2, 4)}-${limpo.slice(0, 2)}`
+  }
+  // Máscara automática dd/mm/yyyy
+  const mascaraData = (valor: string) => {
+    const nums = valor.replace(/\D/g, '').slice(0, 8)
+    if (nums.length <= 2) return nums
+    if (nums.length <= 4) return `${nums.slice(0, 2)}/${nums.slice(2)}`
+    return `${nums.slice(0, 2)}/${nums.slice(2, 4)}/${nums.slice(4)}`
+  }
+
   const [form, setForm] = useState({
     nome: evento?.nome ?? '',
-    data_evento: evento?.data_evento?.slice(0, 10) ?? '',
+    data_evento: isoParaDisplay(evento?.data_evento?.slice(0, 10) ?? ''),
     hora_abertura: evento?.hora_abertura?.slice(0, 5) ?? '22:00',
     descricao: evento?.descricao ?? '',
     ativo: evento?.ativo ?? false,
@@ -338,7 +358,7 @@ const EventoModal: React.FC<{
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, data_evento: displayParaIso(form.data_evento) }),
       })
       const data = await res.json()
       if (data.erro) { toast.error(data.erro); return }
@@ -369,7 +389,14 @@ const EventoModal: React.FC<{
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="admin-label">Data *</label>
-              <input type="date" className="admin-input" value={form.data_evento} onChange={e => f('data_evento', e.target.value)} />
+              <input
+                type="text"
+                className="admin-input"
+                placeholder="dd/mm/aaaa"
+                value={form.data_evento}
+                onChange={e => f('data_evento', mascaraData(e.target.value))}
+                maxLength={10}
+              />
             </div>
             <div>
               <label className="admin-label">Abertura</label>

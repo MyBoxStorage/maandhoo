@@ -35,6 +35,13 @@ function ReservasContent() {
   const [loading, setLoading] = useState(false)
   const [enviado, setEnviado] = useState(false)
 
+  const mascaraData = (valor: string) => {
+    const nums = valor.replace(/\D/g, '').slice(0, 8)
+    if (nums.length <= 2) return nums
+    if (nums.length <= 4) return `${nums.slice(0, 2)}/${nums.slice(2)}`
+    return `${nums.slice(0, 2)}/${nums.slice(2, 4)}/${nums.slice(4)}`
+  }
+
   const [form, setForm] = useState({
     nome: '', email: '', whatsapp: '', numeroPessoas: '',
     areaDesejada: '', dataAniversario: '', observacoes: '',
@@ -131,8 +138,14 @@ function ReservasContent() {
             {tipo === 'aniversario' && (
               <div>
                 <label className="admin-label">Data do Aniversário</label>
-                <input type="date" className="admin-input"
-                  value={form.dataAniversario} onChange={e => setForm(p => ({ ...p, dataAniversario: e.target.value }))} />
+                <input
+                  type="text"
+                  className="admin-input"
+                  placeholder="dd/mm/aaaa"
+                  value={form.dataAniversario}
+                  onChange={e => setForm(p => ({ ...p, dataAniversario: mascaraData(e.target.value) }))}
+                  maxLength={10}
+                />
               </div>
             )}
 
