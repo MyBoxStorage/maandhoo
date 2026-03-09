@@ -1,5 +1,6 @@
 # SQL COMPLEMENTAR — Tabelas Cardápio e Galeria
-## Maandhoo Club — Aplicar no Supabase SQL Editor
+## Maandhoo Club — Projeto: hrprcdbkgujvcrppmtcv
+## Aplicar no Supabase SQL Editor
 
 ---
 
