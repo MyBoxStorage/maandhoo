@@ -19,9 +19,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (existentes.length > 0) {
     ops.push(
       supabaseAdmin.from('lotes').upsert(
-        existentes.map(l => ({
+        existentes.map((l, i) => ({
           id: l.id,
           evento_id: eventoId,
+          numero: l.numero ?? (i + 1),
           nome: l.nome,
           preco_masc: l.preco_masc,
           preco_fem: l.preco_fem,
@@ -36,10 +37,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   // Inserir novos
   if (novos.length > 0) {
+    // Buscar o maior numero existente para continuar a sequência
+    const { data: lotesExistentes } = await supabaseAdmin
+      .from('lotes')
+      .select('numero')
+      .eq('evento_id', eventoId)
+      .order('numero', { ascending: false })
+      .limit(1)
+
+    const maxNumero = lotesExistentes?.[0]?.numero ?? 0
+
     ops.push(
       supabaseAdmin.from('lotes').insert(
-        novos.map(l => ({
+        novos.map((l, i) => ({
           evento_id: eventoId,
+          numero: l.numero ?? (maxNumero + i + 1),
           nome: l.nome,
           preco_masc: l.preco_masc,
           preco_fem: l.preco_fem,
