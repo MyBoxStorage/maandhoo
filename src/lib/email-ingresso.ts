@@ -4,7 +4,7 @@ import { mascaraCPF, labelTipoIngresso } from './ingresso-utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const getResend = () => new Resend(process.env.RESEND_API_KEY)
 
 interface DadosEmail {
   para: string
@@ -235,7 +235,7 @@ export async function enviarEmailIngresso(dados: DadosEmail): Promise<{ sucesso:
     const html = await gerarHTMLIngresso(dados)
     const dataFormatada = format(new Date(dados.eventoData), "dd/MM", { locale: ptBR })
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: process.env.EMAIL_FROM ?? 'Maandhoo Club <onboarding@resend.dev>',
       to: dados.para,
       subject: `🎟 Seu ingresso — ${dados.eventoNome} · ${dataFormatada}`,
@@ -325,7 +325,7 @@ export async function enviarEmailCamarote(params: {
 </body>
 </html>`
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: process.env.EMAIL_FROM ?? 'Maandhoo Club <onboarding@resend.dev>',
       to: params.para,
       subject: `🎪 Ingressos do Camarote — ${params.eventoNome}`,
