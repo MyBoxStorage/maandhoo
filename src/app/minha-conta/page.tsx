@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 import { QuizVibeCheck } from '@/components/ui/QuizVibeCheck'
 import { PERFIS_QUIZ, type PerfilQuiz } from '@/lib/quiz-perfis'
