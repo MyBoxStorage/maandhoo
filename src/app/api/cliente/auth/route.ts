@@ -9,7 +9,7 @@ import {
 // POST /api/cliente/auth — login ou cadastro
 export async function POST(req: NextRequest) {
   try {
-    const { acao, email, senha, nome, whatsapp, cpf, link_token } = await req.json()
+    const { acao, email, senha, nome, whatsapp, cpf, data_nascimento, estado, cidade, termos_aceitos, lgpd_aceito, lgpd_versao, link_token } = await req.json()
 
     if (!email || !senha) {
       return NextResponse.json({ erro: 'Email e senha são obrigatórios' }, { status: 400 })
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     // ── CADASTRO ────────────────────────────────────────────────
     if (acao === 'cadastro') {
       if (!nome) return NextResponse.json({ erro: 'Nome é obrigatório' }, { status: 400 })
+      if (!termos_aceitos) return NextResponse.json({ erro: 'Você precisa aceitar os Termos de Uso' }, { status: 400 })
       if (!cpf) return NextResponse.json({ erro: 'CPF é obrigatório' }, { status: 400 })
 
       // Validação básica de CPF (11 dígitos numéricos)
@@ -41,9 +42,23 @@ export async function POST(req: NextRequest) {
       }
 
       const senha_hash = await bcrypt.hash(senha, 12)
+      const agora = new Date().toISOString()
+      const ip = req.headers.get('x-forwarded-for') || 'unknown'
       const { data: cliente, error } = await supabaseAdmin
         .from('clientes')
-        .insert({ nome: nome.trim(), email: email.toLowerCase(), whatsapp, cpf: cpfLimpo, senha_hash })
+        .insert({
+          nome: nome.trim(), email: email.toLowerCase(), whatsapp, cpf: cpfLimpo, senha_hash,
+          data_nascimento: data_nascimento || null,
+          estado: estado?.trim() || null,
+          cidade: cidade?.trim() || null,
+          termos_aceitos: true,
+          termos_aceitos_em: agora,
+          termos_versao: '1.0',
+          lgpd_aceito: !!lgpd_aceito,
+          lgpd_aceito_em: lgpd_aceito ? agora : null,
+          lgpd_versao_termo: lgpd_aceito ? (lgpd_versao || '1.0') : null,
+          lgpd_ip: lgpd_aceito ? ip : null,
+        })
         .select('id, nome, email').single()
 
       if (error || !cliente) {

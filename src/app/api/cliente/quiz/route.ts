@@ -12,27 +12,41 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies()
     const sessao = cookieStore.get('cliente_sessao')?.value
     if (!sessao) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
-
     let clienteId: string
     try { clienteId = JSON.parse(sessao).id } catch { return NextResponse.json({ erro: 'Sessão inválida' }, { status: 401 }) }
 
-    const { respostas, perfil } = await req.json()
-    if (!respostas || !perfil) return NextResponse.json({ erro: 'Dados inválidos' }, { status: 400 })
+    const { respostas, perfil_id, perfil_nome, lgpd_aceito, lgpd_versao } = await req.json()
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const ua = req.headers.get('user-agent') || ''
+    const agora = new Date().toISOString()
 
-    // Salva/atualiza preferências do cliente
-    const { error } = await supabase
-      .from('clientes')
-      .update({
-        quiz_respostas: respostas,
-        quiz_perfil: perfil,
-        quiz_feito_em: new Date().toISOString(),
-      })
-      .eq('id', clienteId)
-
-    if (error) {
-      // Coluna pode não existir ainda — retorna ok silencioso
-      console.warn('Quiz save warning:', error.message)
+    const updates: Record<string, unknown> = {
+      quiz_feito: true,
+      quiz_feito_em: agora,
+      quiz_respostas: respostas,
+      quiz_perfil_id: perfil_id,
+      quiz_perfil_nome: perfil_nome,
     }
+
+    // Salva consentimento LGPD se foi dado
+    if (lgpd_aceito) {
+      updates.lgpd_aceito = true
+      updates.lgpd_aceito_em = agora
+      updates.lgpd_versao_termo = lgpd_versao || '1.0'
+      updates.lgpd_ip = ip
+
+      // Log imutável de consentimento (obrigatório LGPD)
+      await supabase.from('consentimentos_log').insert({
+        cliente_id: clienteId,
+        tipo: 'lgpd',
+        acao: 'aceite',
+        versao_termo: lgpd_versao || '1.0',
+        ip,
+        user_agent: ua,
+      })
+    }
+
+    await supabase.from('clientes').update(updates).eq('id', clienteId)
 
     return NextResponse.json({ ok: true })
   } catch (err) {
