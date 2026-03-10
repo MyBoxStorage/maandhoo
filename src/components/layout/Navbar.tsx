@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Instagram, Phone } from 'lucide-react'
+import { Menu, X, Instagram, Phone, User } from 'lucide-react'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 
 const navLinks = [
@@ -89,6 +89,14 @@ export const Navbar: React.FC = () => {
                 <Phone size={18} />
               </a>
               <Link
+                href="/minha-conta"
+                className="text-bege-escuro hover:text-dourado transition-colors duration-200 flex items-center gap-1.5"
+                title="Minha Conta"
+              >
+                <User size={16} />
+                <span className="font-body text-sm">Minha Conta</span>
+              </Link>
+              <Link
                 href="/#eventos"
                 className={`text-xs px-5 py-2.5 font-accent tracking-widest uppercase transition-all duration-300 ${
                   scrolled
@@ -131,7 +139,14 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
-            <div className="mt-6">
+            <div className="mt-6 space-y-3">
+              <Link
+                href="/minha-conta"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 w-full border border-dourado/30 text-dourado hover:bg-dourado/10 transition-all text-xs font-accent tracking-widest uppercase py-3 px-4 rounded-sm"
+              >
+                <User size={14} /> Minha Conta
+              </Link>
               <Link
                 href="/#eventos"
                 onClick={() => setMenuOpen(false)}

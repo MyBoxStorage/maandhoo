@@ -52,6 +52,7 @@ export const Footer: React.FC = () => {
                 { href: '/cardapio', label: 'Cardápio' },
                 { href: '/galeria', label: 'Galeria' },
                 { href: '/faq', label: 'Perguntas Frequentes' },
+                { href: '/minha-conta', label: 'Minha Conta' },
               ].map(link => (
                 <li key={link.href}>
                   <Link

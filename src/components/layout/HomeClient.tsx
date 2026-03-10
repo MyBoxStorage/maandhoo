@@ -9,6 +9,7 @@ import { CardapioPreview } from '@/components/sections/CardapioPreview'
 import { GaleriaPreview } from '@/components/sections/GaleriaPreview'
 import { ReservasSection } from '@/components/sections/ReservasSection'
 import { LocalizacaoSection } from '@/components/sections/LocalizacaoSection'
+import { AreaClienteSection } from '@/components/sections/AreaClienteSection'
 import { PopupLista } from '@/components/ui/PopupLista'
 
 const Divisor = () => (
@@ -76,6 +77,8 @@ export default function HomeClient() {
         <CardapioPreview />
         <Divisor />
         <GaleriaPreview />
+        <Divisor />
+        <AreaClienteSection />
         <Divisor />
         <LocalizacaoSection />
       </div>
