@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, RefreshCw, Loader2, X, Image as ImageIcon, ArrowUp, ArrowDown } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Plus, RefreshCw, Loader2, X, Image as ImageIcon, ArrowUp, ArrowDown, Star, Upload } from 'lucide-react'
 import Image from 'next/image'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -11,6 +11,8 @@ type FotoGaleria = {
   url: string
   alt: string | null
   ordem: number
+  destaque: boolean
+  posicao_destaque: number | null
   created_at: string
   evento?: { nome: string } | null
 }
@@ -24,6 +26,8 @@ export default function AdminGaleriaPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [editando, setEditando] = useState<FotoGaleria | null>(null)
   const [eventoFiltro, setEventoFiltro] = useState('todos')
+  const [enviandoLote, setEnviandoLote] = useState(false)
+  const loteInputRef = useRef<HTMLInputElement | null>(null)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -75,8 +79,96 @@ export default function AdminGaleriaPage() {
     }
   }
 
+  const toggleDestaque = async (foto: FotoGaleria) => {
+    const destaquesAtivos = fotos
+      .filter((f) => f.destaque)
+      .map((f) => f.posicao_destaque)
+      .filter((p): p is number => typeof p === 'number')
+
+    if (!foto.destaque && destaquesAtivos.length >= 8) {
+      toast.error('Limite de 8 destaques atingido. Remova um antes de adicionar.')
+      return
+    }
+
+    const proximaPosicao = (() => {
+      for (let i = 1; i <= 8; i += 1) {
+        if (!destaquesAtivos.includes(i)) return i
+      }
+      return null
+    })()
+
+    const payload = foto.destaque
+      ? { destaque: false, posicao_destaque: null }
+      : { destaque: true, posicao_destaque: proximaPosicao }
+
+    const res = await fetch(`/api/admin/galeria/${foto.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      toast.error('Erro ao atualizar destaque')
+      return
+    }
+
+    toast.success(foto.destaque ? 'Destaque removido' : `Foto destacada na posição ${proximaPosicao}`)
+    carregar()
+  }
+
+  const abrirUploadLote = () => loteInputRef.current?.click()
+
+  const handleUploadLote: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length === 0) return
+    if (files.length > 20) {
+      toast.error('Selecione no máximo 20 fotos por lote.')
+      return
+    }
+
+    setEnviandoLote(true)
+    let enviados = 0
+
+    try {
+      for (const file of files) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result ?? ''))
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+
+        const res = await fetch('/api/admin/galeria', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: base64,
+            alt: file.name,
+            evento_id: eventoFiltro !== 'todos' && eventoFiltro !== 'sem_evento' && eventoFiltro !== 'destaques'
+              ? eventoFiltro
+              : null,
+            ordem: fotos.length + enviados,
+          }),
+        })
+
+        if (res.ok) enviados += 1
+      }
+
+      toast.success(`${enviados} foto(s) enviada(s) com sucesso!`)
+      carregar()
+    } catch {
+      toast.error('Erro ao enviar lote de fotos')
+    } finally {
+      setEnviandoLote(false)
+    }
+  }
+
   const filtradas = fotos.filter(f =>
-    eventoFiltro === 'todos' || f.evento_id === eventoFiltro || (eventoFiltro === 'sem_evento' && !f.evento_id)
+    eventoFiltro === 'todos'
+    || (eventoFiltro === 'destaques' && f.destaque)
+    || f.evento_id === eventoFiltro
+    || (eventoFiltro === 'sem_evento' && !f.evento_id)
   )
 
   return (
@@ -94,11 +186,27 @@ export default function AdminGaleriaPage() {
           <button onClick={carregar} className="btn-outline p-2.5" title="Recarregar">
             <RefreshCw size={14} className={carregando ? 'animate-spin' : ''} />
           </button>
+          <button
+            onClick={abrirUploadLote}
+            disabled={enviandoLote}
+            className="btn-outline flex items-center gap-2 text-xs"
+          >
+            {enviandoLote ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            Upload em lote
+          </button>
           <button onClick={() => { setEditando(null); setModalAberto(true) }} className="btn-primary flex items-center gap-2 text-xs">
             <Plus size={14} /> Adicionar Foto
           </button>
         </div>
       </div>
+      <input
+        ref={loteInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleUploadLote}
+      />
 
       {/* FILTRO POR EVENTO */}
       <div className="flex gap-2 flex-wrap">
@@ -118,6 +226,11 @@ export default function AdminGaleriaPage() {
           className={`px-3 py-1.5 rounded-sm border text-xs font-accent tracking-wider uppercase transition-all
             ${eventoFiltro === 'sem_evento' ? 'border-dourado bg-dourado/10 text-dourado' : 'border-white/10 text-bege-escuro/60 hover:border-dourado/30'}`}>
           Sem evento
+        </button>
+        <button onClick={() => setEventoFiltro('destaques')}
+          className={`px-3 py-1.5 rounded-sm border text-xs font-accent tracking-wider uppercase transition-all
+            ${eventoFiltro === 'destaques' ? 'border-dourado bg-dourado/10 text-dourado' : 'border-white/10 text-bege-escuro/60 hover:border-dourado/30'}`}>
+          Destaques
         </button>
       </div>
 
@@ -146,6 +259,18 @@ export default function AdminGaleriaPage() {
                   className="object-cover transition-transform group-hover:scale-105"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 />
+                <button
+                  onClick={() => toggleDestaque(foto)}
+                  className={`absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] border transition-all ${
+                    foto.destaque
+                      ? 'bg-dourado/90 text-preto-profundo border-dourado'
+                      : 'bg-black/55 text-bege border-white/20 hover:border-dourado/60'
+                  }`}
+                  title={foto.destaque ? 'Remover dos destaques' : 'Adicionar aos destaques'}
+                >
+                  <Star size={12} className={foto.destaque ? 'fill-current' : ''} />
+                  {foto.posicao_destaque ?? '-'}
+                </button>
                 {/* Overlay ações */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button

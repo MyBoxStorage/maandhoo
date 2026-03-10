@@ -1,17 +1,77 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Camera } from 'lucide-react'
 
-const fotos = [
-  { src: '/images/galeria/Espaço_1.webp', alt: 'Maandhoo Club — Show ao vivo com lasers e fumaça' },
-  { src: '/images/galeria/Espaço_2.jpg', alt: 'Maandhoo Club — Ambiente interno com luzes e decoração' },
-  { src: '/images/galeria/Espaço_3.webp', alt: 'Maandhoo Club — Artista no palco com luzes coloridas' },
+type FotoGaleriaPublica = {
+  id: string
+  url: string
+  alt: string | null
+  posicao_destaque: number | null
+}
+
+const DESKTOP_LAYOUT_CLASSES = [
+  'col-span-7 row-span-2',
+  'col-span-2 row-span-1',
+  'col-span-3 row-span-1',
+  'col-span-3 row-span-1',
+  'col-span-2 row-span-1',
+  'col-span-3 row-span-1',
+  'col-span-6 row-span-1',
+  'col-span-3 row-span-1',
 ]
 
+const MOBILE_HEIGHTS = ['h-72', 'h-56', 'h-56', 'h-64', 'h-56', 'h-64', 'h-72', 'h-56']
+
+function FotoTile({ foto, className }: { foto: FotoGaleriaPublica | null; className?: string }) {
+  if (!foto) {
+    return (
+      <div className={`relative rounded-sm border border-white/10 bg-black/35 flex items-center justify-center ${className ?? ''}`}>
+        <div className="flex flex-col items-center gap-2 text-bege-escuro/35">
+          <Camera size={18} />
+          <span className="font-body text-xs">Em breve</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`relative rounded-sm overflow-hidden group ${className ?? ''}`}>
+      <Image
+        src={foto.url}
+        alt={foto.alt ?? 'Foto da Maandhoo Club'}
+        fill
+        className="object-cover transition-transform duration-700 group-hover:scale-105"
+        sizes="(max-width: 768px) 100vw, 33vw"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    </div>
+  )
+}
+
 export const GaleriaPreview: React.FC = () => {
+  const [fotos, setFotos] = useState<FotoGaleriaPublica[]>([])
+
+  useEffect(() => {
+    const carregar = async () => {
+      try {
+        const res = await fetch('/api/galeria?destaques=true')
+        const data = await res.json()
+        setFotos(Array.isArray(data.fotos) ? data.fotos.slice(0, 8) : [])
+      } catch {
+        setFotos([])
+      }
+    }
+    carregar()
+  }, [])
+
+  const slots = useMemo(
+    () => Array.from({ length: 8 }, (_, i) => fotos[i] ?? null),
+    [fotos],
+  )
+
   return (
     <section id="galeria" className="py-16 sm:py-24 px-4 bg-cinza-escuro/20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -22,45 +82,18 @@ export const GaleriaPreview: React.FC = () => {
           <div className="divider-gold w-24 mx-auto" />
         </div>
 
-        {/* GRID ASSIMÉTRICO — mobile: coluna única; desktop: grid 12 col */}
-        <div className="flex flex-col md:grid md:grid-cols-12 md:grid-rows-2 gap-3 md:h-[520px] mb-8">
-          {/* Foto grande esquerda */}
-          <div className="md:col-span-7 md:row-span-2 relative rounded-sm overflow-hidden group h-64 md:h-auto">
-            <Image
-              src={fotos[0].src}
-              alt={fotos[0].alt}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 58vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </div>
-          {/* Fotos direita */}
-          <div className="md:col-span-5 md:row-span-1 relative rounded-sm overflow-hidden group h-44 md:h-auto">
-            <Image
-              src={fotos[1].src}
-              alt={fotos[1].alt}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 42vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </div>
-          <div className="md:col-span-5 md:row-span-1 relative rounded-sm overflow-hidden group h-44 md:h-auto">
-            <Image
-              src={fotos[2].src}
-              alt={fotos[2].alt}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 42vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            {/* badge */}
-            <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-preto-profundo/80 px-3 py-1.5 rounded-sm border border-gold/30">
-              <Camera size={12} className="text-dourado" />
-              <span className="font-body text-xs text-bege-escuro">Ver mais fotos</span>
-            </div>
-          </div>
+        {/* Mobile: coluna única com alturas variadas */}
+        <div className="md:hidden space-y-3 mb-8">
+          {slots.map((foto, i) => (
+            <FotoTile key={`m-${i}`} foto={foto} className={MOBILE_HEIGHTS[i]} />
+          ))}
+        </div>
+
+        {/* Desktop: grid 12 colunas, 3 linhas, h-[600px] */}
+        <div className="hidden md:grid md:grid-cols-12 md:grid-rows-3 gap-3 h-[600px] mb-8">
+          {slots.map((foto, i) => (
+            <FotoTile key={`d-${i}`} foto={foto} className={DESKTOP_LAYOUT_CLASSES[i]} />
+          ))}
         </div>
 
         <div className="text-center">

@@ -1,98 +1,81 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Wine, Beer, Zap, Coffee, Droplets, Package, Sparkles } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Wine, Beer, Zap, Coffee, Droplets, Package, Sparkles, Loader2 } from 'lucide-react'
 
-const categorias = [
-  { id: 'combos', label: 'Combos', icon: <Package size={14} /> },
-  { id: 'espumantes', label: 'Espumantes', icon: <Sparkles size={14} /> },
-  { id: 'drinks', label: 'Drinks', icon: <Coffee size={14} /> },
-  { id: 'longneck', label: 'Long Neck', icon: <Beer size={14} /> },
-  { id: 'doses', label: 'Doses', icon: <Wine size={14} /> },
-  { id: 'soft', label: 'Soft Menu', icon: <Droplets size={14} /> },
-  { id: 'outros', label: 'Bomboniere', icon: <Zap size={14} /> },
-  { id: 'todos', label: 'Todos', icon: <Sparkles size={14} /> },
-]
+type ItemCardapioDB = {
+  id: string
+  nome: string
+  descricao: string | null
+  preco: number | string
+  categoria: string
+  disponivel: boolean
+  destaque: boolean
+}
 
-const cardapio = [
-  // DRINKS — GIN (Orloff / Bombay)
-  { id: 'dr1', cat: 'drinks', nome: 'GT Clássico', desc: 'Gin & Tônica — Orloff R$30 · Bombay R$40', preco: 30, precoAlt: 40, altLabel: 'Bombay', destaque: false },
-  { id: 'dr2', cat: 'drinks', nome: 'Gin Citrus', desc: 'Gin e Schweppes Citrus — Orloff R$30 · Bombay R$40', preco: 30, precoAlt: 40, altLabel: 'Bombay', destaque: false },
-  { id: 'dr3', cat: 'drinks', nome: 'Gin Tropical', desc: 'Gin & Red Bull Tropical — Orloff R$35 · Bombay R$45', preco: 35, precoAlt: 45, altLabel: 'Bombay', destaque: true },
-  { id: 'dr4', cat: 'drinks', nome: 'Gin Melancita', desc: 'Gin & Red Bull Melancia — Orloff R$35 · Bombay R$45', preco: 35, precoAlt: 45, altLabel: 'Bombay', destaque: false },
-
-  // LONG NECK
-  { id: 'ln1', cat: 'longneck', nome: 'Cerveja Budweiser', desc: 'Long Neck', preco: 25, destaque: false },
-  { id: 'ln2', cat: 'longneck', nome: 'Cerveja Corona', desc: 'Long Neck', preco: 25, destaque: false },
-
-  // DOSES
-  { id: 'do1', cat: 'doses', nome: 'Bananinha', desc: 'Dose', preco: 25, destaque: false },
-  { id: 'do2', cat: 'doses', nome: 'Jägermeister', desc: 'Dose', preco: 35, destaque: false },
-  { id: 'do3', cat: 'doses', nome: 'Ballena', desc: 'Dose', preco: 40, destaque: false },
-  { id: 'do4', cat: 'doses', nome: 'Licor 43', desc: 'Dose', preco: 40, destaque: false },
-  { id: 'do5', cat: 'doses', nome: 'Licor 43 Chocolate', desc: 'Dose', preco: 50, destaque: true },
-  { id: 'do6', cat: 'doses', nome: 'Tequila', desc: 'Dose', preco: 30, destaque: false },
-  { id: 'do7', cat: 'doses', nome: 'Gin Bombay', desc: 'Dose', preco: 30, destaque: false },
-  { id: 'do8', cat: 'doses', nome: 'Vodka Absolut', desc: 'Dose', preco: 30, destaque: false },
-  { id: 'do9', cat: 'doses', nome: 'Whisky Red Label', desc: 'Dose', preco: 30, destaque: false },
-  { id: 'do10', cat: 'doses', nome: 'Whisky Black Label', desc: 'Dose', preco: 40, destaque: false },
-  { id: 'do11', cat: 'doses', nome: "Jack Daniel's", desc: 'Dose', preco: 40, destaque: false },
-
-  // SOFT MENU
-  { id: 's1', cat: 'soft', nome: 'Água', desc: 'Mineral', preco: 10, destaque: false },
-  { id: 's2', cat: 'soft', nome: 'Suco Del Valle Uva', desc: '', preco: 12, destaque: false },
-  { id: 's3', cat: 'soft', nome: 'Água Tônica', desc: '', preco: 12, destaque: false },
-  { id: 's4', cat: 'soft', nome: 'Refrigerante', desc: 'Coca-Cola · Guaraná · Citrus', preco: 12, destaque: false },
-  { id: 's5', cat: 'soft', nome: 'Água de Coco', desc: '', preco: 20, destaque: false },
-  { id: 's6', cat: 'soft', nome: 'Red Bull', desc: 'Lata', preco: 28, destaque: true },
-
-  // OUTROS (avulsos)
-  { id: 'ot1', cat: 'outros', nome: 'Halls', desc: '', preco: 6, destaque: false },
-  { id: 'ot2', cat: 'outros', nome: 'Gelo (Água de Coco)', desc: '', preco: 10, destaque: false },
-  { id: 'ot3', cat: 'outros', nome: 'Vinho Rosé Piscine', desc: '750ml', preco: 279, destaque: false },
-
-  // ESPUMANTES & CHAMPAGNE
-  { id: 'esp1', cat: 'espumantes', nome: 'Terra Nova Brut Rosé', desc: '', preco: 290, destaque: false },
-  { id: 'esp2', cat: 'espumantes', nome: 'Terra Nova Moscatel', desc: '', preco: 290, destaque: false },
-  { id: 'esp3', cat: 'espumantes', nome: 'Chandon Brut Rosé', desc: '', preco: 390, destaque: false },
-  { id: 'esp4', cat: 'espumantes', nome: 'Chandon Riche Demi Sec', desc: '', preco: 390, destaque: false },
-  { id: 'esp5', cat: 'espumantes', nome: 'Chandon Reserve Brut', desc: '', preco: 390, destaque: false },
-  { id: 'esp6', cat: 'espumantes', nome: 'Chandon Passion Rosé Demi-Sec', desc: '', preco: 390, destaque: false },
-  { id: 'esp7', cat: 'espumantes', nome: 'Champagne Veuve Clicquot Brut', desc: '', preco: 1450, destaque: true },
-  { id: 'esp8', cat: 'espumantes', nome: 'Champagne Veuve Clicquot Rosé', desc: '', preco: 1690, destaque: false },
-  { id: 'esp9', cat: 'espumantes', nome: 'Champagne Dom Pérignon Brut', desc: '', preco: 6500, destaque: false },
-
-  // COMBOS — agrupados por tier
-  { id: 'cb1', cat: 'combos', nome: 'Vodka Skyy 750ml', desc: 'Combo Entrada · +5 Softs R$319 · +5 Red Bulls R$399', preco: 259, destaque: false },
-  { id: 'cb2', cat: 'combos', nome: 'Whisky Ballantines 750ml', desc: 'Combo Entrada · +5 Softs R$319 · +5 Red Bulls R$399', preco: 259, destaque: false },
-  { id: 'cb3', cat: 'combos', nome: 'Vodka Absolut 750ml', desc: 'Mais Pedido · +5 Softs R$419 · +5 Red Bulls R$499', preco: 359, destaque: true },
-  { id: 'cb4', cat: 'combos', nome: 'Whisky Red Label 750ml', desc: 'Mais Pedido · +5 Softs R$419 · +5 Red Bulls R$499', preco: 359, destaque: false },
-  { id: 'cb5', cat: 'combos', nome: 'Gin Beefeater 750ml', desc: 'Mais Pedido · +5 Softs R$479 · +5 Red Bulls R$559', preco: 419, destaque: true },
-  { id: 'cb6', cat: 'combos', nome: 'Whisky Black Label 750ml', desc: 'Deluxe · +5 Softs R$619 · +5 Red Bulls R$699', preco: 559, destaque: false },
-  { id: 'cb7', cat: 'combos', nome: 'Vodka Grey Goose 750ml', desc: 'Deluxe · +5 Softs R$619 · +5 Red Bulls R$699', preco: 559, destaque: false },
-  { id: 'cb8', cat: 'combos', nome: "Whisky Jack Daniel's 1L", desc: 'Deluxe · +5 Softs R$619 · +5 Red Bulls R$699', preco: 559, destaque: false },
-  { id: 'cb9', cat: 'combos', nome: "Whisky Buchanan's 750ml", desc: 'Deluxe · +5 Softs R$719 · +5 Red Bulls R$799', preco: 659, destaque: false },
-  { id: 'cb10', cat: 'combos', nome: 'Whisky Gold Label 750ml', desc: 'Deluxe · +5 Softs R$1.050 · +5 Red Bulls R$1.130', preco: 990, destaque: false },
-  { id: 'cb11', cat: 'combos', nome: 'Whisky Blue Label 750ml', desc: 'Deluxe · +5 Softs R$3.420 · +5 Red Bulls R$3.500', preco: 3360, destaque: false },
-  { id: 'cb12', cat: 'combos', nome: 'Whisky Royal Salute 700ml', desc: 'Deluxe · +5 Softs R$2.910 · +5 Red Bulls R$2.990', preco: 2850, destaque: false },
-  { id: 'cb13', cat: 'combos', nome: 'Vodka Grey Goose 1,5L', desc: 'Extra · +5 Softs R$1.050 · +5 Red Bulls R$1.130', preco: 990, destaque: false },
-  { id: 'cb14', cat: 'combos', nome: 'Gin Bombay 1,75L', desc: 'Extra · +5 Softs R$1.050 · +5 Red Bulls R$1.130', preco: 990, destaque: false },
-  { id: 'cb15', cat: 'combos', nome: 'Vodka Absolut Elyx 1,75L', desc: 'Extra · +5 Softs R$1.050 · +5 Red Bulls R$1.130', preco: 990, destaque: false },
-  { id: 'cb16', cat: 'combos', nome: 'Vodka Absolut Elyx 4,5L', desc: 'Extra · +5 Softs R$2.910 · +5 Red Bulls R$2.990', preco: 2850, destaque: true },
-
-  // COMBOS OUTROS (garrafas avulsas pelo combo)
-  { id: 'cbot1', cat: 'combos', nome: 'Bananinha 750ml', desc: 'Avulso', preco: 299, destaque: false },
-  { id: 'cbot2', cat: 'combos', nome: 'Tequila José Cuervo 750ml', desc: 'Avulso', preco: 399, destaque: false },
-  { id: 'cbot3', cat: 'combos', nome: 'Jägermeister 700ml', desc: 'Avulso', preco: 399, destaque: false },
-  { id: 'cbot4', cat: 'combos', nome: 'Ballena 750ml', desc: 'Avulso', preco: 499, destaque: false },
-  { id: 'cbot5', cat: 'combos', nome: 'Licor 43 700ml', desc: 'Avulso', preco: 499, destaque: false },
-  { id: 'cbot6', cat: 'combos', nome: 'Licor 43 Chocolate 700ml', desc: 'Avulso', preco: 599, destaque: false },
-]
+const CATEGORIAS_ORDEM = ['combos', 'espumantes', 'drinks', 'longneck', 'doses', 'soft', 'outros']
+const CATEGORIAS_LABEL: Record<string, string> = {
+  combos: 'Combos',
+  espumantes: 'Espumantes',
+  drinks: 'Drinks',
+  longneck: 'Long Neck',
+  doses: 'Doses',
+  soft: 'Soft Menu',
+  outros: 'Bomboniere',
+}
+const CATEGORIAS_ICONE: Record<string, React.ReactNode> = {
+  combos: <Package size={14} />,
+  espumantes: <Sparkles size={14} />,
+  drinks: <Coffee size={14} />,
+  longneck: <Beer size={14} />,
+  doses: <Wine size={14} />,
+  soft: <Droplets size={14} />,
+  outros: <Zap size={14} />,
+}
 
 export default function CardapioPage() {
-  const [cat, setCat] = useState('combos')
+  const [cat, setCat] = useState('todos')
+  const [itensBanco, setItensBanco] = useState<ItemCardapioDB[]>([])
+  const [carregando, setCarregando] = useState(true)
 
-  const itens = cat === 'todos' ? cardapio : cardapio.filter(i => i.cat === cat)
+  useEffect(() => {
+    const carregar = async () => {
+      setCarregando(true)
+      try {
+        const res = await fetch('/api/admin/cardapio')
+        const data = await res.json()
+        setItensBanco(Array.isArray(data.itens) ? data.itens : [])
+      } finally {
+        setCarregando(false)
+      }
+    }
+    carregar()
+  }, [])
+
+  const itensDisponiveis = useMemo(
+    () => itensBanco.filter((item) => item.disponivel === true),
+    [itensBanco],
+  )
+
+  const categorias = useMemo(() => {
+    const categoriasEncontradas = Array.from(new Set(itensDisponiveis.map((item) => item.categoria)))
+    const ordenadas = [
+      ...CATEGORIAS_ORDEM.filter((c) => categoriasEncontradas.includes(c)),
+      ...categoriasEncontradas.filter((c) => !CATEGORIAS_ORDEM.includes(c)).sort(),
+    ]
+    return [
+      ...ordenadas.map((id) => ({
+        id,
+        label: CATEGORIAS_LABEL[id] ?? id,
+        icon: CATEGORIAS_ICONE[id] ?? <Sparkles size={14} />,
+      })),
+      { id: 'todos', label: 'Todos', icon: <Sparkles size={14} /> },
+    ]
+  }, [itensDisponiveis])
+
+  const itens = cat === 'todos'
+    ? itensDisponiveis
+    : itensDisponiveis.filter((item) => item.categoria === cat)
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-4">
@@ -121,8 +104,14 @@ export default function CardapioPage() {
           ))}
         </div>
 
+        {carregando && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={26} className="animate-spin text-dourado/50" />
+          </div>
+        )}
+
         {/* COMBOS INFO BANNER */}
-        {(cat === 'combos' || cat === 'todos') && (
+        {!carregando && (cat === 'combos' || cat === 'todos') && (
           <div className="bg-dourado/8 border border-dourado/25 rounded-sm p-4 mb-6 text-center">
             <p className="font-accent text-xs text-dourado tracking-wider uppercase mb-1">Softs incluídos nos combos</p>
             <p className="font-body text-xs text-bege-escuro/60">Água Tônica · Coca-Cola · Guaraná · Citrus · Suco de Uva Del Valle</p>
@@ -130,7 +119,8 @@ export default function CardapioPage() {
         )}
 
         {/* GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {!carregando && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {itens.map(item => (
             <div
               key={item.id}
@@ -145,22 +135,24 @@ export default function CardapioPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <h4 className="font-body text-sm font-medium text-bege mb-0.5">{item.nome}</h4>
-                  {item.desc && <p className="font-body text-xs text-bege-escuro/55">{item.desc}</p>}
+                  {item.descricao && <p className="font-body text-xs text-bege-escuro/55">{item.descricao}</p>}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="font-display text-xl text-gradient-gold">
-                    R$ {item.preco.toLocaleString('pt-BR')}
+                    R$ {Number(item.preco).toLocaleString('pt-BR')}
                   </div>
-                  {item.precoAlt && (
-                    <div className="font-body text-xs text-bege-escuro/50 mt-0.5">
-                      {item.altLabel}: R$ {item.precoAlt}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
+
+        {!carregando && itens.length === 0 && (
+          <p className="text-center text-sm text-bege-escuro/45 py-12">
+            Nenhum item disponível nesta categoria.
+          </p>
+        )}
 
         <p className="text-center text-xs text-bege-escuro/35 mt-10 italic">
           Não cobramos 10% de taxa de serviço · Cardápio sujeito a alterações sem aviso prévio

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { PreloadScreen } from '@/components/ui/PreloadScreen'
 import { HeroSection } from '@/components/sections/HeroSection'
 import { EventosSection } from '@/components/sections/EventosSection'
@@ -21,13 +21,39 @@ const HeroFade = () => (
   <div className="h-12 bg-gradient-to-b from-preto-profundo/0 to-preto-profundo pointer-events-none -mt-12 relative z-10" />
 )
 
+const PRELOAD_KEY = 'maandhoo_preload_ts'
+const PRELOAD_COOLDOWN_MS = 10 * 60 * 1000
+
 export default function HomeClient() {
   const [preloadDone, setPreloadDone] = useState(false)
+
+  useEffect(() => {
+    try {
+      const ts = sessionStorage.getItem(PRELOAD_KEY)
+      if (!ts) return
+
+      const elapsed = Date.now() - Number(ts)
+      if (elapsed < PRELOAD_COOLDOWN_MS) {
+        setPreloadDone(true)
+      }
+    } catch {
+      // Ignora leitura de storage indisponivel
+    }
+  }, [])
+
+  const handlePreloadComplete = () => {
+    try {
+      sessionStorage.setItem(PRELOAD_KEY, Date.now().toString())
+    } catch {
+      // Ignora escrita de storage indisponivel
+    }
+    setPreloadDone(true)
+  }
 
   return (
     <>
       {!preloadDone && (
-        <PreloadScreen onComplete={() => setPreloadDone(true)} />
+        <PreloadScreen onComplete={handlePreloadComplete} />
       )}
 
       {/* Conteúdo fica montado atrás para não re-hidratar depois */}
