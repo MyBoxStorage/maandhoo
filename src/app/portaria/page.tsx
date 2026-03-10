@@ -105,11 +105,12 @@ export default function PortariaPage() {
   }, [porteiro, eventoSelecionado])
 
   // Capturar QR da URL (quando câmera genérica redireciona para cá)
+  // Usa a ref para evitar chamar validarToken antes de sua declaração
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const qrParam = params.get('qr')
     if (qrParam && porteiro && eventoSelecionado) {
-      validarToken(qrParam)
+      validarTokenRef.current(qrParam)
       window.history.replaceState({}, '', '/portaria')
     }
   }, [porteiro, eventoSelecionado])
@@ -147,12 +148,6 @@ export default function PortariaPage() {
     setResultado({ status: 'idle', mensagem: '' })
     localStorage.removeItem('portaria_sessao')
   }
-
-  // Mantém a ref sempre apontando para a versão mais recente de validarToken
-  // Isso garante que o callback da câmera nunca use um closure stale
-  useEffect(() => {
-    validarTokenRef.current = validarToken
-  }, [validarToken])
 
   // ── CÂMERA ─────────────────────────────────────────────────
   const iniciarCamera = useCallback(async () => {
@@ -247,6 +242,12 @@ export default function PortariaPage() {
       inputRef.current?.focus()
     }
   }, [porteiro, eventoSelecionado, loading])
+
+  // Mantém a ref sempre atualizada com a versão mais recente de validarToken
+  // Declarado APÓS validarToken para evitar "used before declaration"
+  useEffect(() => {
+    validarTokenRef.current = validarToken
+  }, [validarToken])
 
   // ─── TELA: LOGIN ───────────────────────────────────────────
   if (!porteiro) {
