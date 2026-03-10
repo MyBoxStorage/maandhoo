@@ -15,7 +15,7 @@ interface Props {
   eventoNome: string
   eventoData: string
   eventoHora: string
-  lotes: Array<{ id: string; numero: number; nome: string | null; preco_masc: number; preco_fem: number; ativo: boolean }>
+  lotes: Array<{ id: string; numero: number; nome: string | null; preco_masc: number; preco_fem: number; preco_backstage_masc?: number | null; preco_backstage_fem?: number | null; ativo: boolean }>
   tipoInicial: TipoIngresso
   generoInicial: GeneroIngresso
   onClose: () => void
@@ -48,8 +48,8 @@ export const CompraIngressoModal: React.FC<Props> = ({
   const loteAtivo = lotes.find(l => l.ativo) ?? lotes[0]
 
   const precos = {
-    pista: { masculino: loteAtivo?.preco_masc ?? 0, feminino: loteAtivo?.preco_fem ?? 0 },
-    backstage: { masculino: 120, feminino: 60 },
+    pista:     { masculino: loteAtivo?.preco_masc ?? 0, feminino: loteAtivo?.preco_fem ?? 0 },
+    backstage: { masculino: loteAtivo?.preco_backstage_masc ?? 120, feminino: loteAtivo?.preco_backstage_fem ?? 60 },
   }
 
   const preco = precos[tipo][genero]
@@ -378,15 +378,17 @@ export const CompraIngressoModal: React.FC<Props> = ({
                 <p>4. Após o pagamento, o ingresso é gerado e enviado ao seu email em instantes</p>
               </div>
 
-              {/* DEV: botão simulação */}
-              <button
-                onClick={simularConfirmacao}
-                disabled={loading}
-                className="btn-outline w-full flex items-center justify-center gap-2 text-xs"
-              >
-                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-                [DEV] Simular Pagamento Confirmado
-              </button>
+              {/* DEV: botão simulação — apenas em desenvolvimento */}
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={simularConfirmacao}
+                  disabled={loading}
+                  className="btn-outline w-full flex items-center justify-center gap-2 text-xs"
+                >
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                  [DEV] Simular Pagamento Confirmado
+                </button>
+              )}
             </div>
           )}
 

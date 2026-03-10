@@ -112,7 +112,7 @@ export default function AdminEventosPage() {
                         </div>
                         <h3 className="font-display text-xl text-bege">{evento.nome}</h3>
                         <p className="font-body text-xs text-bege-escuro/50 mt-0.5 capitalize">
-                          {format(new Date(evento.data_evento), "EEEE, dd 'de' MMMM", { locale: ptBR })} · {evento.hora_abertura}
+                          {format(new Date(`${evento.data_evento}T00:00:00`), "EEEE, dd 'de' MMMM", { locale: ptBR })} · {evento.hora_abertura}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -208,6 +208,8 @@ const LotesEditor: React.FC<{
       nome: `${lotes.length + 1}º Lote`,
       preco_masc: 50,
       preco_fem: 20,
+      preco_backstage_masc: null,
+      preco_backstage_fem: null,
       limite_masc: 100,
       limite_fem: 100,
       vendidos_masc: 0,
@@ -259,7 +261,7 @@ const LotesEditor: React.FC<{
       <div className="space-y-3">
         {lotes.map(lote => (
           <div key={lote.id} className={`p-4 rounded-sm border transition-colors ${lote.ativo ? 'border-dourado/40 bg-dourado/5' : 'border-white/5 bg-black/20'}`}>
-            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
+            <div className="grid grid-cols-2 sm:grid-cols-8 gap-3 items-end">
               <div className="sm:col-span-2">
                 <label className="admin-label">Nome</label>
                 <input className="admin-input text-xs py-2" value={lote.nome ?? ''} onChange={e => update(lote.id, 'nome', e.target.value)} />
@@ -283,6 +285,20 @@ const LotesEditor: React.FC<{
                 <label className="admin-label">Limite Fem</label>
                 <input type="number" className="admin-input text-xs py-2" value={lote.limite_fem ?? 100}
                   onChange={e => update(lote.id, 'limite_fem', Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="admin-label">Backstage Masc (R$)</label>
+                <input type="number" className="admin-input text-xs py-2"
+                  value={lote.preco_backstage_masc ?? ''}
+                  placeholder="120"
+                  onChange={e => update(lote.id, 'preco_backstage_masc', e.target.value === '' ? null : Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="admin-label">Backstage Fem (R$)</label>
+                <input type="number" className="admin-input text-xs py-2"
+                  value={lote.preco_backstage_fem ?? ''}
+                  placeholder="60"
+                  onChange={e => update(lote.id, 'preco_backstage_fem', e.target.value === '' ? null : Number(e.target.value))} />
               </div>
             </div>
 
@@ -344,7 +360,10 @@ const EventoModal: React.FC<{
     descricao: evento?.descricao ?? '',
     ativo: evento?.ativo ?? false,
     capacidade_total: evento?.capacidade_total ?? 500,
-    lista_encerra_as: evento?.lista_encerra_as?.slice(0, 5) ?? '00:00',
+    // lista_encerra_as: extrair só HH:MM para o campo de hora no formulário
+      lista_encerra_as: evento?.lista_encerra_as
+        ? new Date(evento.lista_encerra_as).toTimeString().slice(0, 5)
+        : '00:00',
     flyer_url: evento?.flyer_url ?? '',
   })
   const [salvando, setSalvando] = useState(false)
@@ -360,7 +379,14 @@ const EventoModal: React.FC<{
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, data_evento: displayParaIso(form.data_evento) }),
+        body: JSON.stringify({
+            ...form,
+            data_evento: displayParaIso(form.data_evento),
+            // Combinar data do evento + hora de encerramento da lista → TIMESTAMPTZ
+            lista_encerra_as: form.lista_encerra_as
+              ? `${displayParaIso(form.data_evento)}T${form.lista_encerra_as}:00`
+              : null,
+          }),
       })
       const data = await res.json()
       if (data.erro) { toast.error(data.erro); return }

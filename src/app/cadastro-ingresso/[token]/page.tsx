@@ -82,7 +82,7 @@ export default function CadastroIngressoPage() {
 
   // ── RENDER ──────────────────────────────────────────────────
   const dataFormatada = ingresso?.eventos?.data_evento
-    ? format(new Date(ingresso.eventos.data_evento), "dd 'de' MMMM", { locale: ptBR })
+    ? format(new Date(`${ingresso.eventos.data_evento.slice(0, 10)}T00:00:00`), "dd 'de' MMMM", { locale: ptBR })
     : ''
 
   return (

@@ -57,6 +57,8 @@ export interface LoteDB {
   nome?: string
   preco_masc: number
   preco_fem: number
+  preco_backstage_masc?: number | null
+  preco_backstage_fem?: number | null
   limite_masc?: number
   limite_fem?: number
   vendidos_masc: number

@@ -20,6 +20,8 @@ type LotePublico = {
   nome: string | null
   preco_masc: number
   preco_fem: number
+  preco_backstage_masc: number | null
+  preco_backstage_fem: number | null
   ativo: boolean
 }
 
@@ -95,8 +97,8 @@ export default function EventoPage({ params }: PageProps) {
     setModalAberto(true)
   }
 
-  const precoBackstageMasc = 120
-  const precoBackstageFem = 60
+  const precoBackstageMasc = loteAtivo?.preco_backstage_masc ?? 120
+  const precoBackstageFem  = loteAtivo?.preco_backstage_fem  ?? 60
 
   return (
     <div className="min-h-screen pt-20">

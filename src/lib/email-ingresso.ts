@@ -25,8 +25,12 @@ interface DadosEmail {
  */
 async function gerarHTMLIngresso(dados: DadosEmail): Promise<string> {
   const qrBase64 = await gerarQRCodeBase64(dados.qrToken)
-  const dataFormatada = format(new Date(dados.eventoData), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-  const dataAbrev = format(new Date(dados.eventoData), 'dd/MM/yyyy', { locale: ptBR })
+  // Forçar parse local para evitar problema de timezone com datas DATE (YYYY-MM-DD)
+  const dataISO = dados.eventoData.length === 10
+    ? `${dados.eventoData}T00:00:00`
+    : dados.eventoData
+  const dataFormatada = format(new Date(dataISO), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+  const dataAbrev = format(new Date(dataISO), 'dd/MM/yyyy', { locale: ptBR })
   const cpfMascarado = mascaraCPF(dados.cpf)
   const tipoLabel = labelTipoIngresso(dados.tipoIngresso)
   const serial = dados.ingressoId.slice(0, 8).toUpperCase()
@@ -233,7 +237,10 @@ async function gerarHTMLIngresso(dados: DadosEmail): Promise<string> {
 export async function enviarEmailIngresso(dados: DadosEmail): Promise<{ sucesso: boolean; erro?: string }> {
   try {
     const html = await gerarHTMLIngresso(dados)
-    const dataFormatada = format(new Date(dados.eventoData), "dd/MM", { locale: ptBR })
+    const dataISOEnvio = dados.eventoData.length === 10
+      ? `${dados.eventoData}T00:00:00`
+      : dados.eventoData
+    const dataFormatada = format(new Date(dataISOEnvio), "dd/MM", { locale: ptBR })
 
     const { error } = await getResend().emails.send({
       from: process.env.EMAIL_FROM ?? 'Maandhoo Club <onboarding@resend.dev>',
@@ -261,7 +268,10 @@ export async function enviarEmailCamarote(params: {
   links: Array<{ numero: number; url: string }>
 }): Promise<{ sucesso: boolean; erro?: string }> {
   try {
-    const dataFormatada = format(new Date(params.eventoData), "EEEE, dd 'de' MMMM", { locale: ptBR })
+    const dataISO = params.eventoData.length === 10
+      ? `${params.eventoData}T00:00:00`
+      : params.eventoData
+    const dataFormatada = format(new Date(dataISO), "EEEE, dd 'de' MMMM", { locale: ptBR })
 
     const linksHTML = params.links.map(l => `
       <tr>

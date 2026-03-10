@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<StatData | null>(null)
   const [eventos, setEventos] = useState<EventoResumo[]>([])
   const [recentes, setRecentes] = useState<IngressoRecente[]>([])
+  const [receita, setReceita] = useState(0)
   const [carregando, setCarregando] = useState(true)
 
   const carregar = async () => {
@@ -72,6 +73,11 @@ export default function AdminDashboard() {
           .filter(i => i.status === 'ativo' || i.status === 'utilizado')
           .slice(0, 6)
       )
+
+      const totalReceita = ingressos
+        .filter(i => i.status === 'ativo' || i.status === 'utilizado')
+        .reduce((a, i) => a + (i.preco_pago ?? 0), 0)
+      setReceita(totalReceita)
 
       const reservas = dataRes.reservas ?? []
       const leads = dataLeads.leads ?? []
@@ -97,7 +103,7 @@ export default function AdminDashboard() {
   const statCards = stats
     ? [
         { label: 'Ingressos Ativos', valor: String(stats.ingressosAtivos), sub: `${stats.ingressosUtilizados} utilizados · ${stats.totalIngressos} total`, icon: <Ticket size={20} />, cor: 'text-dourado' },
-        { label: 'Receita Total', valor: `R$ ${recentes.reduce((a, i) => a + (i.preco_pago ?? 0), 0).toLocaleString('pt-BR')}`, sub: 'Ingressos pagos', icon: <TrendingUp size={20} />, cor: 'text-green-400' },
+        { label: 'Receita Total', valor: `R$ ${receita.toLocaleString('pt-BR')}`, sub: 'Ingressos pagos', icon: <TrendingUp size={20} />, cor: 'text-green-400' },
         { label: 'Reservas Pendentes', valor: String(stats.reservasPendentes), sub: 'Aguardando confirmação', icon: <BookMarked size={20} />, cor: 'text-amber-400' },
         { label: 'Leads Novos', valor: String(stats.leadsNovos), sub: 'Sem contato ainda', icon: <UserPlus size={20} />, cor: 'text-blue-400' },
       ]
@@ -168,7 +174,7 @@ export default function AdminDashboard() {
                             <p className="font-body text-sm text-bege">{evento.nome}</p>
                           </div>
                           <p className="font-body text-xs text-bege-escuro/50">
-                            {format(new Date(evento.data_evento), "dd/MM", { locale: ptBR })} · {loteAtivo?.nome ?? '—'}
+                            {format(new Date(`${evento.data_evento}T00:00:00`), "dd/MM", { locale: ptBR })} · {loteAtivo?.nome ?? '—'}
                           </p>
                           <div className="mt-2 h-1.5 bg-black/40 rounded-full overflow-hidden">
                             <div className="h-full bg-dourado rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />

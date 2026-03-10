@@ -116,7 +116,7 @@ export default function AdminCamarotesPage() {
                       <span className={`w-2 h-2 rounded-full ${camarote.disponivel ? 'bg-green-400' : 'bg-bege-escuro/30'}`} />
                       <span className="font-body text-xs text-bege-escuro/50 capitalize">
                         {camarote.evento?.nome ?? 'Evento'} · {camarote.evento?.data_evento
-                          ? format(new Date(camarote.evento.data_evento), "dd/MM", { locale: ptBR })
+                          ? format(new Date(`${camarote.evento.data_evento}T00:00:00`), "dd/MM", { locale: ptBR })
                           : '—'}
                       </span>
                     </div>

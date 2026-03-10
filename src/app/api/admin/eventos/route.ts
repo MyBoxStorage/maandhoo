@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     if (publico) {
       const { data: eventosAtivos, error: errorEventos } = await client
         .from('eventos')
-        .select('id, nome, descricao, data_evento, hora_abertura, flyer_url, ativo')
+        .select('id, nome, descricao, data_evento, hora_abertura, flyer_url, ativo, lista_encerra_as')
         .eq('ativo', true)
         .order('data_evento', { ascending: true })
 

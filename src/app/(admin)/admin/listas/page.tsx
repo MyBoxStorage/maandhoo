@@ -34,38 +34,50 @@ export default function AdminListasPage() {
   const carregar = useCallback(async () => {
     setCarregando(true)
     try {
-      const [resIng, resEv] = await Promise.all([
-        fetch('/api/admin/ingressos'),
+      const [resEv] = await Promise.all([
         fetch('/api/admin/eventos'),
       ])
-      const [dataIng, dataEv] = await Promise.all([resIng.json(), resEv.json()])
+      const [dataEv] = await Promise.all([resEv.json()])
+      const eventosList: EventoOpt[] = dataEv.eventos ?? []
+      setEventos(eventosList)
 
-      // Filtrar só ingressos de lista com cadastro completo
-      const ingressos = (dataIng.ingressos ?? []) as Array<{
-        id: string; tipo: string; status: string; qr_enviado: boolean; created_at: string; evento_id: string;
-        cadastro?: { nome_completo: string; email: string; whatsapp: string; genero: string } | null
-        evento?: { nome: string } | null
-      }>
+      // Buscar de todos os eventos ou do selecionado
+      const eventoIds = eventosList.map((e: EventoOpt) => e.id)
+      if (eventoIds.length === 0) { setLista([]); return }
 
-      const listaitens: ItemLista[] = ingressos
-        .filter(i => i.tipo === 'lista_masc' || i.tipo === 'lista_fem')
-        .map(i => ({
-          id: i.id,
-          nome_completo: i.cadastro?.nome_completo ?? '(Sem cadastro)',
-          email: i.cadastro?.email ?? '',
-          whatsapp: i.cadastro?.whatsapp ?? '',
-          genero: i.cadastro?.genero ?? (i.tipo === 'lista_fem' ? 'feminino' : 'masculino'),
-          status: i.status,
-          tipo: i.tipo,
-          qr_enviado: i.qr_enviado ?? false,
-          created_at: i.created_at,
-          evento_nome: i.evento?.nome ?? '',
-        }))
+      // Buscar lista_amiga de todos os eventos
+      const respostas = await Promise.all(
+        eventoIds.map((id: string) => fetch(`/api/lista?eventoId=${id}`).then(r => r.json()))
+      )
+
+      const eventosMap = Object.fromEntries(eventosList.map((e: EventoOpt) => [e.id, e.nome]))
+
+      const listaitens: ItemLista[] = []
+      respostas.forEach((res, idx) => {
+        const items = res.lista ?? []
+        const eventoNome = eventosMap[eventoIds[idx]] ?? ''
+        items.forEach((i: {
+          id: string; nome: string; email: string; genero: string;
+          status: string; qr_enviado: boolean; created_at: string;
+        }) => {
+          listaitens.push({
+            id: i.id,
+            nome_completo: i.nome,
+            email: i.email,
+            whatsapp: '',
+            genero: i.genero,
+            status: i.status,
+            tipo: i.genero === 'feminino' ? 'lista_fem' : 'lista_masc',
+            qr_enviado: i.qr_enviado ?? false,
+            created_at: i.created_at,
+            evento_nome: eventoNome,
+          })
+        })
+      })
 
       // Ordenar alfabeticamente por nome
       listaitens.sort((a, b) => a.nome_completo.localeCompare(b.nome_completo, 'pt-BR'))
       setLista(listaitens)
-      setEventos(dataEv.eventos ?? [])
     } catch {
       toast.error('Erro ao carregar listas')
     } finally {
@@ -77,7 +89,7 @@ export default function AdminListasPage() {
 
   const filtrada = lista.filter(item => {
     const generoOk = filtroGenero === 'todos' || item.genero === filtroGenero
-    const eventoOk = eventoSelecionado === 'todos' // TODO: filtrar por evento_id quando API retornar
+    const eventoOk = eventoSelecionado === 'todos' || item.evento_nome === eventos.find(e => e.id === eventoSelecionado)?.nome
     const termo = busca.toLowerCase()
     const buscaOk = !busca ||
       item.nome_completo.toLowerCase().includes(termo) ||
@@ -130,7 +142,7 @@ export default function AdminListasPage() {
           <option value="todos">Todos os eventos</option>
           {eventos.map(e => (
             <option key={e.id} value={e.id}>
-              {e.nome} — {format(new Date(e.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+              {e.nome} — {format(new Date(`${e.data_evento.slice(0,10)}T00:00:00`), "dd/MM/yyyy", { locale: ptBR })}
             </option>
           ))}
         </select>

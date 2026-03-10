@@ -74,6 +74,10 @@ export default function PortariaPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerRef = useRef<any>(null)
+  // Ref sempre atualizada com a versão mais recente de validarToken
+  // para evitar closure stale dentro do callback da câmera
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const validarTokenRef = useRef<(token: string) => void>(() => {})
   const scannerDivId = 'qr-reader'
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -136,6 +140,12 @@ export default function PortariaPage() {
     localStorage.removeItem('portaria_sessao')
   }
 
+  // Mantém a ref sempre apontando para a versão mais recente de validarToken
+  // Isso garante que o callback da câmera nunca use um closure stale
+  useEffect(() => {
+    validarTokenRef.current = validarToken
+  }, [validarToken])
+
   // ── CÂMERA ─────────────────────────────────────────────────
   const iniciarCamera = useCallback(async () => {
     if (typeof window === 'undefined') return
@@ -152,7 +162,8 @@ export default function PortariaPage() {
             const url = new URL(decodedText)
             token = url.searchParams.get('token') ?? decodedText
           } catch { /* não é URL, usar texto direto */ }
-          validarToken(token)
+          // Usa ref para evitar closure stale com eventoSelecionado / porteiro
+          validarTokenRef.current(token)
         },
         () => { /* erros de frame ignorados */ }
       )
@@ -162,7 +173,8 @@ export default function PortariaPage() {
       toast.error('Não foi possível acessar a câmera. Verifique as permissões.')
       console.error('[camera]', err)
     }
-  }, [eventoSelecionado, porteiro])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const pararCamera = async () => {
     if (scannerRef.current) {
@@ -329,7 +341,7 @@ export default function PortariaPage() {
                     <div>
                       <p className="font-display text-base text-bege group-hover:text-dourado transition-colors">{ev.nome}</p>
                       <p className="font-body text-xs text-bege-escuro/45 mt-0.5 capitalize">
-                        {format(new Date(ev.data_evento), "dd 'de' MMMM", { locale: ptBR })} · {ev.hora_abertura}
+                        {format(new Date(`${ev.data_evento}T00:00:00`), "dd 'de' MMMM", { locale: ptBR })} · {ev.hora_abertura}
                       </p>
                     </div>
                     <ChevronDown size={16} className="text-bege-escuro/30 group-hover:text-dourado/60 -rotate-90 ml-auto transition-colors" />
