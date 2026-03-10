@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const linksArray = Array.isArray(data.links) ? data.links : []
     const linksComUrl = linksArray.map((l: { numero: number; link_token: string; ingresso_id: string }) => ({
       numero: l.numero,
-      url: `${baseUrl}/ingressos/cadastro?token=${l.link_token}`,
+      url: `${baseUrl}/cadastro-ingresso/${l.link_token}`,
     }))
 
     // Disparar email com os links
