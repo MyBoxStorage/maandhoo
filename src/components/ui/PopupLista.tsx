@@ -2,19 +2,37 @@
 
 import React, { useState, useEffect } from 'react'
 import { X, PartyPopper } from 'lucide-react'
-import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast from 'react-hot-toast'
+
+type EventoPublico = {
+  id: string
+  nome: string
+  data_evento: string
+  lista_encerra_as?: string | null
+}
 
 export const PopupLista: React.FC = () => {
   const [visible, setVisible] = useState(false)
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [proximoEvento, setProximoEvento] = useState<EventoPublico | null>(null)
 
-  // Próximo evento com lista
-  const proximoEvento = EVENTOS_INICIAIS.find(e => e.temLista && e.status === 'publicado')
+  useEffect(() => {
+    const carregarEvento = async () => {
+      try {
+        const res = await fetch('/api/admin/eventos?publico=true')
+        const data = await res.json()
+        const eventos = Array.isArray(data.eventos) ? data.eventos : []
+        setProximoEvento(eventos[0] ?? null)
+      } catch {
+        setProximoEvento(null)
+      }
+    }
+    carregarEvento()
+  }, [])
 
   useEffect(() => {
     const jaViu = sessionStorage.getItem('popup-lista-fechado')
@@ -33,8 +51,6 @@ export const PopupLista: React.FC = () => {
     if (!nome.trim() || !email.trim()) return
     setLoading(true)
     try {
-      await new Promise(r => setTimeout(r, 800)) // placeholder API
-
       // Captura lead com consentimento LGPD
       await fetch('/api/leads', {
         method: 'POST',
@@ -60,7 +76,7 @@ export const PopupLista: React.FC = () => {
 
   if (!visible || !proximoEvento) return null
 
-  const dataFormatada = format(proximoEvento.data, "dd 'de' MMMM", { locale: ptBR })
+  const dataFormatada = format(new Date(`${proximoEvento.data_evento}T00:00:00`), "dd 'de' MMMM", { locale: ptBR })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

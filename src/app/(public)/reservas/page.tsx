@@ -7,26 +7,18 @@ import toast from 'react-hot-toast'
 
 type TipoReserva = 'mesa' | 'camarote' | 'aniversario'
 
-const tiposConfig = {
-  mesa: {
-    icon: <UtensilsCrossed size={20} />,
-    titulo: 'Reservar Mesa',
-    descricao: 'Garanta seu espaço com até 5 pessoas.',
-    areas: ['Área Principal', 'Área Lateral Esquerda', 'Área Lateral Direita', 'Frente ao Palco'],
-  },
-  camarote: {
-    icon: <Sofa size={20} />,
-    titulo: 'Reservar Camarote',
-    descricao: 'Experiência VIP com vista privilegiada. Até 10 pessoas.',
-    areas: ['Camarote Superior (4-7)', 'Camarote Lateral Direito (8-9)', 'Camarote Lateral Esquerdo (10)', 'Camarote Principal (11-15)'],
-  },
-  aniversario: {
-    icon: <Cake size={20} />,
-    titulo: 'Aniversário VIP',
-    descricao: 'Aniversariante entra grátis com confirmação prévia via WhatsApp.',
-    areas: ['Pista', 'Mesa', 'Camarote'],
-  },
+type Camarote = {
+  id: string
+  identificador: string
+  disponivel: boolean
 }
+
+const CAMAROTE_AREAS_FALLBACK = [
+  'Camarote Superior (4-7)',
+  'Camarote Lateral Direito (8-9)',
+  'Camarote Lateral Esquerdo (10)',
+  'Camarote Principal (11-15)',
+]
 
 function ReservasContent() {
   const searchParams = useSearchParams()
@@ -34,6 +26,7 @@ function ReservasContent() {
   const [tipo, setTipo] = useState<TipoReserva>(tipoParam || 'mesa')
   const [loading, setLoading] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [camarotes, setCamarotes] = useState<Camarote[]>([])
 
   const mascaraData = (valor: string) => {
     const nums = valor.replace(/\D/g, '').slice(0, 8)
@@ -51,6 +44,45 @@ function ReservasContent() {
     if (tipoParam) setTipo(tipoParam)
   }, [tipoParam])
 
+  useEffect(() => {
+    const carregarCamarotes = async () => {
+      try {
+        const res = await fetch('/api/admin/camarotes')
+        if (!res.ok) return
+        const data = await res.json()
+        setCamarotes(Array.isArray(data.camarotes) ? data.camarotes : [])
+      } catch {
+        setCamarotes([])
+      }
+    }
+    carregarCamarotes()
+  }, [])
+
+  const tiposConfig = {
+    mesa: {
+      icon: <UtensilsCrossed size={20} />,
+      titulo: 'Reservar Mesa',
+      descricao: 'Garanta seu espaço com até 5 pessoas.',
+      areas: ['Área Principal', 'Área Lateral Esquerda', 'Área Lateral Direita', 'Frente ao Palco'],
+    },
+    camarote: {
+      icon: <Sofa size={20} />,
+      titulo: 'Reservar Camarote',
+      descricao: 'Experiência VIP com vista privilegiada. Até 10 pessoas.',
+      areas: (
+        camarotes.filter(c => c.disponivel).map(c => c.identificador)
+      ).length > 0
+        ? camarotes.filter(c => c.disponivel).map(c => c.identificador)
+        : CAMAROTE_AREAS_FALLBACK,
+    },
+    aniversario: {
+      icon: <Cake size={20} />,
+      titulo: 'Aniversário VIP',
+      descricao: 'Aniversariante entra grátis com confirmação prévia via WhatsApp.',
+      areas: ['Pista', 'Mesa', 'Camarote'],
+    },
+  }
+
   const config = tiposConfig[tipo]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +93,13 @@ function ReservasContent() {
     }
     setLoading(true)
     try {
-      await new Promise(r => setTimeout(r, 900))
+      const res = await fetch('/api/reservas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, ...form, numeroPessoas: Number(form.numeroPessoas) || 1 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao enviar')
       setEnviado(true)
       toast.success('Solicitação enviada! Retornaremos em breve.')
     } catch {
