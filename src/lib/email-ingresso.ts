@@ -229,15 +229,14 @@ export async function enviarEmailCamarote(params: {
 
     const linksHTML = params.links.map(l => `
       <tr>
-        <td style="padding:12px 0;border-bottom:1px solid rgba(201,168,76,0.1);">
-          <table width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td style="font-size:12px;color:rgba(237,228,216,0.45);letter-spacing:1px;">Convidado ${l.numero}</td>
-            <td style="text-align:right;">
-              <a href="${l.url}" style="background:#C9A84C;color:#0d0a07;padding:9px 22px;text-decoration:none;font-size:10px;letter-spacing:3px;text-transform:uppercase;border-radius:2px;font-weight:bold;display:inline-block;">
-                Cadastrar &amp; Receber QR
-              </a>
-            </td>
-          </tr></table>
+        <td style="padding:14px 0;border-bottom:1px solid rgba(201,168,76,0.08);">
+          <div style="font-size:10px;letter-spacing:3px;color:rgba(201,168,76,0.45);text-transform:uppercase;margin-bottom:6px;">Convidado ${l.numero}</div>
+          <div style="background:#0a0805;border:1px solid rgba(201,168,76,0.2);border-radius:3px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+            <span style="font-family:Courier New,monospace;font-size:11px;color:rgba(237,228,216,0.6);word-break:break-all;flex:1;">${l.url}</span>
+          </div>
+          <div style="margin-top:6px;">
+            <a href="${l.url}" style="font-size:10px;color:rgba(201,168,76,0.6);text-decoration:underline;letter-spacing:1px;">Abrir link &rarr;</a>
+          </div>
         </td>
       </tr>`).join('')
 
