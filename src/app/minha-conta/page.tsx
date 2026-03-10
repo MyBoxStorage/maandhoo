@@ -229,23 +229,7 @@ export default function MinhaContaPage() {
         {/* ── CORPO ──────────────────────────────────────────────── */}
         <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
 
-          {/* Quiz Vibe Check — acima dos ingressos */}
-          <QuizVibeCheck
-            clienteId={cliente!.id}
-            clienteNome={cliente!.nome}
-            quizJaFeito={!!cliente?.quiz_feito}
-            perfilSalvo={perfilAtivo}
-            respostasSalvas={cliente?.quiz_respostas ?? null}
-            lgpdAceito={!!cliente?.lgpd_aceito}
-            badgeAtivo={badgeAtivo}
-            temaAtivo={temaAtivo}
-            onPerfilDefinido={handlePerfilDefinido}
-          />
-
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-dourado/15 to-transparent" />
-
-          {/* Header ingressos */}
+          {/* ── INGRESSOS — primeiro ──────────────────────────────── */}
           <div className="flex items-center gap-2">
             <Ticket size={14} className="text-dourado/60" />
             <h2 className="font-accent text-xs tracking-[0.3em] uppercase text-bege-escuro/60">Meus Ingressos</h2>
@@ -348,6 +332,23 @@ export default function MinhaContaPage() {
               </div>
             )
           })}
+
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-dourado/15 to-transparent" />
+
+          {/* ── QUIZ VIBE CHECK — após ingressos ─────────────────── */}
+          <QuizVibeCheck
+            clienteId={cliente!.id}
+            clienteNome={cliente!.nome}
+            quizJaFeito={!!cliente?.quiz_feito}
+            perfilSalvo={perfilAtivo}
+            respostasSalvas={cliente?.quiz_respostas ?? null}
+            lgpdAceito={!!cliente?.lgpd_aceito}
+            badgeAtivo={badgeAtivo}
+            temaAtivo={temaAtivo}
+            onPerfilDefinido={handlePerfilDefinido}
+          />
+
         </div>
       </div>
     </>

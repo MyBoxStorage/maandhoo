@@ -447,21 +447,39 @@ export function QuizVibeCheck({
   if (fase === 'cta') return (
     <div className="space-y-3">
       {/* Card principal do quiz */}
-      <div className="relative border border-dourado/15 rounded-sm overflow-hidden bg-gradient-to-br from-black/40 via-[#0d0900]/60 to-black/40 p-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_65%_-10%,rgba(201,168,76,0.09),transparent_65%)] pointer-events-none"/>
-        <div className="flex flex-col sm:flex-row items-center gap-5">
-          <div className="flex-shrink-0 w-14 h-14 rounded-sm border border-dourado/25 flex items-center justify-center bg-dourado/5 relative overflow-hidden">
-            <div className="absolute inset-0 bg-dourado/10 animate-pulse" style={{ animationDuration: '2.5s' }}/>
-            <Sparkles size={24} className="text-dourado relative z-10"/>
+      <div className="relative border border-dourado/20 rounded-sm overflow-hidden bg-gradient-to-br from-black/50 via-[#0d0900]/70 to-black/50">
+        {/* Glow radial no canto superior direito */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_-20%,rgba(201,168,76,0.12),transparent_60%)] pointer-events-none"/>
+        {/* Linha dourada no topo */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dourado/40 to-transparent"/>
+
+        <div className="relative px-5 py-5">
+          {/* Label topo */}
+          <p className="font-accent text-[9px] tracking-[0.45em] text-dourado/50 uppercase mb-3">Exclusivo para membros</p>
+
+          <div className="flex items-start gap-4">
+            {/* Ícone */}
+            <div className="flex-shrink-0 w-12 h-12 rounded-sm border border-dourado/25 flex items-center justify-center bg-dourado/5 relative overflow-hidden mt-0.5">
+              <div className="absolute inset-0 bg-dourado/10 animate-pulse" style={{ animationDuration: '2.5s' }}/>
+              <Sparkles size={22} className="text-dourado relative z-10"/>
+            </div>
+
+            {/* Texto */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-xl text-bege leading-tight mb-2">
+                Qual é a sua <span style={{ color: '#C9A84C' }}>vibe</span> na Maandhoo?
+              </h3>
+              <p className="font-body text-xs text-bege-escuro/55 leading-relaxed">
+                7 perguntas · descubra seu perfil na noite, badge exclusivo e playlist personalizada para o seu gosto.{' '}
+                <span className="text-dourado/70">Da play na sua música e fica à vontade, porque aqui é sua casa.</span>
+              </p>
+            </div>
           </div>
-          <div className="flex-1 text-center sm:text-left">
-            <p className="font-accent text-[10px] tracking-[0.4em] text-dourado/60 uppercase mb-1">Exclusivo para membros</p>
-            <h3 className="font-display text-xl text-bege mb-1">Qual é a sua <span style={{ color: '#C9A84C' }}>vibe</span> na Maandhoo?</h3>
-            <p className="font-body text-xs text-bege-escuro/50 leading-relaxed">7 perguntas · descubra seu perfil na noite, badge exclusivo e playlist personalizada para o seu gosto.</p>
-          </div>
+
+          {/* Botão full-width na base */}
           <button
             onClick={() => setFase('consentimento')}
-            className="flex-shrink-0 group flex items-center gap-2 bg-dourado hover:bg-dourado/90 text-preto-profundo font-accent text-xs tracking-widest uppercase px-5 py-3 rounded-sm transition-all duration-200 hover:shadow-[0_0_24px_rgba(201,168,76,0.35)] whitespace-nowrap"
+            className="mt-4 w-full group flex items-center justify-center gap-2 bg-dourado hover:bg-dourado/90 text-preto-profundo font-accent text-xs tracking-widest uppercase px-5 py-3 rounded-sm transition-all duration-200 hover:shadow-[0_0_24px_rgba(201,168,76,0.35)]"
           >
             Fazer Quiz <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform"/>
           </button>
