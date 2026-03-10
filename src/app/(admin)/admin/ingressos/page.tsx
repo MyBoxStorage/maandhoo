@@ -63,18 +63,17 @@ export default function AdminIngressosPage() {
   })
 
   const exportarCSV = () => {
-    const linhas = ['Nome,Email,CPF,Tipo,Serial,Status,QR Enviado,Criado']
+    const linhas = ['Nome,Email,Tipo,Serial,Status,QR Enviado,Criado']
     filtrados.forEach(i => {
       const c = i.cadastro
       linhas.push([
-        c?.nome_completo ?? '',
-        c?.email ?? '',
-        (c?.cpf_hash?.slice(0, 8) ?? '') + '...',
-        TIPO_LABEL[i.tipo] ?? i.tipo,
-        i.serial ?? '',
-        i.status,
-        i.qr_enviado ? 'Sim' : 'Não',
-        i.created_at ? format(new Date(i.created_at), 'dd/MM/yyyy HH:mm') : '',
+        `"${c?.nome_completo ?? ''}"`,
+        `"${c?.email ?? ''}"`,
+        `"${TIPO_LABEL[i.tipo] ?? i.tipo}"`,
+        `"${i.serial ?? ''}"`,
+        `"${i.status}"`,
+        `"${i.qr_enviado ? 'Sim' : 'Não'}"`,
+        `"${i.created_at ? format(new Date(i.created_at), 'dd/MM/yyyy HH:mm') : ''}"`,
       ].join(','))
     })
     const blob = new Blob([linhas.join('\n')], { type: 'text/csv;charset=utf-8' })

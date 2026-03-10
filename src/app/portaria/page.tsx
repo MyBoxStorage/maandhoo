@@ -81,14 +81,18 @@ export default function PortariaPage() {
   const scannerDivId = 'qr-reader'
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Restaurar sessão do localStorage
+  // Restaurar sessão do localStorage (expira em 12 horas)
   useEffect(() => {
     const saved = localStorage.getItem('portaria_sessao')
     if (saved) {
       try {
-        const { porteiro: p, eventos: e } = JSON.parse(saved)
-        setPorteiro(p)
-        setEventos(e)
+        const { porteiro: p, eventos: e, exp } = JSON.parse(saved)
+        if (exp && Date.now() > exp) {
+          localStorage.removeItem('portaria_sessao')
+        } else {
+          setPorteiro(p)
+          setEventos(e)
+        }
       } catch { localStorage.removeItem('portaria_sessao') }
     }
   }, [])
@@ -124,7 +128,11 @@ export default function PortariaPage() {
       if (!data.sucesso) { toast.error(data.erro ?? 'Credenciais inválidas'); return }
       setPorteiro(data.porteiro)
       setEventos(data.eventos)
-      localStorage.setItem('portaria_sessao', JSON.stringify({ porteiro: data.porteiro, eventos: data.eventos }))
+      localStorage.setItem('portaria_sessao', JSON.stringify({
+        porteiro: data.porteiro,
+        eventos: data.eventos,
+        exp: Date.now() + 12 * 60 * 60 * 1000, // 12 horas
+      }))
       toast.success(`Bem-vindo, ${data.porteiro.nome}!`)
     } catch { toast.error('Erro de conexão') }
     finally { setLoginLoading(false) }

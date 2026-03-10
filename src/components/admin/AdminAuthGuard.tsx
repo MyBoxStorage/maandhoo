@@ -1,48 +1,104 @@
 'use client'
 
-import React, { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import React, { useState, useEffect, createContext, useContext } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
+import { Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const CREDENCIAIS_DEMO = [
-  { email: 'admin@maandhoo.com', senha: 'admin123', role: 'admin', nome: 'Administrador' },
-  { email: 'operador@maandhoo.com', senha: 'operador123', role: 'operador', nome: 'Operador' },
-  { email: 'porteiro@maandhoo.com', senha: 'porteiro123', role: 'porteiro', nome: 'Porteiro' },
-]
+// ── Contexto de sessão admin ──────────────────────────────────
+
+type AdminUser = { id: string; nome: string; role: 'admin' | 'operador' }
+
+type AdminAuthContextType = {
+  usuario: AdminUser | null
+  logout: () => Promise<void>
+}
+
+const AdminAuthContext = createContext<AdminAuthContextType>({
+  usuario: null,
+  logout: async () => {},
+})
+
+export const useAdminAuth = () => useContext(AdminAuthContext)
+
+// ── Componente principal ──────────────────────────────────────
 
 export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [autenticado, setAutenticado] = useState(false)
+  const [usuario, setUsuario] = useState<AdminUser | null>(null)
+  const [verificando, setVerificando] = useState(true)
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  // Se rota de portaria, verificar role porteiro
-  const isPortaria = pathname?.startsWith('/portaria')
+  // Verificar se já existe sessão válida no cookie
+  useEffect(() => {
+    const verificarSessao = async () => {
+      try {
+        const res = await fetch('/api/auth/admin', { method: 'GET' })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.autenticado) setUsuario(data.usuario)
+        }
+      } catch {
+        // sem sessão — vai mostrar o formulário de login
+      } finally {
+        setVerificando(false)
+      }
+    }
+    verificarSessao()
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
-    const user = CREDENCIAIS_DEMO.find(u => u.email === email && u.senha === senha)
-    if (user) {
-      if (isPortaria && user.role === 'operador') {
-        toast.error('Operadores não têm acesso à portaria')
-        setLoading(false)
+    try {
+      const res = await fetch('/api/auth/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.erro) {
+        toast.error(data.erro ?? 'Credenciais inválidas')
         return
       }
-      setAutenticado(true)
-      toast.success(`Bem-vindo, ${user.nome}!`)
-    } else {
-      toast.error('Credenciais inválidas')
+      setUsuario(data.usuario)
+      toast.success(`Bem-vindo, ${data.usuario.nome}!`)
+    } catch {
+      toast.error('Erro de conexão. Tente novamente.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  if (autenticado) return <>{children}</>
+  const logout = async () => {
+    await fetch('/api/auth/admin', { method: 'DELETE' })
+    setUsuario(null)
+    router.push('/admin')
+  }
 
+  // Carregando verificação inicial
+  if (verificando) {
+    return (
+      <div className="min-h-screen bg-preto-profundo flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-dourado/40" />
+      </div>
+    )
+  }
+
+  // Sessão válida — renderizar conteúdo protegido
+  if (usuario) {
+    return (
+      <AdminAuthContext.Provider value={{ usuario, logout }}>
+        {children}
+      </AdminAuthContext.Provider>
+    )
+  }
+
+  // Formulário de login
   return (
     <div className="min-h-screen bg-preto-profundo flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -51,9 +107,7 @@ export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ childr
             <LogoElefante width={60} height={66} color="#C9A84C" animated />
           </div>
           <h1 className="font-accent text-2xl tracking-widest text-bege">maandhoo</h1>
-          <p className="font-body text-xs text-bege-escuro/50 mt-1">
-            {isPortaria ? 'Acesso — Portaria' : 'Painel Administrativo'}
-          </p>
+          <p className="font-body text-xs text-bege-escuro/50 mt-1">Painel Administrativo</p>
         </div>
 
         <div className="bg-card border border-gold/20 rounded-sm p-8">
@@ -65,8 +119,10 @@ export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ childr
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="admin-input"
-                placeholder="seu@email.com"
+                placeholder="admin@maandhoo.com"
                 required
+                autoComplete="email"
+                disabled={loading}
               />
             </div>
             <div>
@@ -78,6 +134,8 @@ export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ childr
                 className="admin-input"
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
+                disabled={loading}
               />
             </div>
             <button
@@ -85,22 +143,10 @@ export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ childr
               disabled={loading}
               className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {loading && <span className="w-4 h-4 border-2 border-preto-profundo/30 border-t-preto-profundo rounded-full animate-spin" />}
+              {loading && <Loader2 size={14} className="animate-spin" />}
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
-
-          <div className="mt-5 pt-4 border-t border-white/5">
-            <p className="text-xs text-bege-escuro/30 text-center mb-2">Contas de demonstração:</p>
-            <div className="space-y-1 text-xs text-bege-escuro/40 font-mono">
-              <p>admin@maandhoo.com / admin123</p>
-              <p>operador@maandhoo.com / operador123</p>
-              <p>porteiro@maandhoo.com / porteiro123</p>
-            </div>
-            <p className="text-xs text-amber-500/60 text-center mt-2">
-              ⚠️ Configure NextAuth + Supabase para produção
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -8,28 +8,30 @@ import {
   BookMarked, UtensilsCrossed, Image, LogOut, Menu, X, QrCode, UserPlus, ShieldCheck
 } from 'lucide-react'
 import { LogoElefante } from '@/components/ui/LogoElefante'
+import { useAdminAuth } from '@/components/admin/AdminAuthGuard'
 
 const navAdmin = [
-  { href: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={17} />, roles: ['admin'] },
-  { href: '/admin/eventos', label: 'Eventos', icon: <CalendarDays size={17} />, roles: ['admin', 'operador'] },
-  { href: '/admin/ingressos', label: 'Ingressos', icon: <Ticket size={17} />, roles: ['admin'] },
-  { href: '/admin/camarotes', label: 'Camarotes', icon: <ShieldCheck size={17} />, roles: ['admin', 'operador'] },
-  { href: '/admin/porteiros', label: 'Porteiros', icon: <Users size={17} />, roles: ['admin'] },
-  { href: '/admin/listas', label: 'Listas Amigas', icon: <ListChecks size={17} />, roles: ['admin', 'operador'] },
-  { href: '/admin/reservas', label: 'Reservas', icon: <BookMarked size={17} />, roles: ['admin'] },
-  { href: '/admin/leads', label: 'Leads & Contatos', icon: <UserPlus size={17} />, roles: ['admin'] },
-  { href: '/admin/usuarios', label: 'Usuários / CRM', icon: <Users size={17} />, roles: ['admin'] },
-  { href: '/admin/cardapio', label: 'Cardápio', icon: <UtensilsCrossed size={17} />, roles: ['admin'] },
-  { href: '/admin/galeria', label: 'Galeria', icon: <Image size={17} />, roles: ['admin'] },
-  { href: '/portaria', label: 'Portaria (QR)', icon: <QrCode size={17} />, roles: ['admin', 'porteiro'] },
+  { href: '/admin',           label: 'Dashboard',      icon: <LayoutDashboard size={17} />, roles: ['admin'] },
+  { href: '/admin/eventos',   label: 'Eventos',        icon: <CalendarDays size={17} />,    roles: ['admin', 'operador'] },
+  { href: '/admin/ingressos', label: 'Ingressos',      icon: <Ticket size={17} />,          roles: ['admin'] },
+  { href: '/admin/camarotes', label: 'Camarotes',      icon: <ShieldCheck size={17} />,     roles: ['admin', 'operador'] },
+  { href: '/admin/porteiros', label: 'Porteiros',      icon: <Users size={17} />,           roles: ['admin'] },
+  { href: '/admin/listas',    label: 'Listas Amigas',  icon: <ListChecks size={17} />,      roles: ['admin', 'operador'] },
+  { href: '/admin/reservas',  label: 'Reservas',       icon: <BookMarked size={17} />,      roles: ['admin'] },
+  { href: '/admin/leads',     label: 'Leads & Contatos', icon: <UserPlus size={17} />,      roles: ['admin'] },
+  { href: '/admin/usuarios',  label: 'Usuários / CRM', icon: <Users size={17} />,           roles: ['admin'] },
+  { href: '/admin/cardapio',  label: 'Cardápio',       icon: <UtensilsCrossed size={17} />, roles: ['admin'] },
+  { href: '/admin/galeria',   label: 'Galeria',        icon: <Image size={17} />,           roles: ['admin'] },
+  { href: '/portaria',        label: 'Portaria (QR)',  icon: <QrCode size={17} />,          roles: ['admin', 'operador'] },
 ]
 
 export const AdminSidebar: React.FC = () => {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  // Simulação de role — em prod vem do NextAuth session
-  const userRole = 'admin'
-  const userName = 'Administrador'
+  const { usuario, logout } = useAdminAuth()
+
+  const userRole = usuario?.role ?? 'operador'
+  const userName  = usuario?.nome ?? ''
 
   const linksVisiveis = navAdmin.filter(l => l.roles.includes(userRole))
 
@@ -44,18 +46,21 @@ export const AdminSidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* ROLE BADGE */}
+      {/* USER INFO */}
       <div className="px-6 py-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-dourado animate-pulse" />
-          <span className="font-body text-xs text-bege-escuro/60 capitalize">{userRole} · {userName}</span>
+          <span className="font-body text-xs text-bege-escuro/60 capitalize">
+            {userRole} · {userName}
+          </span>
         </div>
       </div>
 
       {/* NAV */}
       <nav className="flex-1 px-3 py-2 space-y-0.5">
         {linksVisiveis.map(link => {
-          const ativo = pathname === link.href || (link.href !== '/admin' && pathname?.startsWith(link.href))
+          const ativo = pathname === link.href ||
+            (link.href !== '/admin' && pathname?.startsWith(link.href))
           return (
             <Link
               key={link.href}
@@ -75,7 +80,10 @@ export const AdminSidebar: React.FC = () => {
         <Link href="/" className="admin-nav-item text-xs rounded-sm">
           ← Ver Site Público
         </Link>
-        <button className="admin-nav-item w-full text-left text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-sm mt-1">
+        <button
+          onClick={logout}
+          className="admin-nav-item w-full text-left text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-sm mt-1"
+        >
           <LogOut size={15} />
           Sair
         </button>
