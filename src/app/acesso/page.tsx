@@ -95,13 +95,13 @@ function AcessoForm() {
       <Toaster position="top-center" toastOptions={{ style: { background: '#1a1208', color: '#e8ddd0', border: '1px solid rgba(201,168,76,0.3)' } }} />
 
       {/* Logo */}
-      <div className="flex flex-col items-center gap-3 mb-10">
+      <Link href="/" className="flex flex-col items-center gap-3 mb-10 group">
         <LogoElefante width={48} height={53} color="#C9A84C" />
         <div className="text-center">
-          <p className="font-accent text-xs tracking-[0.4em] text-dourado/70 uppercase">Maandhoo Club</p>
+          <p className="font-accent text-xs tracking-[0.4em] text-dourado/70 uppercase group-hover:text-dourado transition-colors">Maandhoo Club</p>
           <p className="font-body text-[10px] text-bege-escuro/35 tracking-widest uppercase mt-1">Área do Cliente</p>
         </div>
-      </div>
+      </Link>
 
       <div className="w-full max-w-sm">
         {/* Tabs */}

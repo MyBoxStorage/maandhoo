@@ -376,11 +376,11 @@ export default function MinhaContaPage() {
         {/* ── HEADER ─────────────────────────────────────────────── */}
         <div className="sticky top-0 z-10 bg-preto-profundo/95 backdrop-blur-sm border-b border-dourado/10 px-4 py-4">
           <div className="max-w-lg mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 group">
               <LogoElefante width={28} height={31} color="#C9A84C" />
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-accent text-xs tracking-widest text-bege leading-none">MINHA CONTA</p>
+                  <p className="font-accent text-xs tracking-widest text-bege leading-none group-hover:text-dourado transition-colors">MINHA CONTA</p>
                   {/* Badge no header — só aparece se quiz feito + badge ativo */}
                   {badgeAtivo && perfilAtivo && (
                     <div className="flex items-center gap-1.5 animate-fade-in">
@@ -396,7 +396,7 @@ export default function MinhaContaPage() {
                 </div>
                 <p className="font-body text-[10px] text-bege-escuro/40 mt-0.5">{cliente?.nome}</p>
               </div>
-            </div>
+            </Link>
             <button onClick={logout} className="text-bege-escuro/30 hover:text-bege-escuro/70 transition-colors flex items-center gap-1.5">
               <LogOut size={14} />
               <span className="font-body text-xs">Sair</span>
