@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       url: l.url,
     }))
 
-    await enviarEmailCamarote({
+    const resultadoEmail = await enviarEmailCamarote({
       para: email_responsavel,
       nomeResponsavel: nome_responsavel ?? 'Responsável',
       eventoNome: data.evento,
@@ -85,6 +85,12 @@ export async function POST(req: NextRequest) {
       camaroteId: camarote_id,
       links: linksParaEmail,
     })
+
+    if (!resultadoEmail.sucesso) {
+      console.error('[camarote] Falha no email:', resultadoEmail.erro)
+    } else {
+      console.log('[camarote] Email enviado para:', email_responsavel)
+    }
 
     return NextResponse.json({
       sucesso: true,
