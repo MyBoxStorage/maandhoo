@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 import { Loader2, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react'
@@ -9,7 +9,8 @@ import toast, { Toaster } from 'react-hot-toast'
 type Modo = 'login' | 'cadastro'
 type Fase = 'idle' | 'enviando'
 
-export default function AcessoPage() {
+// Componente interno que usa useSearchParams — precisa estar dentro de <Suspense>
+function AcessoForm() {
   const router = useRouter()
   const params = useSearchParams()
   const linkToken = params.get('link') ?? ''
@@ -144,5 +145,18 @@ export default function AcessoPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+// Suspense obrigatório para useSearchParams no Next.js 14 App Router
+export default function AcessoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-preto-profundo flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-dourado/40" />
+      </div>
+    }>
+      <AcessoForm />
+    </Suspense>
   )
 }
