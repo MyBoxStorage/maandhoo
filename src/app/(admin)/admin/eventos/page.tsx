@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, Edit2, Eye, EyeOff, ChevronDown, ChevronUp, X, Upload, RefreshCw, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -348,6 +348,8 @@ const EventoModal: React.FC<{
     flyer_url: evento?.flyer_url ?? '',
   })
   const [salvando, setSalvando] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const salvar = async () => {
     if (!form.nome || !form.data_evento) { toast.error('Nome e data são obrigatórios'); return }
@@ -369,6 +371,13 @@ const EventoModal: React.FC<{
   }
 
   const f = (field: string, value: unknown) => setForm(p => ({ ...p, [field]: value }))
+
+  const handleFlyerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    toast('Para fazer upload de imagens, use a página Galeria no painel e copie a URL gerada.', { icon: 'ℹ️', duration: 5000 })
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -419,9 +428,35 @@ const EventoModal: React.FC<{
           </div>
 
           <div>
-            <label className="admin-label">URL do Flyer</label>
-            <input className="admin-input font-mono text-xs" value={form.flyer_url}
-              onChange={e => f('flyer_url', e.target.value)} placeholder="/images/flyers/flyer.webp" />
+            <label className="admin-label">Flyer</label>
+            <div className="flex gap-2">
+              <input
+                className="admin-input flex-1 font-mono text-xs"
+                value={form.flyer_url}
+                onChange={e => f('flyer_url', e.target.value)}
+                placeholder="/images/flyers/flyer.webp ou faça upload"
+                disabled={uploading}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 border border-dourado/40 hover:border-dourado text-dourado text-xs rounded-sm transition-all disabled:opacity-40"
+              >
+                {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                {uploading ? 'Enviando...' : 'Upload'}
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFlyerUpload}
+            />
+            {form.flyer_url && !uploading && (
+              <p className="text-xs text-bege-escuro/40 mt-1 truncate">{form.flyer_url}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

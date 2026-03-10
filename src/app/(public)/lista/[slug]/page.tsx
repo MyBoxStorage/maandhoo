@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserPlus, CheckCircle, ArrowLeft, Mail, User, AlertCircle } from 'lucide-react'
-import { EVENTOS_INICIAIS } from '@/lib/eventos-data'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -14,9 +13,18 @@ interface PageProps {
   params: { slug: string }
 }
 
+type EventoPublico = {
+  id: string
+  nome: string
+  data_evento: string
+  hora_abertura: string
+  flyer_url: string | null
+  lista_encerra_as: string | null
+}
+
 export default function ListaPage({ params }: PageProps) {
-  const evento = EVENTOS_INICIAIS.find(e => e.slug === params.slug)
-  if (!evento || !evento.temLista) notFound()
+  const [carregando, setCarregando] = useState(true)
+  const [eventos, setEventos] = useState<EventoPublico[]>([])
 
   const [genero, setGenero] = useState<'masculino' | 'feminino'>('feminino')
   const [nome, setNome] = useState('')
@@ -24,8 +32,53 @@ export default function ListaPage({ params }: PageProps) {
   const [loading, setLoading] = useState(false)
   const [sucesso, setSucesso] = useState(false)
 
-  const dataFormatada = format(evento.data, "dd 'de' MMMM", { locale: ptBR })
-  const diaHora = format(evento.data, 'EEEE', { locale: ptBR })
+  useEffect(() => {
+    const carregarEventos = async () => {
+      setCarregando(true)
+      try {
+        const res = await fetch('/api/admin/eventos?publico=true')
+        const data = await res.json()
+        setEventos(Array.isArray(data.eventos) ? data.eventos : [])
+      } finally {
+        setCarregando(false)
+      }
+    }
+    carregarEventos()
+  }, [])
+
+  const gerarSlugLegado = (evento: EventoPublico) =>
+    `${evento.nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${evento.data_evento.slice(0, 10).replace(/-/g, '-')}`
+
+  const evento = useMemo(
+    () => eventos.find((ev) => ev.id === params.slug || gerarSlugLegado(ev) === params.slug) ?? null,
+    [eventos, params.slug],
+  )
+
+  if (carregando) {
+    return (
+      <div className="min-h-screen pt-20">
+        <div className="max-w-4xl mx-auto px-4 py-16 animate-pulse">
+          <div className="h-5 w-40 bg-white/10 rounded mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="aspect-[9/16] bg-white/10 rounded-sm max-w-xs" />
+            <div className="space-y-4">
+              <div className="h-8 w-2/3 bg-white/10 rounded" />
+              <div className="h-4 w-1/2 bg-white/10 rounded" />
+              <div className="h-40 w-full bg-white/10 rounded" />
+              <div className="h-10 w-full bg-white/10 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!evento) notFound()
+
+  const eventoSlug = gerarSlugLegado(evento)
+  const dataEvento = new Date(`${evento.data_evento}T00:00:00`)
+  const dataFormatada = format(dataEvento, "dd 'de' MMMM", { locale: ptBR })
+  const diaHora = format(dataEvento, 'EEEE', { locale: ptBR })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +93,16 @@ export default function ListaPage({ params }: PageProps) {
     setLoading(true)
     try {
       // POST /api/lista — gera QR Code e envia email
-      await new Promise(r => setTimeout(r, 1000))
+      const res = await fetch('/api/lista', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventoId: evento.id, nome, email, genero, origem: 'pagina_lista' }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? data.erro ?? 'Erro ao entrar na lista. Tente novamente.')
+        return
+      }
       setSucesso(true)
       toast.success('Nome adicionado! Verifique seu email.')
     } catch {
@@ -53,7 +115,7 @@ export default function ListaPage({ params }: PageProps) {
   return (
     <div className="min-h-screen pt-20">
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <Link href={`/eventos/${evento.slug}`} className="inline-flex items-center gap-2 text-bege-escuro hover:text-bege text-sm mb-8 transition-colors">
+        <Link href={`/eventos/${eventoSlug}`} className="inline-flex items-center gap-2 text-bege-escuro hover:text-bege text-sm mb-8 transition-colors">
           <ArrowLeft size={16} /> Voltar ao evento
         </Link>
 
@@ -61,7 +123,7 @@ export default function ListaPage({ params }: PageProps) {
           {/* FLYER */}
           <div className="relative aspect-[9/16] rounded-sm overflow-hidden max-w-xs mx-auto md:mx-0">
             <Image
-              src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
+              src={evento.flyer_url || '/images/flyers/placeholder.webp'}
               alt={evento.nome}
               fill
               className="object-cover"
@@ -74,7 +136,7 @@ export default function ListaPage({ params }: PageProps) {
               <p className="section-subtitle mb-2">Lista Amiga</p>
               <h1 className="font-display text-4xl text-bege mb-1">{evento.nome}</h1>
               <p className="font-body text-sm text-bege-escuro/60 capitalize">
-                {diaHora} · {dataFormatada} · {evento.hora}
+                {diaHora} · {dataFormatada} · {evento.hora_abertura}
               </p>
             </div>
 
@@ -188,7 +250,7 @@ export default function ListaPage({ params }: PageProps) {
                     Apresente o QR Code ou informe seu nome na portaria até 00:00
                   </p>
                 </div>
-                <Link href={`/eventos/${evento.slug}`} className="btn-outline block text-center text-xs">
+                <Link href={`/eventos/${eventoSlug}`} className="btn-outline block text-center text-xs">
                   Ver detalhes do evento
                 </Link>
               </div>

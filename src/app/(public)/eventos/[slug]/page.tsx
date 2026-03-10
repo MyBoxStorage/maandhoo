@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Calendar, Clock, MapPin, Ticket, Users, ChevronRight, ArrowLeft, Shield } from 'lucide-react'
-import { EVENTOS_INICIAIS, getLoteAtivo } from '@/lib/eventos-data'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { TipoIngresso, GeneroIngresso } from '@/types'
@@ -15,16 +14,80 @@ interface PageProps {
   params: { slug: string }
 }
 
-export default function EventoPage({ params }: PageProps) {
-  const evento = EVENTOS_INICIAIS.find(e => e.slug === params.slug)
-  if (!evento) notFound()
+type LotePublico = {
+  id: string
+  numero: number
+  nome: string | null
+  preco_masc: number
+  preco_fem: number
+  ativo: boolean
+}
 
+type EventoPublico = {
+  id: string
+  nome: string
+  descricao: string | null
+  data_evento: string
+  hora_abertura: string
+  flyer_url: string | null
+  lista_encerra_as: string | null
+  lotes: LotePublico[]
+}
+
+export default function EventoPage({ params }: PageProps) {
+  const [eventos, setEventos] = useState<EventoPublico[]>([])
+  const [carregando, setCarregando] = useState(true)
   const [modalAberto, setModalAberto] = useState(false)
   const [tipoSelecionado, setTipoSelecionado] = useState<TipoIngresso>('pista')
   const [generoSelecionado, setGeneroSelecionado] = useState<GeneroIngresso>('masculino')
 
-  const loteAtivo = getLoteAtivo(evento)
-  const dataFormatada = format(evento.data, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+  useEffect(() => {
+    const carregarEventos = async () => {
+      setCarregando(true)
+      try {
+        const res = await fetch('/api/admin/eventos?publico=true')
+        const data = await res.json()
+        setEventos(Array.isArray(data.eventos) ? data.eventos : [])
+      } finally {
+        setCarregando(false)
+      }
+    }
+    carregarEventos()
+  }, [])
+
+  const gerarSlug = (evento: EventoPublico) =>
+    `${evento.nome.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${evento.data_evento.slice(0, 10)}`
+
+  const evento = useMemo(
+    () => eventos.find((ev) => gerarSlug(ev) === params.slug) ?? null,
+    [eventos, params.slug],
+  )
+
+  if (carregando) {
+    return (
+      <div className="min-h-screen pt-20">
+        <div className="relative h-[60vh] min-h-[400px] animate-pulse bg-white/10" />
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="h-40 rounded-sm bg-white/10" />
+              <div className="h-36 rounded-sm bg-white/10" />
+              <div className="h-64 rounded-sm bg-white/10" />
+            </div>
+            <div className="h-96 rounded-sm bg-white/10" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!evento) notFound()
+
+  const eventoSlug = gerarSlug(evento)
+  const loteAtivo = evento.lotes.find((l) => l.ativo) ?? evento.lotes[0]
+  const dataEvento = new Date(`${evento.data_evento}T00:00:00`)
+  const dataFormatada = format(dataEvento, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+  const temLista = evento.lista_encerra_as !== null
 
   const abrirCompra = (tipo: TipoIngresso, genero: GeneroIngresso) => {
     setTipoSelecionado(tipo)
@@ -40,7 +103,7 @@ export default function EventoPage({ params }: PageProps) {
       {/* HERO */}
       <div className="relative h-[60vh] min-h-[400px]">
         <Image
-          src={evento.flyerUrl || '/images/flyers/placeholder.webp'}
+          src={evento.flyer_url || '/images/flyers/placeholder.webp'}
           alt={evento.nome}
           fill
           className="object-cover object-top"
@@ -52,7 +115,7 @@ export default function EventoPage({ params }: PageProps) {
             <Link href="/#eventos" className="inline-flex items-center gap-2 text-bege-escuro hover:text-bege text-sm mb-4 transition-colors">
               <ArrowLeft size={16} /> Voltar aos eventos
             </Link>
-            <p className="section-subtitle mb-2">{format(evento.data, 'dd MMM yyyy', { locale: ptBR }).toUpperCase()}</p>
+            <p className="section-subtitle mb-2">{format(dataEvento, 'dd MMM yyyy', { locale: ptBR }).toUpperCase()}</p>
             <h1 className="font-display text-5xl md:text-7xl text-bege capitalize">{evento.nome}</h1>
           </div>
         </div>
@@ -70,7 +133,7 @@ export default function EventoPage({ params }: PageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { icon: <Calendar size={16} />, label: 'Data', value: dataFormatada },
-                  { icon: <Clock size={16} />, label: 'Horário', value: `A partir das ${evento.hora}` },
+                  { icon: <Clock size={16} />, label: 'Horário', value: `A partir das ${evento.hora_abertura}` },
                   { icon: <MapPin size={16} />, label: 'Local', value: 'Rua Brás Cubas, 35 — BC' },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3">
@@ -105,17 +168,17 @@ export default function EventoPage({ params }: PageProps) {
                       ${lote.ativo ? 'border-dourado/50 bg-dourado/8' : 'border-white/5 bg-black/20 opacity-50'}`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${lote.ativo ? 'bg-dourado animate-pulse' : 'bg-bege-escuro/30'}`} />
-                      <span className="font-body text-sm text-bege">{lote.nome}</span>
+                      <span className="font-body text-sm text-bege">{lote.nome ?? `${lote.numero}º Lote`}</span>
                       {lote.ativo && <span className="font-accent text-xs text-dourado border border-dourado/40 px-2 py-0.5">ATUAL</span>}
                     </div>
                     <div className="flex items-center gap-6 text-sm">
                       <div className="text-right">
                         <p className="text-xs text-bege-escuro/50">Masc</p>
-                        <p className="text-bege">R$ {lote.precoMasculino},00</p>
+                        <p className="text-bege">R$ {Number(lote.preco_masc)},00</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-bege-escuro/50">Fem</p>
-                        <p className="text-dourado">R$ {lote.precoFeminino},00</p>
+                        <p className="text-dourado">R$ {Number(lote.preco_fem)},00</p>
                       </div>
                     </div>
                   </div>
@@ -147,7 +210,7 @@ export default function EventoPage({ params }: PageProps) {
                       <span className="font-body text-xs text-bege-escuro/60">Masculino</span>
                     </div>
                     <div className="font-display text-xl text-bege group-hover:text-gradient-gold">
-                      R$ {loteAtivo.precoMasculino},00
+                      R$ {Number(loteAtivo?.preco_masc ?? 0)},00
                     </div>
                     <div className="flex items-center gap-1 mt-1 text-xs text-dourado opacity-0 group-hover:opacity-100 transition-opacity">
                       <ChevronRight size={10} /> Comprar
@@ -162,7 +225,7 @@ export default function EventoPage({ params }: PageProps) {
                       <span className="font-body text-xs text-bege-escuro/60">Feminino</span>
                     </div>
                     <div className="font-display text-xl text-dourado">
-                      R$ {loteAtivo.precoFeminino},00
+                      R$ {Number(loteAtivo?.preco_fem ?? 0)},00
                     </div>
                     <div className="flex items-center gap-1 mt-1 text-xs text-dourado opacity-0 group-hover:opacity-100 transition-opacity">
                       <ChevronRight size={10} /> Comprar
@@ -205,11 +268,11 @@ export default function EventoPage({ params }: PageProps) {
               </div>
 
               {/* Lista amiga */}
-              {evento.temLista && (
+              {temLista && (
                 <>
                   <div className="divider-gold opacity-30" />
                   <Link
-                    href={`/lista/${evento.slug}`}
+                    href={`/lista/${eventoSlug}`}
                     className="block text-center text-xs font-accent tracking-widest uppercase text-bege-escuro/60 hover:text-dourado border border-white/10 hover:border-dourado/40 py-3 rounded-sm transition-all duration-200"
                   >
                     Entrar na Lista Amiga →
@@ -231,7 +294,11 @@ export default function EventoPage({ params }: PageProps) {
       {/* MODAL DE COMPRA */}
       {modalAberto && (
         <CompraIngressoModal
-          evento={evento}
+          eventoId={evento.id}
+          eventoNome={evento.nome}
+          eventoData={evento.data_evento}
+          eventoHora={evento.hora_abertura}
+          lotes={evento.lotes}
           tipoInicial={tipoSelecionado}
           generoInicial={generoSelecionado}
           onClose={() => setModalAberto(false)}

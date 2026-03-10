@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react'
 import { X, User, Mail, Phone, CreditCard, QrCode, Shield, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
-import { Evento, TipoIngresso, GeneroIngresso } from '@/types'
-import { getLoteAtivo } from '@/lib/eventos-data'
+import { TipoIngresso, GeneroIngresso } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -12,14 +11,18 @@ type Step = 'dados' | 'pagamento' | 'pix' | 'sucesso'
 type MetodoPagamento = 'pix' | 'cartao'
 
 interface Props {
-  evento: Evento
+  eventoId: string
+  eventoNome: string
+  eventoData: string
+  eventoHora: string
+  lotes: Array<{ id: string; numero: number; nome: string | null; preco_masc: number; preco_fem: number; ativo: boolean }>
   tipoInicial: TipoIngresso
   generoInicial: GeneroIngresso
   onClose: () => void
 }
 
 export const CompraIngressoModal: React.FC<Props> = ({
-  evento, tipoInicial, generoInicial, onClose
+  eventoId, eventoNome, eventoData, eventoHora, lotes, tipoInicial, generoInicial, onClose
 }) => {
   const [step, setStep] = useState<Step>('dados')
   const [tipo, setTipo] = useState<TipoIngresso>(tipoInicial)
@@ -42,10 +45,10 @@ export const CompraIngressoModal: React.FC<Props> = ({
     expiresAt: new Date(Date.now() + 30 * 60 * 1000),
   })
 
-  const loteAtivo = getLoteAtivo(evento)
+  const loteAtivo = lotes.find(l => l.ativo) ?? lotes[0]
 
   const precos = {
-    pista: { masculino: loteAtivo.precoMasculino, feminino: loteAtivo.precoFeminino },
+    pista: { masculino: loteAtivo?.preco_masc ?? 0, feminino: loteAtivo?.preco_fem ?? 0 },
     backstage: { masculino: 120, feminino: 60 },
   }
 
@@ -147,7 +150,7 @@ export const CompraIngressoModal: React.FC<Props> = ({
             <p className="font-accent text-xs tracking-widest uppercase text-dourado">
               {step === 'dados' ? 'Seus Dados' : step === 'pagamento' ? 'Pagamento' : step === 'pix' ? 'PIX' : 'Confirmado!'}
             </p>
-            <h3 className="font-display text-2xl text-bege mt-0.5">{evento.nome}</h3>
+            <h3 className="font-display text-2xl text-bege mt-0.5">{eventoNome}</h3>
           </div>
           <button onClick={onClose} className="text-bege-escuro hover:text-bege transition-colors">
             <X size={22} />
@@ -159,7 +162,7 @@ export const CompraIngressoModal: React.FC<Props> = ({
           <div>
             <p className="font-body text-xs text-bege-escuro/60">{nomeIngresso}</p>
             <p className="font-body text-xs text-bege-escuro/40">
-              {format(evento.data, "dd/MM/yyyy", { locale: ptBR })} às {evento.hora} · {loteAtivo.nome}
+              {format(new Date(`${eventoData}T00:00:00`), "dd/MM/yyyy", { locale: ptBR })} às {eventoHora} · {loteAtivo?.nome ?? 'Lote'}
             </p>
           </div>
           <div className="font-display text-2xl text-gradient-gold">
@@ -407,7 +410,7 @@ export const CompraIngressoModal: React.FC<Props> = ({
               <div className="bg-black/30 border border-gold/20 rounded-sm p-4 text-left space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-bege-escuro/60">Evento</span>
-                  <span className="text-bege">{evento.nome}</span>
+                  <span className="text-bege">{eventoNome}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-bege-escuro/60">Ingresso</span>
