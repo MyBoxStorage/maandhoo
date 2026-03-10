@@ -1,6 +1,9 @@
 import crypto from 'crypto'
 
-const SECRET = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+const SECRET = process.env.NEXTAUTH_SECRET ?? ''
+if (!SECRET && process.env.NODE_ENV !== 'test') {
+  console.error('[cliente-session] NEXTAUTH_SECRET não configurado! Sessões de cliente não funcionarão.')
+}
 export const CLIENTE_SESSION_COOKIE = 'maandhoo_cliente_session'
 export const CLIENTE_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7 // 7 dias
 
@@ -15,6 +18,7 @@ function hmac(data: string): string {
 }
 
 export function criarTokenCliente(payload: ClientePayload): string {
+  if (!SECRET) throw new Error('[cliente-session] NEXTAUTH_SECRET não configurado')
   const exp = Math.floor(Date.now() / 1000) + CLIENTE_SESSION_DURATION_SECONDS
   const data = JSON.stringify({ ...payload, exp })
   const encoded = Buffer.from(data).toString('base64url')
@@ -23,6 +27,7 @@ export function criarTokenCliente(payload: ClientePayload): string {
 }
 
 export function verificarTokenCliente(token: string): (ClientePayload & { exp: number }) | null {
+  if (!SECRET) return null
   try {
     const [encoded, sig] = token.split('.')
     if (!encoded || !sig) return null

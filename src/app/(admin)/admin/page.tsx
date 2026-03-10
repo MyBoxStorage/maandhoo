@@ -49,38 +49,38 @@ export default function AdminDashboard() {
   const carregar = async () => {
     setCarregando(true)
     try {
-      const [resIng, resEv, resRes, resLeads] = await Promise.all([
-        fetch('/api/admin/ingressos'),
+      // stats usa rota dedicada (sem paginação) para receita/contagens corretas
+      // ingressos usa a rota paginada só para mostrar os recentes (6 itens)
+      const [resStats, resRecentes, resEv, resRes, resLeads] = await Promise.all([
+        fetch('/api/admin/ingressos/stats'),
+        fetch('/api/admin/ingressos?page=1'),
         fetch('/api/admin/eventos'),
         fetch('/api/reservas'),
         fetch('/api/leads'),
       ])
 
-      const [dataIng, dataEv, dataRes, dataLeads] = await Promise.all([
-        resIng.json(), resEv.json(), resRes.json(), resLeads.json(),
+      const [dataStats, dataRecentes, dataEv, dataRes, dataLeads] = await Promise.all([
+        resStats.json(), resRecentes.json(), resEv.json(), resRes.json(), resLeads.json(),
       ])
 
-      const ingressos: IngressoRecente[] = dataIng.ingressos ?? []
-      setRecentes(
-        ingressos
-          .filter(i => i.status === 'ativo' || i.status === 'utilizado')
-          .slice(0, 6)
-      )
+      // Recentes: só para exibição no card (máx 6)
+      const recentes: IngressoRecente[] = (dataRecentes.ingressos ?? [])
+        .filter((i: IngressoRecente) => i.status === 'ativo' || i.status === 'utilizado')
+        .slice(0, 6)
+      setRecentes(recentes)
 
-      const totalReceita = ingressos
-        .filter(i => i.status === 'ativo' || i.status === 'utilizado')
-        .reduce((a, i) => a + (i.preco_pago ?? 0), 0)
-      setReceita(totalReceita)
+      // Receita e contagens: dados agregados sem paginação
+      setReceita(dataStats.receita ?? 0)
 
       const reservas = dataRes.reservas ?? []
       const leads = dataLeads.leads ?? []
 
       setStats({
-        ingressosAtivos:    ingressos.filter(i => i.status === 'ativo').length,
-        ingressosUtilizados: ingressos.filter(i => i.status === 'utilizado').length,
-        totalIngressos:     ingressos.length,
-        reservasPendentes:  reservas.filter((r: { status: string }) => r.status === 'pendente').length,
-        leadsNovos:         leads.filter((l: { status: string }) => l.status === 'novo').length,
+        ingressosAtivos:     dataStats.ativos ?? 0,
+        ingressosUtilizados: dataStats.utilizados ?? 0,
+        totalIngressos:      dataStats.total ?? 0,
+        reservasPendentes:   reservas.filter((r: { status: string }) => r.status === 'pendente').length,
+        leadsNovos:          leads.filter((l: { status: string }) => l.status === 'novo').length,
       })
 
       setEventos(dataEv.eventos ?? [])

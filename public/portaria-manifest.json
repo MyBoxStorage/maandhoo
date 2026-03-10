@@ -1,0 +1,39 @@
+{
+  "name": "Maandhoo Portaria",
+  "short_name": "Portaria",
+  "description": "Sistema de validação de ingressos — Maandhoo Club",
+  "start_url": "/portaria",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0604",
+  "theme_color": "#0A0604",
+  "lang": "pt-BR",
+  "categories": ["utilities"],
+  "icons": [
+    {
+      "src": "/api/pwa-icon?size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/pwa-icon?size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/pwa-icon?size=192&maskable=true",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/api/pwa-icon?size=512&maskable=true",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -279,7 +279,7 @@ const PorteiroModal: React.FC<{
                   <span onClick={() => toggleEvento(ev.id)} className="font-body text-sm text-bege-escuro/70 group-hover:text-bege transition-colors cursor-pointer">
                     {ev.nome}
                     {ev.data_evento && <span className="text-bege-escuro/40 ml-1.5 text-xs">
-                      {format(new Date(ev.data_evento), "dd/MM", { locale: ptBR })}
+                      {format(new Date(`${ev.data_evento.slice(0, 10)}T00:00:00`), "dd/MM", { locale: ptBR })}
                     </span>}
                   </span>
                 </label>

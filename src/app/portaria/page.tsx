@@ -461,19 +461,24 @@ export default function PortariaPage() {
             </button>
           </div>
 
-          {/* Container da câmera — sempre renderizado no DOM para o html5-qrcode */}
-          <div className={`relative scanner-frame mb-4 overflow-hidden ${!cameraAtiva ? 'flex items-center justify-center bg-black/40' : ''}`}>
-            <div id={scannerDivId} className={cameraAtiva ? 'w-full' : 'hidden'} />
-
+          {/* Container da câmera
+               IMPORTANTE: o div#qr-reader NUNCA pode ter display:none enquanto
+               o html5-qrcode está inicializando — injeta o <video> antes de
+               setCameraAtiva(true) ser chamado, e se o elemento estiver oculto
+               o browser renderiza o vídeo com dimensões zero (tela marrom).
+               Solução: manter o div sempre no DOM, controlar visibilidade só
+               no container pai com visibility+height em vez de display:none.
+          */}
+          <div className="relative scanner-frame mb-4 overflow-hidden">
+            {/* Placeholder visível quando câmera inativa */}
             {!cameraAtiva && (
-              <button
-                onClick={toggleCamera}
-                className="flex flex-col items-center gap-2 text-bege-escuro/30 hover:text-dourado/60 transition-colors"
-              >
-                <Camera size={36} />
-                <span className="font-body text-xs">Ativar câmera</span>
-              </button>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-10 pointer-events-none">
+                <Camera size={36} className="text-bege-escuro/30" />
+                <span className="font-body text-xs text-bege-escuro/30 mt-2">Ativar câmera</span>
+              </div>
             )}
+            {/* div sempre no DOM — nunca hidden */}
+            <div id={scannerDivId} style={{ width: '100%', minHeight: cameraAtiva ? undefined : '200px' }} />
 
             {cameraAtiva && (
               <div className="absolute inset-0 pointer-events-none">

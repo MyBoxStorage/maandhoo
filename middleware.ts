@@ -4,6 +4,9 @@ import { verificarTokenSessao, ADMIN_SESSION_COOKIE } from '@/lib/admin-session'
 // ─── RATE LIMITING ────────────────────────────────────────────────────────────
 // Mapa em memória: chave → { count, resetAt }
 // Funciona no Edge Runtime do Next.js (sem dependências externas)
+// ATENÇÃO: Em produção com múltiplas instâncias serverless (ex: Vercel),
+// cada instância mantém seu próprio mapa — o limite não é global entre instâncias.
+// Para rate limiting global em produção, use Redis/Upstash KV.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
 const RATE_LIMIT_RULES: Record<string, { limit: number; windowMs: number }> = {

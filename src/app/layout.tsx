@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description: 'Balada premium em Balneário Camboriú. Compre ingressos, reserve mesas e camarotes. Rua Brás Cubas, 35 — Nova Esperança, BC.',
   keywords: 'maandhoo, club, balada, balneário camboriú, ingressos, eventos, camarote, reserva',
   metadataBase: new URL('https://maandhoo.com'),
+  // PWA — precisa estar no root layout para Chrome e Safari detectarem
+  manifest: '/portaria-manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Portaria',
+  },
   openGraph: {
     title: 'Maandhoo Club',
     description: 'Suas noites são na Maandhoo — o melhor club de Balneário Camboriú',
@@ -17,6 +24,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: '/favicon.ico',
+    apple: '/api/pwa-icon?size=192',
+  },
+  // mobile-web-app-capable não tem campo nativo no Next, vai via other
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 }
 
@@ -28,9 +40,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* Fontes — estas tags SÃO renderizadas pelo Next no <head> */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Cinzel:wght@400;500;600;700&family=Nunito:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Cinzel:wght@400;500;600;700&family=Nunito:wght@200;300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="bg-preto-profundo text-bege antialiased">
         {children}
