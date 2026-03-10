@@ -73,9 +73,9 @@ function CheckboxLGPD({ checked, onChange, variant = 'full' }: {
         {variant === 'full' ? (
           <>
             <p className="font-body text-xs text-bege-escuro/80 leading-relaxed">
-              <span className="text-dourado font-medium">Quero participar dos sorteios semanais</span> e receber experiências personalizadas.
-              Autorizo a Maandhoo a compartilhar meu perfil com empresas parceiras em Balneário Camboriú para envio de
-              ofertas e promoções exclusivas.
+              <span className="text-dourado font-medium">Quero participar dos sorteios semanais</span> e receber ofertas personalizadas.
+              Autorizo a Maandhoo e parceiros a compartilharem meu perfil para melhorar produtos, serviços e tornar minha experiência
+              PREMIUM com propostas exclusivas e promoções em Balneário Camboriú.
             </p>
             <p className="font-body text-[10px] text-bege-escuro/35 mt-1.5 leading-relaxed">
               Você pode revogar este consentimento a qualquer momento em Configurações. Seus dados são tratados
@@ -473,7 +473,7 @@ export function QuizVibeCheck({
         <div>
           <h3 className="font-display text-xl text-bege mb-1">Personalização e sorteios</h3>
           <p className="font-body text-xs text-bege-escuro/45 leading-relaxed">
-            Seus dados enriquecem sua experiência na Maandhoo. A autorização abaixo é opcional, mas desbloqueia badge exclusivo, tema personalizado e participação nos sorteios semanais com parceiros.
+            Suas informações enriquecem a experiência na Maandhoo. A autorização abaixo é opcional, mas desbloqueia sorteios em Balneário Camboriú toda semana e um badge e tema exclusivo para você personalizar sua página na Maandhoo.
           </p>
         </div>
         <CheckboxLGPD checked={lgpdChecked} onChange={setLgpdChecked} variant="full"/>
