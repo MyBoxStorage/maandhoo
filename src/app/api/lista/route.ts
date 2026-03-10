@@ -77,10 +77,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao salvar inscrição' }, { status: 500 })
     }
 
-    // 5. Gerar QR Code em base64
+    // 5. Gerar QR Code em base64 (salvo no banco para uso no admin — NÃO enviado por email)
     const qrBase64 = await gerarQRCodeBase64(qrToken)
+    await supabaseAdmin
+      .from('lista_amiga')
+      .update({ qr_base64: qrBase64 })
+      .eq('id', inscricao.id)
+      .then(() => {}) // fire-and-forget, não bloqueia o fluxo
 
-    // 6. Enviar email via lib centralizada (domínio correto, design profissional)
+    // 6. Enviar email com instrução de acesso (sem QR Code)
     let emailEnviado = false
     try {
       const resultado = await enviarEmailLista({
@@ -90,15 +95,13 @@ export async function POST(req: NextRequest) {
         eventoData:    evento.data_evento,
         eventoHora:    evento.hora_abertura ?? '22:00',
         genero,
-        qrBase64,
-        qrToken,
       })
 
       if (resultado.sucesso) {
         emailEnviado = true
         await supabaseAdmin
           .from('lista_amiga')
-          .update({ qr_enviado: true, qr_enviado_em: new Date().toISOString() })
+          .update({ email_enviado: true, email_enviado_em: new Date().toISOString() })
           .eq('id', inscricao.id)
       } else {
         console.error('[lista] Falha ao enviar email:', resultado.erro)

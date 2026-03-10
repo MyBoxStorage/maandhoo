@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 import { QuizVibeCheck } from '@/components/ui/QuizVibeCheck'
@@ -8,6 +8,7 @@ import { PERFIS_QUIZ, type PerfilQuiz } from '@/lib/quiz-perfis'
 import {
   Loader2, LogOut, Ticket,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Clock,
+  ZoomIn, X, ShieldAlert,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -43,7 +44,166 @@ const STATUS_LABEL: Record<string, string> = {
   cancelado: 'Cancelado', pendente: 'Aguardando',
 }
 
-// ── Badge inline SVG pequeno para o header ─────────────────────
+// ── QR Code protegido com zoom e anti-print/screenshot ─────────
+function QRProtegido({ src }: { src: string }) {
+  const [ampliado, setAmpliado] = useState(false)
+  const [printBlock, setPrintBlock] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Renderiza QR em canvas (impede download via salvar imagem)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !src) return
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    }
+    img.src = src
+  }, [src, ampliado])
+
+  // Detecta tentativa de print/screenshot e exibe bloqueio
+  useEffect(() => {
+    const bloquear = () => setPrintBlock(true)
+    const desbloquear = () => setPrintBlock(false)
+    window.addEventListener('beforeprint', bloquear)
+    window.addEventListener('afterprint', desbloquear)
+    // iOS/Android screenshot heuristic via visibilitychange
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') setPrintBlock(true)
+      else setTimeout(() => setPrintBlock(false), 1500)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('beforeprint', bloquear)
+      window.removeEventListener('afterprint', desbloquear)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
+
+  return (
+    <>
+      {/* ── Modal ampliado ── */}
+      {ampliado && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+          style={{
+            background: 'rgba(10,8,5,0.97)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+          }}
+          onClick={() => setAmpliado(false)}
+        >
+          {/* Overlay de bloqueio de print — dentro do modal */}
+          {printBlock && (
+            <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center gap-4"
+              style={{ background: 'rgba(10,8,5,1)' }}>
+              <ShieldAlert size={48} color="#C9A84C" />
+              <p style={{ color: '#e8ddd0', fontFamily: 'Georgia,serif', fontSize: '16px', letterSpacing: '3px', textAlign: 'center' }}>
+                PROTEÇÃO ATIVADA
+              </p>
+              <p style={{ color: 'rgba(232,221,208,0.35)', fontSize: '11px', textAlign: 'center', maxWidth: '280px', lineHeight: '1.8' }}>
+                O QR Code é protegido contra capturas de tela.<br/>Apresente pessoalmente na entrada.
+              </p>
+            </div>
+          )}
+
+          <div className="relative flex flex-col items-center gap-5 p-8" onClick={e => e.stopPropagation()}>
+            <p className="font-accent text-xs tracking-[0.3em] text-dourado/60 uppercase">QR Code — Entrada</p>
+
+            {/* Canvas do QR ampliado */}
+            <div
+              className="relative bg-[#fefbf5] rounded-sm p-4"
+              style={{ boxShadow: '0 0 60px rgba(201,168,76,0.20)' }}
+              onContextMenu={e => e.preventDefault()}
+            >
+              <canvas
+                ref={canvasRef}
+                width={280}
+                height={280}
+                style={{
+                  display: 'block',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                  WebkitTouchCallout: 'none',
+                }}
+              />
+              {/* Marca d'água diagonal discreta */}
+              <div
+                className="absolute inset-0 pointer-events-none select-none"
+                style={{
+                  background: 'repeating-linear-gradient(-45deg, transparent, transparent 48px, rgba(201,168,76,0.04) 48px, rgba(201,168,76,0.04) 50px)',
+                  borderRadius: '2px',
+                }}
+              />
+            </div>
+
+            <p className="font-accent text-[9px] tracking-[0.3em] text-dourado/40 uppercase">Apresente na entrada</p>
+            <p className="font-body text-[10px] text-bege-escuro/30">Uso único &middot; Não compartilhe</p>
+
+            <button
+              onClick={() => setAmpliado(false)}
+              className="flex items-center gap-2 px-5 py-2.5 border border-dourado/25 rounded-sm text-bege-escuro/50 hover:text-bege hover:border-dourado/40 transition-colors"
+            >
+              <X size={13} />
+              <span className="font-accent text-[10px] tracking-[0.2em] uppercase">Fechar</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Visualização inline (miniatura) ── */}
+      <div
+        className="flex flex-col items-center gap-3"
+        onContextMenu={e => e.preventDefault()}
+        style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+      >
+        {/* Miniatura do QR em canvas */}
+        <div
+          className="relative bg-[#fefbf5] p-2.5 rounded-sm cursor-pointer group"
+          style={{ border: '1px solid rgba(201,168,76,0.20)' }}
+          onClick={() => setAmpliado(true)}
+        >
+          <img
+            src={src}
+            width={160}
+            height={160}
+            alt="QR Code"
+            draggable={false}
+            onContextMenu={e => e.preventDefault()}
+            style={{
+              display: 'block',
+              pointerEvents: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none',
+            }}
+          />
+          {/* Overlay hover com ícone de zoom */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-sm flex items-center justify-center">
+            <ZoomIn size={28} className="text-white/0 group-hover:text-white/80 transition-all drop-shadow-lg" />
+          </div>
+        </div>
+
+        <button
+          onClick={() => setAmpliado(true)}
+          className="flex items-center gap-1.5 text-dourado/50 hover:text-dourado transition-colors"
+        >
+          <ZoomIn size={12} />
+          <span className="font-accent text-[9px] tracking-[0.2em] uppercase">Ampliar QR Code</span>
+        </button>
+
+        <p className="font-accent text-[9px] tracking-[0.3em] text-dourado/40 uppercase">Apresente na entrada</p>
+        <p className="font-body text-[10px] text-bege-escuro/25">Uso único &middot; Não compartilhe</p>
+      </div>
+    </>
+  )
+}
+
+
 function BadgeMini({ perfil }: { perfil: PerfilQuiz }) {
   return (
     <div className="relative flex items-center justify-center" style={{ filter: `drop-shadow(0 0 6px ${perfil.corGlow})` }}>
@@ -150,33 +310,59 @@ export default function MinhaContaPage() {
   return (
     <>
       <style>{`
+        /* ── Anti-print global ── */
         @media print {
-          body * { visibility: hidden !important; }
-          .no-print-overlay { display: flex !important; visibility: visible !important; }
+          body * { visibility: hidden !important; display: none !important; }
+          .print-block-overlay {
+            display: flex !important;
+            visibility: visible !important;
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+          }
         }
-        .qr-wrapper { -webkit-user-select: none; user-select: none; }
-
+        /* Impede seleção de texto e arrastar em toda a página */
+        .qr-zona {
+          -webkit-user-select: none;
+          user-select: none;
+          -webkit-touch-callout: none;
+        }
+        /* Desabilita pointer events nos elementos de QR */
+        .qr-zona img, .qr-zona canvas {
+          pointer-events: none !important;
+          -webkit-user-drag: none !important;
+          user-drag: none !important;
+        }
         /* Tema dinâmico do perfil */
         .tema-ativo .border-dourado\\/10 { border-color: var(--tema-border, rgba(201,168,76,0.1)); }
         .tema-ativo .border-dourado\\/20 { border-color: var(--tema-border, rgba(201,168,76,0.2)); }
         .tema-ativo .text-dourado { color: var(--tema-cor, #C9A84C); }
-        .tema-ativo .bg-preto-profundo { background: linear-gradient(180deg, #0A0604 0%, #0a0604 100%); }
         .tema-ativo .border-b.border-dourado\\/10 {
           border-bottom-color: var(--tema-border);
           box-shadow: 0 1px 0 0 var(--tema-glow);
         }
       `}</style>
 
-      <div className="no-print-overlay" style={{
-        display: 'none', position: 'fixed', inset: 0, zIndex: 9999,
-        background: '#0d0a07', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: '16px',
-      }}>
-        <AlertTriangle size={48} color="#C9A84C" />
-        <p style={{ color: '#e8ddd0', fontFamily: 'Georgia,serif', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
+      {/* ── Overlay global de bloqueio de print ── */}
+      <div
+        className="print-block-overlay"
+        style={{
+          display: 'none',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 99999,
+          background: '#0d0a07',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+        }}
+      >
+        <ShieldAlert size={52} color="#C9A84C" />
+        <p style={{ color: '#e8ddd0', fontFamily: 'Georgia,serif', fontSize: '18px', letterSpacing: '3px', textAlign: 'center' }}>
           IMPRESSÃO NÃO PERMITIDA
         </p>
-        <p style={{ color: 'rgba(232,221,208,0.4)', fontSize: '12px', textAlign: 'center', maxWidth: '300px', lineHeight: '1.6' }}>
+        <p style={{ color: 'rgba(232,221,208,0.4)', fontSize: '12px', textAlign: 'center', maxWidth: '300px', lineHeight: '1.8' }}>
           O QR Code é de uso único e pessoal.<br />Apresente diretamente pelo celular na entrada.
         </p>
       </div>
@@ -274,21 +460,14 @@ export default function MinhaContaPage() {
                 {isAberto && (
                   <div className="border-t border-dourado/10 bg-black/20 p-5">
                     {qrAtivo && (
-                      <div className="qr-wrapper flex flex-col items-center mb-5">
+                      <div className="qr-zona flex flex-col items-center mb-5">
                         {qrLoading === ing.id ? (
                           <div className="flex flex-col items-center gap-3 py-8">
                             <Loader2 size={28} className="animate-spin text-dourado/40" />
                             <p className="font-body text-xs text-bege-escuro/40">Carregando QR Code...</p>
                           </div>
                         ) : qrMap[ing.id] ? (
-                          <>
-                            <div className="bg-[#fefbf5] p-3 rounded-sm mb-3" style={{ WebkitUserSelect: 'none', userSelect: 'none' }}>
-                              <img src={qrMap[ing.id]} width={200} height={200} alt="QR Code" draggable={false}
-                                onContextMenu={e => e.preventDefault()} style={{ display: 'block', pointerEvents: 'none' }} />
-                            </div>
-                            <p className="font-accent text-[9px] tracking-[0.3em] text-dourado/40 uppercase">Apresente na entrada</p>
-                            <p className="font-body text-[10px] text-bege-escuro/25 mt-1">Uso único · Não compartilhe</p>
-                          </>
+                          <QRProtegido src={qrMap[ing.id]} />
                         ) : null}
                       </div>
                     )}

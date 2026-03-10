@@ -50,8 +50,7 @@ interface DadosEmailLista {
   eventoData: string
   eventoHora: string
   genero: string
-  qrBase64: string
-  qrToken: string
+  // QR Code NÃO é enviado por email — apenas instruções de acesso
 }
 
 interface DadosEmailCamarote {
@@ -264,15 +263,16 @@ function gerarHTMLIngresso(dados: DadosEmailIngresso & {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// HTML: Lista Amiga
+// HTML: Lista Amiga — SEM QR Code, apenas instrução de acesso
 // ─────────────────────────────────────────────────────────────────
 function gerarHTMLLista(dados: DadosEmailLista & {
   dataFormatada: string; dataAbrev: string; generoLabel: string; serial: string
 }): string {
   const { dataFormatada, dataAbrev, generoLabel, serial } = dados
+  const loginUrl = `${SITE_URL()}/acesso`
 
   const corpo = `
-  ${cabecalhoEmail('Lista Amiga', 'Seu QR Code de Acesso')}
+  ${cabecalhoEmail('Lista Amiga', 'Confirmação de Inscrição')}
 
   <!-- EVENTO -->
   <tr>
@@ -284,29 +284,44 @@ function gerarHTMLLista(dados: DadosEmailLista & {
     </td>
   </tr>
 
-  <!-- QR CODE -->
+  <!-- INSTRUÇÃO DE ACESSO -->
   <tr>
     <td style="background:${BG_SECTION};border-left:1px solid ${GOLD_35};
       border-right:1px solid ${GOLD_35};border-bottom:1px solid ${GOLD_20};padding:36px 48px;text-align:center;">
-      <div style="font-size:8px;letter-spacing:5px;color:${GOLD_50};text-transform:uppercase;margin-bottom:18px;">Seu QR Code</div>
-      <div style="display:inline-block;background:#fdf9f2;padding:14px;border-radius:4px;
-        border:2px solid rgba(201,168,76,0.20);">
-        <img src="${dados.qrBase64}" width="180" height="180" alt="QR Code Lista Amiga"
-          style="display:block;border:0;outline:none;-ms-interpolation-mode:bicubic;"/>
+      <div style="font-size:8px;letter-spacing:5px;color:${GOLD_50};text-transform:uppercase;margin-bottom:18px;">Como Acessar seu QR Code</div>
+
+      <!-- Ícone de cadeado / acesso seguro -->
+      <div style="width:64px;height:64px;margin:0 auto 20px;background:rgba(201,168,76,0.10);
+        border:1px solid ${GOLD_30};border-radius:50%;display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:28px;line-height:1;">&#128274;</div>
       </div>
-      <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.35);
-        text-transform:uppercase;margin-top:14px;">Apresente na entrada</div>
+
+      <div style="font-size:13px;color:${CREAM_55};line-height:1.9;margin-bottom:28px;max-width:380px;margin-left:auto;margin-right:auto;">
+        Seu QR Code de acesso está disponível com segurança na sua <strong style="color:${CREAM};">área do cliente</strong>.
+        <br/>Acesse pelo link abaixo, faça login e apresente o QR Code diretamente pelo celular na entrada.
+      </div>
+
+      <a href="${loginUrl}"
+        style="display:inline-block;background:${GOLD};color:#0d0a07;padding:14px 36px;
+          border-radius:3px;text-decoration:none;font-size:11px;letter-spacing:4px;
+          text-transform:uppercase;font-weight:bold;font-family:Georgia,serif;">
+        Acessar Meu QR Code
+      </a>
+
+      <div style="margin-top:18px;font-size:10px;color:rgba(237,228,216,0.25);font-family:'Courier New',Courier,monospace;">
+        ${loginUrl}
+      </div>
     </td>
   </tr>
 
-  <!-- DADOS DO PORTADOR -->
+  <!-- DADOS DA INSCRIÇÃO -->
   <tr>
     <td style="background:${BG_SECTION};border-left:1px solid ${GOLD_35};
       border-right:1px solid ${GOLD_35};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td width="50%" style="padding:22px 16px 22px 48px;border-right:1px solid rgba(201,168,76,0.08);">
-            <div style="font-size:7px;letter-spacing:4px;color:${GOLD_50};text-transform:uppercase;margin-bottom:7px;">Portador</div>
+            <div style="font-size:7px;letter-spacing:4px;color:${GOLD_50};text-transform:uppercase;margin-bottom:7px;">Inscrito</div>
             <div style="font-size:15px;color:${CREAM};">${dados.nomeCompleto}</div>
           </td>
           <td width="50%" style="padding:22px 48px 22px 16px;text-align:right;">
@@ -315,7 +330,7 @@ function gerarHTMLLista(dados: DadosEmailLista & {
           </td>
         </tr>
         <tr>
-          <td colspan="2" style="padding:16px 48px 22px;border-top:1px solid rgba(201,168,76,0.06);">
+          <td colspan="2" style="padding:14px 48px 20px;border-top:1px solid rgba(201,168,76,0.06);">
             <div style="font-size:7px;letter-spacing:4px;color:${GOLD_50};text-transform:uppercase;margin-bottom:7px;">Validade</div>
             <div style="font-size:12px;color:${CREAM_55};">${dataAbrev} &middot; Até 00h00 &middot; Entrada única</div>
           </td>
@@ -334,7 +349,7 @@ function gerarHTMLLista(dados: DadosEmailLista & {
         border-radius:4px;padding:18px 24px;">
         <div style="font-size:8px;letter-spacing:3px;color:${GOLD_50};text-transform:uppercase;margin-bottom:10px;">Informações Importantes</div>
         <div style="font-size:11px;color:rgba(237,228,216,0.40);line-height:1.9;">
-          &#8226; QR Code pessoal e intransferível — válido somente para este evento.<br/>
+          &#8226; O QR Code é <strong style="color:rgba(237,228,216,0.60);">pessoal e intransferível</strong> — disponível somente na sua área do cliente.<br/>
           &#8226; Acesso encerrado às 00h00. Não haverá entrada após este horário.<br/>
           &#8226; Dúvidas? WhatsApp: <span style="color:rgba(201,168,76,0.65);">(47) 99930-0283</span>
         </div>
@@ -484,7 +499,7 @@ export async function enviarEmailIngresso(
   }
 }
 
-/** Envia email da Lista Amiga com QR Code embutido */
+/** Envia email da Lista Amiga — sem QR Code, apenas instrução de acesso */
 export async function enviarEmailLista(
   dados: DadosEmailLista
 ): Promise<{ sucesso: boolean; erro?: string }> {
@@ -497,7 +512,7 @@ export async function enviarEmailLista(
     const generoLabel   = dados.genero === 'feminino'
       ? 'Feminino — Entrada Gratuita'
       : 'Masculino — R$ 50,00'
-    const serial = `${dados.qrToken.slice(6, 14)}-LISTA`
+    const serial = `LISTA-${Date.now().toString(36).toUpperCase()}`
 
     const html = gerarHTMLLista({
       ...dados, dataFormatada, dataAbrev, generoLabel, serial,
@@ -509,8 +524,7 @@ export async function enviarEmailLista(
       subject: `Lista Amiga confirmada — ${dados.eventoNome} · ${format(new Date(dataISO), 'dd/MM', { locale: ptBR })}`,
       html,
       headers: {
-        'X-Entity-Ref-ID': dados.qrToken,
-        'List-Unsubscribe':  '<mailto:contato@maandhoo.com>',
+        'List-Unsubscribe': '<mailto:contato@maandhoo.com>',
       },
     })
 
