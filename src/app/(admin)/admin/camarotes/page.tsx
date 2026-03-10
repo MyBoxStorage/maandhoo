@@ -18,7 +18,7 @@ export default function AdminCamarotesPage() {
   const [eventos, setEventos] = useState<EventoDB[]>([])
   const [carregando, setCarregando] = useState(true)
   const [modalAberto, setModalAberto] = useState(false)
-  const [linksGerados, setLinksGerados] = useState<string[] | null>(null)
+  const [linksGerados, setLinksGerados] = useState<Array<{ numero: number; url: string }> | null>(null)
   const [eventoFiltro, setEventoFiltro] = useState('todos')
 
   const carregar = useCallback(async () => {
@@ -46,8 +46,8 @@ export default function AdminCamarotesPage() {
     toast.success('Link copiado!')
   }
 
-  const copiarTodos = (links: string[]) => {
-    navigator.clipboard.writeText(links.join('\n'))
+  const copiarTodos = (links: Array<{ numero: number; url: string }>) => {
+    navigator.clipboard.writeText(links.map(link => link.url).join('\n'))
     toast.success(`${links.length} links copiados!`)
   }
 
@@ -148,7 +148,7 @@ export default function AdminCamarotesPage() {
                   {/* AÇÕES */}
                   <div className="flex flex-col gap-2">
                     <GerarLinksButton
-                      camaroteId={camarote.id}
+                      camarote={camarote}
                       onGerado={(links) => setLinksGerados(links)}
                     />
                   </div>
@@ -181,15 +181,15 @@ export default function AdminCamarotesPage() {
               <p className="font-body text-xs text-bege-escuro/50 mb-4">
                 Distribua cada link para uma pessoa diferente. Cada link é de uso único.
               </p>
-              {linksGerados.map((url, i) => (
+              {linksGerados.map((link, i) => (
                 <div key={i} className="flex items-center gap-2 p-3 bg-black/30 rounded-sm border border-white/5">
-                  <span className="font-body text-xs text-bege-escuro/40 w-6 flex-shrink-0">{i + 1}.</span>
-                  <span className="font-mono text-xs text-bege-escuro/70 flex-1 truncate">{url}</span>
+                  <span className="font-body text-xs text-bege-escuro/40 w-6 flex-shrink-0">{link.numero}.</span>
+                  <span className="font-mono text-xs text-bege-escuro/70 flex-1 truncate">{link.url}</span>
                   <div className="flex gap-1.5 flex-shrink-0">
-                    <button onClick={() => copiarLink(url)} className="p-1.5 text-bege-escuro/40 hover:text-dourado transition-colors" title="Copiar">
+                    <button onClick={() => copiarLink(link.url)} className="p-1.5 text-bege-escuro/40 hover:text-dourado transition-colors" title="Copiar">
                       <Copy size={12} />
                     </button>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-bege-escuro/40 hover:text-dourado transition-colors" title="Abrir">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-bege-escuro/40 hover:text-dourado transition-colors" title="Abrir">
                       <ExternalLink size={12} />
                     </a>
                   </div>
@@ -212,39 +212,125 @@ export default function AdminCamarotesPage() {
   )
 }
 
-// ─── BOTÃO GERAR LINKS ────────────────────────────────────────
+// ─── MODAL GERAR LINKS ────────────────────────────────────────
 
-const GerarLinksButton: React.FC<{
-  camaroteId: string
-  onGerado: (links: string[]) => void
-}> = ({ camaroteId, onGerado }) => {
+const GerarLinksModal: React.FC<{
+  camarote: CamaroteComIngressos
+  onClose: () => void
+  onGerado: (links: Array<{ numero: number; url: string }>) => void
+}> = ({ camarote, onClose, onGerado }) => {
+  const [email, setEmail] = useState('')
+  const [nomeResponsavel, setNomeResponsavel] = useState('')
   const [gerando, setGerando] = useState(false)
 
   const gerar = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Informe um email válido')
+      return
+    }
     setGerando(true)
     try {
       const res = await fetch('/api/ingressos/camarote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ camarote_id: camaroteId }),
+        body: JSON.stringify({
+          camarote_id: camarote.id,
+          email_responsavel: email,
+          nome_responsavel: nomeResponsavel || 'Responsável',
+        }),
       })
       const data = await res.json()
       if (data.links) {
         onGerado(data.links)
-        toast.success(`${data.links.length} links gerados!`)
+        toast.success(`${data.links.length} ingressos gerados e enviados para ${email}!`)
+        onClose()
       } else {
-        toast.error(data.erro ?? 'Erro ao gerar links')
+        toast.error(data.erro ?? 'Erro ao gerar ingressos')
       }
     } catch { toast.error('Erro de conexão') }
     finally { setGerando(false) }
   }
 
   return (
-    <button onClick={gerar} disabled={gerando}
-      className="flex items-center gap-1.5 text-xs border border-dourado/30 hover:border-dourado text-dourado/80 hover:text-dourado px-3 py-2 rounded-sm transition-all disabled:opacity-50 whitespace-nowrap">
-      {gerando ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
-      {gerando ? 'Gerando...' : 'Gerar Links'}
-    </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#0f0c07] border border-dourado/30 rounded-sm"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-dourado/15">
+          <div>
+            <h3 className="font-display text-xl text-bege">Gerar Ingressos</h3>
+            <p className="font-body text-xs text-bege-escuro/50 mt-0.5">{camarote.identificador} · {camarote.capacidade} ingressos</p>
+          </div>
+          <button onClick={onClose} className="text-bege-escuro/50 hover:text-bege"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-dourado/5 border border-dourado/15 rounded-sm p-3 text-xs text-bege-escuro/60 leading-relaxed">
+            Após confirmar o pagamento via WhatsApp, informe o email do responsável pelo grupo.
+            Ele receberá <strong className="text-bege">{camarote.capacidade} links individuais</strong> — um para cada convidado.
+          </div>
+          <div>
+            <label className="admin-label">Nome do Responsável</label>
+            <input
+              className="admin-input"
+              value={nomeResponsavel}
+              onChange={e => setNomeResponsavel(e.target.value)}
+              placeholder="Ex: João Silva"
+            />
+          </div>
+          <div>
+            <label className="admin-label">Email para envio dos links *</label>
+            <input
+              className="admin-input"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="email@exemplo.com"
+              onKeyDown={e => e.key === 'Enter' && gerar()}
+            />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={gerar}
+              disabled={gerando}
+              className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs"
+            >
+              {gerando
+                ? <><Loader2 size={12} className="animate-spin" /> Gerando e enviando...</>
+                : <><ExternalLink size={12} /> Gerar e Enviar por Email</>}
+            </button>
+            <button onClick={onClose} className="btn-outline text-xs">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── BOTÃO QUE ABRE O MODAL ───────────────────────────────────
+
+const GerarLinksButton: React.FC<{
+  camarote: CamaroteComIngressos
+  onGerado: (links: Array<{ numero: number; url: string }>) => void
+}> = ({ camarote, onGerado }) => {
+  const [modalAberto, setModalAberto] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={() => setModalAberto(true)}
+        className="flex items-center gap-1.5 text-xs border border-dourado/30 hover:border-dourado text-dourado/80 hover:text-dourado px-3 py-2 rounded-sm transition-all whitespace-nowrap"
+      >
+        <ExternalLink size={12} />
+        Gerar Links
+      </button>
+      {modalAberto && (
+        <GerarLinksModal
+          camarote={camarote}
+          onClose={() => setModalAberto(false)}
+          onGerado={onGerado}
+        />
+      )}
+    </>
   )
 }
 

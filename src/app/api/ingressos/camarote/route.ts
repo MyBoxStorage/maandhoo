@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { enviarEmailCamarote } from '@/lib/email-ingresso'
 import type { GerarCamarotePayload } from '@/types/ingressos'
 
 /**
@@ -9,12 +10,22 @@ import type { GerarCamarotePayload } from '@/types/ingressos'
  */
 export async function POST(req: NextRequest) {
   try {
-    const body: Partial<GerarCamarotePayload> = await req.json()
-    const { camarote_id, gerado_por, reservado_por } = body
+    const body: Partial<GerarCamarotePayload> & { email_responsavel?: string; nome_responsavel?: string } = await req.json()
+    const { camarote_id, gerado_por, reservado_por, email_responsavel, nome_responsavel } = body
 
     if (!camarote_id) {
       return NextResponse.json({ erro: 'camarote_id é obrigatório' }, { status: 400 })
     }
+
+    if (!email_responsavel) {
+      return NextResponse.json({ erro: 'email_responsavel é obrigatório' }, { status: 400 })
+    }
+
+    const { data: camaroteData } = await supabaseAdmin
+      .from('camarotes')
+      .select('evento_id, identificador, eventos(nome, data_evento)')
+      .eq('id', camarote_id)
+      .single()
 
     // Se gerado_por foi enviado, verificar permissão
     if (gerado_por) {
@@ -59,6 +70,21 @@ export async function POST(req: NextRequest) {
       numero: l.numero,
       url: `${baseUrl}/ingressos/cadastro?token=${l.link_token}`,
     }))
+
+    // Disparar email com os links
+    const linksParaEmail = linksComUrl.map((l: { numero: number; url: string }) => ({
+      numero: l.numero,
+      url: l.url,
+    }))
+
+    await enviarEmailCamarote({
+      para: email_responsavel,
+      nomeResponsavel: nome_responsavel ?? 'Responsável',
+      eventoNome: data.evento,
+      eventoData: (camaroteData as { eventos?: { data_evento?: string } | null })?.eventos?.data_evento ?? new Date().toISOString(),
+      camaroteId: camarote_id,
+      links: linksParaEmail,
+    })
 
     return NextResponse.json({
       sucesso: true,
