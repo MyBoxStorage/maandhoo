@@ -229,14 +229,22 @@ export async function enviarEmailCamarote(params: {
 
     const linksHTML = params.links.map(l => `
       <tr>
-        <td style="padding:14px 0;border-bottom:1px solid rgba(201,168,76,0.08);">
-          <div style="font-size:10px;letter-spacing:3px;color:rgba(201,168,76,0.45);text-transform:uppercase;margin-bottom:6px;">Convidado ${l.numero}</div>
-          <div style="background:#0a0805;border:1px solid rgba(201,168,76,0.2);border-radius:3px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <span style="font-family:Courier New,monospace;font-size:11px;color:rgba(237,228,216,0.6);word-break:break-all;flex:1;">${l.url}</span>
-          </div>
-          <div style="margin-top:6px;">
-            <a href="${l.url}" style="font-size:10px;color:rgba(201,168,76,0.6);text-decoration:underline;letter-spacing:1px;">Abrir link &rarr;</a>
-          </div>
+        <td style="padding:16px 0;border-bottom:1px solid rgba(201,168,76,0.08);">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <!-- Número do convidado -->
+              <td width="32" style="vertical-align:middle;padding-right:14px;">
+                <div style="width:28px;height:28px;border-radius:50%;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);text-align:center;line-height:28px;font-size:11px;color:#C9A84C;font-family:Georgia,serif;">${l.numero}</div>
+              </td>
+              <!-- URL clicável + instrução -->
+              <td style="vertical-align:middle;">
+                <div style="font-size:9px;letter-spacing:3px;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-bottom:5px;">Convidado ${l.numero} — toque para abrir ou selecione para copiar</div>
+                <a href="${l.url}" style="display:block;background:#0a0805;border:1px solid rgba(201,168,76,0.25);border-radius:4px;padding:10px 14px;text-decoration:none;">
+                  <span style="font-family:Courier New,monospace;font-size:11px;color:#C9A84C;word-break:break-all;line-height:1.5;">${l.url}</span>
+                </a>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>`).join('')
 
