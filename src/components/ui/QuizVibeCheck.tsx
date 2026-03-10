@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { X, RotateCcw, ChevronRight, Sparkles, Lock, CheckCheck, Music, Share2 } from 'lucide-react'
+import { X, RotateCcw, ChevronRight, Sparkles, Lock, CheckCheck, Music, Share2, Download, Loader2 } from 'lucide-react'
 import { PERGUNTAS_QUIZ } from '@/lib/quiz-perguntas'
 import { calcularPerfilQuiz, PERFIS_QUIZ, type PerfilQuiz } from '@/lib/quiz-perfis'
 
@@ -154,6 +154,7 @@ export function QuizVibeCheck({
   const [temaAtivo, setTemaAtivo] = useState(temaInicial)
   const [salvando, setSalvando] = useState(false)
   const [refazendo, setRefazendo] = useState(false)
+  const [compartilhando, setCompartilhando] = useState(false)
 
   // Confirmar refazer
   const iniciarRefazer = () => setRefazendo(true)
@@ -220,6 +221,34 @@ export function QuizVibeCheck({
       setTemaAtivo(true)
       onPerfilDefinido?.(perfil!, badgeAtivo, true)
     } catch {}
+  }
+
+  const compartilharBadge = async () => {
+    if (!perfil) return
+    setCompartilhando(true)
+    try {
+      const url = `/api/cliente/badge-share?perfil=${perfil.id}&nome=${encodeURIComponent(clienteNome)}`
+      // Tenta Web Share API (mobile nativo)
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          const res = await fetch(url)
+          const blob = await res.blob()
+          const file = new File([blob], `maandhoo-${perfil.id}.png`, { type: 'image/png' })
+          await navigator.share({
+            title: `Sou ${perfil.nome} na Maandhoo`,
+            text: `${perfil.subtitulo} — Maandhoo Club, Balneário Camboriú`,
+            files: [file],
+          })
+          setCompartilhando(false)
+          return
+        } catch {
+          // share cancelado ou não suporta files — cai no fallback
+        }
+      }
+      // Fallback: abre imagem em nova aba para salvar
+      window.open(url, '_blank')
+    } catch {}
+    setCompartilhando(false)
   }
 
   // ── FASE: CTA ──────────────────────────────────────────────────
@@ -424,8 +453,15 @@ export function QuizVibeCheck({
           )}
 
           {/* Compartilhar badge */}
-          <button className="w-full flex items-center justify-center gap-2 border border-white/10 text-bege-escuro/40 hover:text-bege-escuro/70 hover:border-white/20 font-accent text-[10px] tracking-widest uppercase py-2.5 rounded-sm transition-all duration-200 mb-3">
-            <Share2 size={11}/> Compartilhar meu perfil
+          <button
+            onClick={compartilharBadge}
+            disabled={compartilhando}
+            className="w-full flex items-center justify-center gap-2 border border-white/10 text-bege-escuro/40 hover:text-bege-escuro/70 hover:border-white/20 disabled:opacity-50 font-accent text-[10px] tracking-widest uppercase py-2.5 rounded-sm transition-all duration-200 mb-3"
+          >
+            {compartilhando
+              ? <><Loader2 size={11} className="animate-spin"/> Gerando imagem...</>
+              : <><Share2 size={11}/> Compartilhar meu perfil</>
+            }
           </button>
 
           <a href="/#eventos" className="flex items-center justify-center gap-2 w-full py-3 rounded-sm font-accent text-xs tracking-widest uppercase transition-all duration-200 hover:opacity-90" style={{ background: perfil.corPrimaria, color: '#0d0a07' }}>
