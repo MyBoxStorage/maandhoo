@@ -37,13 +37,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Atualiza ip e dispositivo na última validação registrada (best-effort)
+    // Busca o id da última validação primeiro, depois atualiza por id —
+    // pois UPDATE + order + limit não é suportado diretamente no Supabase.
     if (data?.ingresso_id) {
-      await supabaseAdmin
+      const { data: ultima } = await supabaseAdmin
         .from('validacoes')
-        .update({ ip_origem: ip, dispositivo })
+        .select('id')
         .eq('ingresso_id', data.ingresso_id)
         .order('created_at', { ascending: false })
         .limit(1)
+        .maybeSingle()
+
+      if (ultima?.id) {
+        await supabaseAdmin
+          .from('validacoes')
+          .update({ ip_origem: ip, dispositivo })
+          .eq('id', ultima.id)
+      }
     }
 
     return NextResponse.json(data)
