@@ -9,7 +9,7 @@ import {
 // POST /api/cliente/auth — login ou cadastro
 export async function POST(req: NextRequest) {
   try {
-    const { acao, email, senha, nome, whatsapp, link_token } = await req.json()
+    const { acao, email, senha, nome, whatsapp, cpf, link_token } = await req.json()
 
     if (!email || !senha) {
       return NextResponse.json({ erro: 'Email e senha são obrigatórios' }, { status: 400 })
@@ -18,6 +18,20 @@ export async function POST(req: NextRequest) {
     // ── CADASTRO ────────────────────────────────────────────────
     if (acao === 'cadastro') {
       if (!nome) return NextResponse.json({ erro: 'Nome é obrigatório' }, { status: 400 })
+      if (!cpf) return NextResponse.json({ erro: 'CPF é obrigatório' }, { status: 400 })
+
+      // Validação básica de CPF (11 dígitos numéricos)
+      const cpfLimpo = cpf.replace(/\D/g, '')
+      if (cpfLimpo.length !== 11) {
+        return NextResponse.json({ erro: 'CPF inválido' }, { status: 400 })
+      }
+
+      // Verificar CPF duplicado
+      const { data: cpfExistente } = await supabaseAdmin
+        .from('clientes').select('id').eq('cpf', cpfLimpo).maybeSingle()
+      if (cpfExistente) {
+        return NextResponse.json({ erro: 'CPF já cadastrado.' }, { status: 409 })
+      }
 
       const { data: existente } = await supabaseAdmin
         .from('clientes').select('id').eq('email', email.toLowerCase()).maybeSingle()
@@ -29,7 +43,7 @@ export async function POST(req: NextRequest) {
       const senha_hash = await bcrypt.hash(senha, 12)
       const { data: cliente, error } = await supabaseAdmin
         .from('clientes')
-        .insert({ nome: nome.trim(), email: email.toLowerCase(), whatsapp, senha_hash })
+        .insert({ nome: nome.trim(), email: email.toLowerCase(), whatsapp, cpf: cpfLimpo, senha_hash })
         .select('id, nome, email').single()
 
       if (error || !cliente) {

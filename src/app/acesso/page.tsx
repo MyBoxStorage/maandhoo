@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
-import { Loader2, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Mail, Lock, User, Phone, Eye, EyeOff, CreditCard } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 type Modo = 'login' | 'cadastro'
@@ -20,7 +20,17 @@ function AcessoForm() {
   const [verSenha, setVerSenha] = useState(false)
   const [verConfirmar, setVerConfirmar] = useState(false)
   const [confirmarSenha, setConfirmarSenha] = useState('')
-  const [form, setForm] = useState({ nome: '', email: '', whatsapp: '', senha: '' })
+  const [form, setForm] = useState({ nome: '', email: '', whatsapp: '', cpf: '', senha: '' })
+
+  // Máscara CPF: 000.000.000-00
+  const handleCpf = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11)
+    const masked = d
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    campo('cpf', masked)
+  }
 
   // Se já tiver sessão ativa, redireciona direto para minha conta
   useEffect(() => {
@@ -35,6 +45,7 @@ function AcessoForm() {
   const handleSubmit = async () => {
     if (!form.email || !form.senha) { toast.error('Preencha email e senha'); return }
     if (modo === 'cadastro' && !form.nome) { toast.error('Informe seu nome'); return }
+    if (modo === 'cadastro' && form.cpf.replace(/\D/g, '').length !== 11) { toast.error('CPF inválido'); return }
     if (form.senha.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return }
     if (modo === 'cadastro' && form.senha !== confirmarSenha) { toast.error('As senhas não coincidem'); return }
 
@@ -112,6 +123,25 @@ function AcessoForm() {
                 <input type="tel" value={form.whatsapp} onChange={e => campo('whatsapp', e.target.value)}
                   className="w-full bg-black/40 border border-white/10 focus:border-dourado/40 rounded-sm pl-9 pr-4 py-3 font-body text-sm text-bege outline-none transition-colors"
                   placeholder="(47) 99999-9999" disabled={fase === 'enviando'} />
+              </div>
+            </div>
+          )}
+
+          {modo === 'cadastro' && (
+            <div>
+              <label className="block font-accent text-[9px] tracking-[0.3em] uppercase text-bege-escuro/50 mb-2">CPF</label>
+              <div className="relative">
+                <CreditCard size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={form.cpf}
+                  onChange={e => handleCpf(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 focus:border-dourado/40 rounded-sm pl-9 pr-4 py-3 font-body text-sm text-bege outline-none transition-colors"
+                  placeholder="000.000.000-00"
+                  autoComplete="off"
+                  disabled={fase === 'enviando'}
+                />
               </div>
             </div>
           )}
