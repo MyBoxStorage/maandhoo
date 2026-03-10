@@ -55,7 +55,7 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {/* LINKS — DESKTOP */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-7">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -69,33 +69,29 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* AÇÕES DIREITA — DESKTOP */}
-            <div className="hidden lg:flex items-center gap-4">
-              <a
-                href="https://www.instagram.com/maandhoo_club/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-bege-escuro hover:text-dourado transition-colors duration-200"
-                aria-label="Instagram"
-              >
+            <div className="hidden lg:flex items-center gap-3">
+              <a href="https://www.instagram.com/maandhoo_club/" target="_blank" rel="noopener noreferrer"
+                className="text-bege-escuro hover:text-dourado transition-colors duration-200" aria-label="Instagram">
                 <Instagram size={18} />
               </a>
-              <a
-                href="https://wa.me/5547999300283"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-bege-escuro hover:text-dourado transition-colors duration-200"
-                aria-label="WhatsApp"
-              >
+              <a href="https://wa.me/5547999300283" target="_blank" rel="noopener noreferrer"
+                className="text-bege-escuro hover:text-dourado transition-colors duration-200" aria-label="WhatsApp">
                 <Phone size={18} />
               </a>
+
+              {/* Divisor */}
+              <div className="w-px h-5 bg-dourado/20" />
+
+              {/* MINHA CONTA — botão com ícone */}
               <Link
                 href="/minha-conta"
-                className="text-bege-escuro hover:text-dourado transition-colors duration-200 flex items-center gap-1.5"
-                title="Minha Conta"
+                className="flex items-center gap-2 border border-dourado/30 hover:border-dourado/70 text-bege-escuro/80 hover:text-dourado px-3.5 py-2 rounded-sm transition-all duration-200 group"
               >
-                <User size={16} />
-                <span className="font-body text-sm">Minha Conta</span>
+                <User size={14} className="group-hover:scale-110 transition-transform duration-200" />
+                <span className="font-accent text-[11px] tracking-[0.2em] uppercase">Minha Conta</span>
               </Link>
+
+              {/* COMPRAR INGRESSO */}
               <Link
                 href="/#eventos"
                 className={`text-xs px-5 py-2.5 font-accent tracking-widest uppercase transition-all duration-300 ${
@@ -108,14 +104,24 @@ export const Navbar: React.FC = () => {
               </Link>
             </div>
 
-            {/* MENU MOBILE */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="lg:hidden text-bege p-2 hover:text-dourado transition-colors"
-              aria-label="Menu"
-            >
-              {menuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* AÇÕES MOBILE: ícone conta + menu hamburguer */}
+            <div className="flex lg:hidden items-center gap-2">
+              <Link
+                href="/minha-conta"
+                className="flex items-center gap-1.5 border border-dourado/30 text-dourado px-3 py-2 rounded-sm"
+                aria-label="Minha Conta"
+              >
+                <User size={15} />
+                <span className="font-accent text-[10px] tracking-widest uppercase">Conta</span>
+              </Link>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="text-bege p-2 hover:text-dourado transition-colors"
+                aria-label="Menu"
+              >
+                {menuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -123,10 +129,7 @@ export const Navbar: React.FC = () => {
       {/* MENU MOBILE OVERLAY */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setMenuOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <div className="absolute top-0 right-0 w-72 h-full bg-preto-profundo border-l border-gold flex flex-col pt-24 px-6 gap-2 animate-fade-in">
             <div className="divider-gold mb-4" />
             {navLinks.map((link) => (
@@ -139,14 +142,16 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
+            {/* Minha Conta no menu mobile também */}
+            <Link
+              href="/minha-conta"
+              onClick={() => setMenuOpen(false)}
+              className="font-body text-base text-dourado/80 hover:text-dourado py-3 border-b border-white/5 transition-colors flex items-center gap-2"
+            >
+              <User size={15} /> Minha Conta
+            </Link>
+
             <div className="mt-6 space-y-3">
-              <Link
-                href="/minha-conta"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 w-full border border-dourado/30 text-dourado hover:bg-dourado/10 transition-all text-xs font-accent tracking-widest uppercase py-3 px-4 rounded-sm"
-              >
-                <User size={14} /> Minha Conta
-              </Link>
               <Link
                 href="/#eventos"
                 onClick={() => setMenuOpen(false)}
@@ -155,26 +160,16 @@ export const Navbar: React.FC = () => {
                 Comprar Ingresso
               </Link>
             </div>
-            <div className="flex items-center gap-4 mt-6">
-              <a
-                href="https://www.instagram.com/maandhoo_club/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-bege-escuro hover:text-dourado text-sm transition-colors"
-              >
-                <Instagram size={16} />
-                @maandhoo_club
+            <div className="flex flex-col gap-3 mt-6">
+              <a href="https://www.instagram.com/maandhoo_club/" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 text-bege-escuro hover:text-dourado text-sm transition-colors">
+                <Instagram size={16} /> @maandhoo_club
+              </a>
+              <a href="https://wa.me/5547999300283" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 text-bege-escuro hover:text-dourado text-sm transition-colors">
+                <Phone size={16} /> (47) 9930-0283
               </a>
             </div>
-            <a
-              href="https://wa.me/5547999300283"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-bege-escuro hover:text-dourado text-sm transition-colors"
-            >
-              <Phone size={16} />
-              (47) 9930-0283
-            </a>
           </div>
         </div>
       )}
