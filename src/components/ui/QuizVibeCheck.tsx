@@ -336,6 +336,14 @@ export function QuizVibeCheck({
   const [mostrarOverlay, setMostrarOverlay] = useState(false)
   const [recemDesbloqueado, setRecemDesbloqueado] = useState(false)
 
+  // Reset do efeito "recém desbloqueado" no player após a animação
+  useEffect(() => {
+    if (recemDesbloqueado) {
+      const t = setTimeout(() => setRecemDesbloqueado(false), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [recemDesbloqueado])
+
   const iniciarRefazer = () => setRefazendo(true)
   const confirmarRefazer = () => {
     setRefazendo(false); setFase('consentimento')
@@ -343,6 +351,18 @@ export function QuizVibeCheck({
     setPerfil(null); setBadgeAtivo(false); setTemaAtivo(false)
     setRecemDesbloqueado(false)
   }
+
+  const salvarQuiz = useCallback(async (resp: Record<string, string>, p: PerfilQuiz, lgpd: boolean) => {
+    setSalvando(true)
+    try {
+      await fetch('/api/cliente/quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ respostas: resp, perfil_id: p.id, perfil_nome: p.nome, lgpd_aceito: lgpd, lgpd_versao: VERSAO_LGPD }),
+      })
+    } catch {}
+    setSalvando(false)
+  }, [])
 
   const selecionar = useCallback((valor: string) => {
     if (opcaoSelecionada) return
@@ -362,25 +382,16 @@ export function QuizVibeCheck({
         const p = calcularPerfilQuiz(novasRespostas)
         setPerfil(p)
         salvarQuiz(novasRespostas, p, lgpdChecked)
-        // Dispara overlay de desbloqueio ANTES de ir para resultado
-        setMostrarOverlay(true)
-        setRecemDesbloqueado(true)
-        setTimeout(() => setFase('resultado'), 350)
+        // Vai para resultado imediatamente, depois dispara overlay sobre ele
+        setFase('resultado')
+        setTimeout(() => {
+          setMostrarOverlay(true)
+          setRecemDesbloqueado(true)
+        }, 100)
       }
     }, 550)
-  }, [opcaoSelecionada, respostas, perguntaIdx, lgpdChecked])
-
-  const salvarQuiz = async (resp: Record<string, string>, p: PerfilQuiz, lgpd: boolean) => {
-    setSalvando(true)
-    try {
-      await fetch('/api/cliente/quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ respostas: resp, perfil_id: p.id, perfil_nome: p.nome, lgpd_aceito: lgpd, lgpd_versao: VERSAO_LGPD }),
-      })
-    } catch {}
-    setSalvando(false)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opcaoSelecionada, respostas, perguntaIdx, lgpdChecked, salvarQuiz])
 
   const aplicarBadge = async () => {
     try {
@@ -561,13 +572,13 @@ export function QuizVibeCheck({
 
     return (
       <>
-        {/* Overlay de desbloqueio — aparece sobre tudo momentaneamente */}
+        {/* Overlay de desbloqueio — fixed fora de qualquer overflow */}
         {mostrarOverlay && (
           <DesbloqueioOverlay perfil={perfil} onFim={() => setMostrarOverlay(false)} />
         )}
 
         <div className="border rounded-sm overflow-hidden" style={{ borderColor: `${perfil.corPrimaria}30` }}>
-          <div className="absolute inset-0 pointer-events-none opacity-[0.07]" style={{ background: `radial-gradient(ellipse at 50% 0%, ${perfil.corPrimaria}, transparent 70%)` }}/>
+          <div className="pointer-events-none opacity-[0.07]" style={{ background: `radial-gradient(ellipse at 50% 0%, ${perfil.corPrimaria}, transparent 70%)`, position: 'absolute', inset: 0 }}/>
           <div className="relative px-6 py-6">
             {/* Topo */}
             <div className="flex items-start justify-between mb-5">
