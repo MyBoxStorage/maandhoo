@@ -41,6 +41,20 @@ const config: Config = {
         'scan': 'scanLine 2s linear infinite',
         'pulse-gold': 'pulse-gold 2.5s ease-in-out infinite',
         'shimmer': 'shimmer 3s linear infinite',
+        'bounce-slow': 'bounceSlow 2s ease-in-out infinite',
+        'float-particle': 'floatParticle 4s ease-in-out infinite',
+      },
+      keyframes: {
+        bounceSlow: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
+        floatParticle: {
+          '0%': { transform: 'translateY(0) scale(1)', opacity: '0' },
+          '20%': { opacity: '0.6' },
+          '80%': { opacity: '0.3' },
+          '100%': { transform: 'translateY(-60px) scale(0.5)', opacity: '0' },
+        },
       },
     },
   },

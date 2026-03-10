@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
+import { QuizVibeCheck } from '@/components/ui/QuizVibeCheck'
 import { Loader2, LogOut, Ticket, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -152,6 +153,11 @@ export default function MinhaContaPage() {
               <p className="font-body text-xs text-bege-escuro/25 mt-1">Seus ingressos aparecerão aqui após o cadastro.</p>
             </div>
           )}
+
+          {/* QUIZ VIBE CHECK */}
+          <div className="mt-2 mb-6">
+            <QuizVibeCheck clienteNome={cliente?.nome ?? 'Visitante'} />
+          </div>
 
           {ingressos.map(ing => {
             const dataISO = ing.eventos?.data_evento?.length === 10
