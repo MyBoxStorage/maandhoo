@@ -372,11 +372,24 @@ const EventoModal: React.FC<{
 
   const f = (field: string, value: unknown) => setForm(p => ({ ...p, [field]: value }))
 
-  const handleFlyerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFlyerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    toast('Para fazer upload de imagens, use a página Galeria no painel e copie a URL gerada.', { icon: 'ℹ️', duration: 5000 })
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.erro ?? 'Erro no upload')
+      f('flyer_url', data.url)
+      toast.success('Flyer enviado!')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro no upload do flyer')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   return (
