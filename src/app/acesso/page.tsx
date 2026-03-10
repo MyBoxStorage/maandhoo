@@ -18,6 +18,19 @@ const ESTADOS_BR = [
   'MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
 ]
 
+// ── Fora do AcessoForm para evitar remontagem a cada render ─────────
+function Campo({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block font-accent text-[9px] tracking-[0.3em] uppercase text-bege-escuro/50 mb-2">{label}</label>
+      <div className="relative">
+        <Icon size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30 pointer-events-none z-10" />
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function AcessoForm() {
   const router = useRouter()
   const params = useSearchParams()
@@ -75,16 +88,7 @@ function AcessoForm() {
     } catch { toast.error('Erro de conexão'); setFase('idle') }
   }
 
-  // ── Componente de campo de input reutilizável ──────────────────
-  const Campo = ({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) => (
-    <div>
-      <label className="block font-accent text-[9px] tracking-[0.3em] uppercase text-bege-escuro/50 mb-2">{label}</label>
-      <div className="relative">
-        <Icon size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30 pointer-events-none z-10" />
-        {children}
-      </div>
-    </div>
-  )
+  // Campo movido para fora do componente (ver abaixo)
 
   return (
     <div className="min-h-screen bg-preto-profundo flex flex-col items-center justify-center px-4 py-12">
