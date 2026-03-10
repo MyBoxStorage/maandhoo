@@ -346,7 +346,9 @@ export function QuizVibeCheck({
 
   const iniciarRefazer = () => setRefazendo(true)
   const confirmarRefazer = () => {
-    setRefazendo(false); setFase('consentimento')
+    setRefazendo(false)
+    // Se LGPD já foi aceito antes, pula tela de consentimento e vai direto ao quiz
+    setFase(lgpdInicial ? 'quiz' : 'consentimento')
     setPerguntaIdx(0); setRespostas({}); setOpcaoSelecionada(null)
     setPerfil(null); setBadgeAtivo(false); setTemaAtivo(false)
     setRecemDesbloqueado(false)
@@ -553,16 +555,16 @@ export function QuizVibeCheck({
 
     if (refazendo) return (
       <div className="border border-dourado/20 rounded-sm overflow-hidden bg-gradient-to-b from-black/50 to-black/30 p-6">
-        <h3 className="font-display text-xl text-bege mb-3">Refazer o quiz?</h3>
-        <p className="font-body text-xs text-bege-escuro/50 mb-4 leading-relaxed">Suas respostas anteriores:</p>
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          {Object.entries(respostas).map(([k, v]) => (
-            <div key={k} className="border border-white/8 rounded-sm px-3 py-2">
-              <p className="font-accent text-[9px] tracking-widest text-bege-escuro/30 uppercase">{k}</p>
-              <p className="font-body text-xs text-bege-escuro/60">{v}</p>
-            </div>
-          ))}
-        </div>
+        <h3 className="font-display text-xl text-bege mb-2">Refazer o quiz?</h3>
+        <p className="font-body text-xs text-bege-escuro/45 mb-5 leading-relaxed">
+          Seu perfil atual é <span className="font-medium" style={{ color: perfil.corPrimaria }}>{perfil.nome}</span>.
+          Ao refazer, seu perfil será atualizado com as novas respostas.
+          {lgpdInicial && (
+            <span className="block mt-2 text-bege-escuro/30">
+              Seu consentimento LGPD já está registrado — não é necessário aceitar novamente.
+            </span>
+          )}
+        </p>
         <div className="flex gap-3">
           <button onClick={() => setRefazendo(false)} className="flex-1 border border-white/15 text-bege-escuro/60 font-accent text-xs tracking-widest uppercase py-2.5 rounded-sm hover:border-white/25 transition-colors">Cancelar</button>
           <button onClick={confirmarRefazer} className="flex-1 bg-dourado/80 hover:bg-dourado text-preto-profundo font-accent text-xs tracking-widest uppercase py-2.5 rounded-sm transition-colors">Sim, refazer</button>
@@ -614,7 +616,7 @@ export function QuizVibeCheck({
               <SpotifyPlayer perfil={perfil} recemDesbloqueado={recemDesbloqueado} />
             </div>
 
-            {/* Badge + Tema */}
+            {/* Badge + Tema — só mostra checkbox LGPD se ainda não foi aceito */}
             {podeDesbloquear ? (
               <div className="grid grid-cols-2 gap-3 mb-5">
                 <button onClick={aplicarBadge} disabled={badgeAtivo}
@@ -627,15 +629,19 @@ export function QuizVibeCheck({
                 </button>
               </div>
             ) : (
-              <div className="mb-5">
-                <CheckboxLGPD checked={lgpdChecked} onChange={setLgpdChecked} variant="compact"/>
-                {lgpdChecked && (
-                  <button onClick={() => salvarQuiz(respostas, perfil, true)}
-                    className="mt-2 w-full border border-dourado/30 text-dourado font-accent text-[10px] tracking-widest uppercase py-2.5 rounded-sm hover:bg-dourado/10 transition-colors">
-                    Confirmar e desbloquear badge + tema
-                  </button>
-                )}
-              </div>
+              // Checkbox LGPD só aparece se o cliente ainda NÃO aceitou os termos.
+              // Se lgpdInicial=true, o termo já foi registrado — não volta a aparecer aqui.
+              !lgpdInicial && (
+                <div className="mb-5">
+                  <CheckboxLGPD checked={lgpdChecked} onChange={setLgpdChecked} variant="compact"/>
+                  {lgpdChecked && (
+                    <button onClick={() => salvarQuiz(respostas, perfil, true)}
+                      className="mt-2 w-full border border-dourado/30 text-dourado font-accent text-[10px] tracking-widest uppercase py-2.5 rounded-sm hover:bg-dourado/10 transition-colors">
+                      Confirmar e desbloquear badge + tema
+                    </button>
+                  )}
+                </div>
+              )
             )}
 
             {/* Compartilhar */}
