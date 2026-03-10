@@ -18,6 +18,8 @@ function AcessoForm() {
   const [modo, setModo] = useState<Modo>('login')
   const [fase, setFase] = useState<Fase>('idle')
   const [verSenha, setVerSenha] = useState(false)
+  const [verConfirmar, setVerConfirmar] = useState(false)
+  const [confirmarSenha, setConfirmarSenha] = useState('')
   const [form, setForm] = useState({ nome: '', email: '', whatsapp: '', senha: '' })
 
   // Se já tiver sessão ativa, redireciona direto para minha conta
@@ -34,6 +36,7 @@ function AcessoForm() {
     if (!form.email || !form.senha) { toast.error('Preencha email e senha'); return }
     if (modo === 'cadastro' && !form.nome) { toast.error('Informe seu nome'); return }
     if (form.senha.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return }
+    if (modo === 'cadastro' && form.senha !== confirmarSenha) { toast.error('As senhas não coincidem'); return }
 
     setFase('enviando')
     try {
@@ -69,7 +72,7 @@ function AcessoForm() {
         {/* TABS */}
         <div className="flex border border-dourado/20 rounded-sm mb-6 overflow-hidden">
           {(['login', 'cadastro'] as Modo[]).map(m => (
-            <button key={m} onClick={() => setModo(m)}
+            <button key={m} onClick={() => { setModo(m); setConfirmarSenha('') }}
               className={`flex-1 py-3 font-accent text-xs tracking-[0.2em] uppercase transition-all
                 ${modo === m ? 'bg-dourado/15 text-dourado border-b-2 border-dourado' : 'text-bege-escuro/40 hover:text-bege-escuro/70'}`}>
               {m === 'login' ? 'Entrar' : 'Criar Conta'}
@@ -129,6 +132,38 @@ function AcessoForm() {
               </button>
             </div>
           </div>
+
+          {modo === 'cadastro' && (
+            <div>
+              <label className="block font-accent text-[9px] tracking-[0.3em] uppercase text-bege-escuro/50 mb-2">Confirmar senha</label>
+              <div className="relative">
+                <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30" />
+                <input
+                  type={verConfirmar ? 'text' : 'password'}
+                  value={confirmarSenha}
+                  onChange={e => setConfirmarSenha(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  className={`w-full bg-black/40 border rounded-sm pl-9 pr-10 py-3 font-body text-sm text-bege outline-none transition-colors ${
+                    confirmarSenha && form.senha !== confirmarSenha
+                      ? 'border-red-500/50 focus:border-red-500'
+                      : confirmarSenha && form.senha === confirmarSenha
+                      ? 'border-green-500/50 focus:border-green-500'
+                      : 'border-white/10 focus:border-dourado/40'
+                  }`}
+                  placeholder="Repita a senha"
+                  autoComplete="new-password"
+                  disabled={fase === 'enviando'}
+                />
+                <button type="button" onClick={() => setVerConfirmar(!verConfirmar)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30 hover:text-bege-escuro/60">
+                  {verConfirmar ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </div>
+              {confirmarSenha && form.senha !== confirmarSenha && (
+                <p className="font-body text-[10px] text-red-400/80 mt-1.5">As senhas não coincidem</p>
+              )}
+            </div>
+          )}
 
           <button onClick={handleSubmit} disabled={fase === 'enviando'}
             className="w-full bg-dourado hover:bg-dourado/90 disabled:bg-dourado/40 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all flex items-center justify-center gap-2 mt-2">
