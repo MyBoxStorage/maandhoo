@@ -12,6 +12,7 @@ const RATE_LIMIT_RULES: Record<string, { limit: number; windowMs: number }> = {
   '/api/lista':              { limit: 15, windowMs: 60_000 },  // 15 req/min por IP
   '/api/validar':            { limit: 60, windowMs: 60_000 },  // 60 req/min (portaria)
   '/api/auth/admin':         { limit: 10, windowMs: 60_000 },  // 10 tentativas login/min
+  '/api/cliente/auth':       { limit: 10, windowMs: 60_000 },  // 10 tentativas cliente/min
 }
 
 function applyRateLimit(req: NextRequest): NextResponse | null {
@@ -102,5 +103,6 @@ export const config = {
     '/api/lista',
     '/api/validar',
     '/api/auth/admin',
+    '/api/cliente/auth',
   ],
 }

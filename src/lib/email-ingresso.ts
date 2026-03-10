@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-import { gerarQRCodeBuffer } from './qr-generator'
 import { mascaraCPF, labelTipoIngresso } from './ingresso-utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -84,12 +83,19 @@ function gerarHTMLIngresso(dados: DadosEmail & { dataFormatada: string; dataAbre
     <td style="background:#0f0b06;border-left:1px solid rgba(201,168,76,0.35);border-right:1px solid rgba(201,168,76,0.35);">
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <!-- QR CODE via CID -->
-          <td width="220" style="padding:36px 20px 36px 48px;vertical-align:middle;">
-            <div style="background:#fefbf5;padding:14px;border-radius:4px;display:inline-block;box-shadow:0 2px 12px rgba(0,0,0,0.4);">
-              <img src="cid:qrcode@maandhoo" width="160" height="160" alt="QR Code" style="display:block;border:0;"/>
+          <!-- ACESSO VIA APP -->
+          <td width="220" style="padding:36px 20px 36px 48px;vertical-align:middle;text-align:center;">
+            <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:6px;padding:24px 16px;">
+              <div style="font-size:9px;letter-spacing:4px;color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:12px;">Seu QR Code</div>
+              <a href="${process.env.NEXT_PUBLIC_SITE_URL}/acesso?link=${dados.qrToken}"
+                style="display:inline-block;background:#C9A84C;color:#0d0a07;padding:12px 20px;border-radius:3px;text-decoration:none;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:bold;margin-bottom:12px;">
+                Acessar Ingresso
+              </a>
+              <div style="font-size:10px;color:rgba(237,228,216,0.35);line-height:1.6;">
+                Faça login ou crie sua conta para ver o QR Code
+              </div>
             </div>
-            <div style="font-size:8px;color:rgba(201,168,76,0.4);letter-spacing:2px;text-transform:uppercase;margin-top:10px;text-align:center;">Apresente na entrada</div>
+            <div style="font-size:8px;color:rgba(201,168,76,0.35);letter-spacing:2px;text-transform:uppercase;margin-top:10px;">Apresente na entrada</div>
           </td>
           <!-- DIVISOR -->
           <td width="20" style="padding:0;vertical-align:middle;text-align:center;">
@@ -171,9 +177,6 @@ function gerarHTMLIngresso(dados: DadosEmail & { dataFormatada: string; dataAbre
 /** Envia email com ingresso para o portador */
 export async function enviarEmailIngresso(dados: DadosEmail): Promise<{ sucesso: boolean; erro?: string }> {
   try {
-    // QR Code como Buffer (attachment CID — funciona em Gmail, Outlook, Apple Mail)
-    const qrBuffer = await gerarQRCodeBuffer(dados.qrToken)
-
     const dataISO = dados.eventoData.length === 10 ? `${dados.eventoData}T00:00:00` : dados.eventoData
     const dataFormatada = format(new Date(dataISO), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     const dataAbrev = format(new Date(dataISO), 'dd/MM/yyyy', { locale: ptBR })
@@ -196,14 +199,6 @@ export async function enviarEmailIngresso(dados: DadosEmail): Promise<{ sucesso:
       to: dados.para,
       subject: `Seu ingresso — ${dados.eventoNome} · ${dataAbrev}`,
       html,
-      attachments: [
-        {
-          filename: 'qrcode.png',
-          content: qrBuffer.toString('base64'),
-          contentType: 'image/png',
-          contentId: 'qrcode@maandhoo',
-        },
-      ],
     })
 
     if (error) return { sucesso: false, erro: error.message }
