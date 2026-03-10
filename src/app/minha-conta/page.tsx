@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
 import { QuizVibeCheck } from '@/components/ui/QuizVibeCheck'
-import { Loader2, LogOut, Ticket, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { PERFIS_QUIZ, type PerfilQuiz } from '@/lib/quiz-perfis'
+import {
+  Loader2, LogOut, Ticket,
+  ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Clock,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast, { Toaster } from 'react-hot-toast'
@@ -16,6 +20,15 @@ interface Ingresso {
   expira_em?: string; created_at: string
   eventos: Evento
   cadastro?: { nome_completo: string; email: string }
+}
+interface ClienteData {
+  id: string; nome: string; email: string
+  quiz_feito?: boolean
+  quiz_perfil_id?: string
+  quiz_respostas?: Record<string, string>
+  lgpd_aceito?: boolean
+  badge_ativo?: boolean
+  tema_ativo?: boolean
 }
 
 const STATUS_COR: Record<string, string> = {
@@ -30,14 +43,42 @@ const STATUS_LABEL: Record<string, string> = {
   cancelado: 'Cancelado', pendente: 'Aguardando',
 }
 
+// ── Badge inline SVG pequeno para o header ─────────────────────
+function BadgeMini({ perfil }: { perfil: PerfilQuiz }) {
+  return (
+    <div className="relative flex items-center justify-center" style={{ filter: `drop-shadow(0 0 6px ${perfil.corGlow})` }}>
+      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id={`hbg-${perfil.id}`} cx="50%" cy="35%" r="70%">
+            <stop offset="0%" stopColor={perfil.corSecundaria} stopOpacity="0.95"/>
+            <stop offset="100%" stopColor={perfil.corPrimaria} stopOpacity="0.8"/>
+          </radialGradient>
+        </defs>
+        <circle cx="16" cy="16" r="14" fill={`url(#hbg-${perfil.id})`}/>
+        <circle cx="16" cy="16" r="14" fill="none" stroke={perfil.corPrimaria} strokeWidth="1.5" opacity="0.7"/>
+        <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+        <circle cx="16" cy="10" r="2" fill="rgba(255,255,255,0.8)"/>
+        <circle cx="10" cy="19" r="2" fill="rgba(255,255,255,0.6)"/>
+        <circle cx="22" cy="19" r="2" fill="rgba(255,255,255,0.6)"/>
+        <line x1="10" y1="19" x2="16" y2="10" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
+        <line x1="22" y1="19" x2="16" y2="10" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
+        <line x1="10" y1="19" x2="22" y2="19" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2"/>
+      </svg>
+    </div>
+  )
+}
+
 export default function MinhaContaPage() {
   const router = useRouter()
-  const [cliente, setCliente] = useState<{ id: string; nome: string; email: string } | null>(null)
+  const [cliente, setCliente] = useState<ClienteData | null>(null)
   const [ingressos, setIngressos] = useState<Ingresso[]>([])
   const [carregando, setCarregando] = useState(true)
   const [aberto, setAberto] = useState<string | null>(null)
   const [qrMap, setQrMap] = useState<Record<string, string>>({})
   const [qrLoading, setQrLoading] = useState<string | null>(null)
+  const [perfilAtivo, setPerfilAtivo] = useState<PerfilQuiz | null>(null)
+  const [badgeAtivo, setBadgeAtivo] = useState(false)
+  const [temaAtivo, setTemaAtivo] = useState(false)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -50,6 +91,13 @@ export default function MinhaContaPage() {
     const { ingressos: ing } = await resIng.json()
     setCliente(c)
     setIngressos(ing ?? [])
+
+    // Carrega perfil salvo
+    if (c.quiz_perfil_id && PERFIS_QUIZ[c.quiz_perfil_id]) {
+      setPerfilAtivo(PERFIS_QUIZ[c.quiz_perfil_id])
+    }
+    setBadgeAtivo(!!c.badge_ativo)
+    setTemaAtivo(!!c.tema_ativo)
     setCarregando(false)
   }, [router])
 
@@ -64,9 +112,7 @@ export default function MinhaContaPage() {
       if (data.qr) {
         setQrMap(prev => ({ ...prev, [ingressoId]: data.qr }))
         setAberto(ingressoId)
-      } else {
-        toast.error(data.erro ?? 'Erro ao carregar QR Code')
-      }
+      } else { toast.error(data.erro ?? 'Erro ao carregar QR Code') }
     } catch { toast.error('Erro de conexão') }
     finally { setQrLoading(null) }
   }
@@ -82,33 +128,49 @@ export default function MinhaContaPage() {
     router.replace('/acesso')
   }
 
-  if (carregando) {
-    return (
-      <div className="min-h-screen bg-preto-profundo flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-dourado/40" />
-      </div>
-    )
+  const handlePerfilDefinido = (p: PerfilQuiz, badge: boolean, tema: boolean) => {
+    setPerfilAtivo(p)
+    setBadgeAtivo(badge)
+    setTemaAtivo(tema)
   }
+
+  if (carregando) return (
+    <div className="min-h-screen bg-preto-profundo flex items-center justify-center">
+      <Loader2 size={32} className="animate-spin text-dourado/40" />
+    </div>
+  )
+
+  // Variáveis CSS de tema dinâmico
+  const temaVars = temaAtivo && perfilAtivo ? {
+    '--tema-cor': perfilAtivo.corPrimaria,
+    '--tema-glow': perfilAtivo.corGlow,
+    '--tema-border': `${perfilAtivo.corPrimaria}25`,
+  } as React.CSSProperties : {}
 
   return (
     <>
-      {/* CSS anti-print injetado via style tag */}
       <style>{`
         @media print {
           body * { visibility: hidden !important; }
           .no-print-overlay { display: flex !important; visibility: visible !important; }
         }
-        .qr-wrapper {
-          -webkit-user-select: none;
-          user-select: none;
+        .qr-wrapper { -webkit-user-select: none; user-select: none; }
+
+        /* Tema dinâmico do perfil */
+        .tema-ativo .border-dourado\\/10 { border-color: var(--tema-border, rgba(201,168,76,0.1)); }
+        .tema-ativo .border-dourado\\/20 { border-color: var(--tema-border, rgba(201,168,76,0.2)); }
+        .tema-ativo .text-dourado { color: var(--tema-cor, #C9A84C); }
+        .tema-ativo .bg-preto-profundo { background: linear-gradient(180deg, #0A0604 0%, #0a0604 100%); }
+        .tema-ativo .border-b.border-dourado\\/10 {
+          border-bottom-color: var(--tema-border);
+          box-shadow: 0 1px 0 0 var(--tema-glow);
         }
       `}</style>
 
-      {/* Overlay que aparece ao tentar imprimir */}
       <div className="no-print-overlay" style={{
         display: 'none', position: 'fixed', inset: 0, zIndex: 9999,
         background: '#0d0a07', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: '16px'
+        alignItems: 'center', justifyContent: 'center', gap: '16px',
       }}>
         <AlertTriangle size={48} color="#C9A84C" />
         <p style={{ color: '#e8ddd0', fontFamily: 'Georgia,serif', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' }}>
@@ -119,16 +181,33 @@ export default function MinhaContaPage() {
         </p>
       </div>
 
-      <div className="min-h-screen bg-preto-profundo pb-16">
+      <div
+        className={`min-h-screen bg-preto-profundo pb-16 ${temaAtivo && perfilAtivo ? 'tema-ativo' : ''}`}
+        style={temaVars}
+      >
         <Toaster position="top-center" toastOptions={{ style: { background: '#1a1208', color: '#e8ddd0', border: '1px solid rgba(201,168,76,0.3)' } }} />
 
-        {/* HEADER */}
+        {/* ── HEADER ─────────────────────────────────────────────── */}
         <div className="sticky top-0 z-10 bg-preto-profundo/95 backdrop-blur-sm border-b border-dourado/10 px-4 py-4">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <LogoElefante width={28} height={31} color="#C9A84C" />
               <div>
-                <p className="font-accent text-xs tracking-widest text-bege leading-none">MINHA CONTA</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-accent text-xs tracking-widest text-bege leading-none">MINHA CONTA</p>
+                  {/* Badge no header — só aparece se quiz feito + badge ativo */}
+                  {badgeAtivo && perfilAtivo && (
+                    <div className="flex items-center gap-1.5 animate-fade-in">
+                      <BadgeMini perfil={perfilAtivo} />
+                      <span
+                        className="font-accent text-[9px] tracking-[0.2em] uppercase hidden sm:block"
+                        style={{ color: perfilAtivo.corPrimaria }}
+                      >
+                        {perfilAtivo.nome}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <p className="font-body text-[10px] text-bege-escuro/40 mt-0.5">{cliente?.nome}</p>
               </div>
             </div>
@@ -137,10 +216,37 @@ export default function MinhaContaPage() {
               <span className="font-body text-xs">Sair</span>
             </button>
           </div>
+
+          {/* Linha de tema sob o header */}
+          {temaAtivo && perfilAtivo && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-px"
+              style={{ background: `linear-gradient(to right, transparent, ${perfilAtivo.corPrimaria}50, transparent)` }}
+            />
+          )}
         </div>
 
-        <div className="max-w-lg mx-auto px-4 pt-6 space-y-3">
-          <div className="flex items-center gap-2 mb-4">
+        {/* ── CORPO ──────────────────────────────────────────────── */}
+        <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+
+          {/* Quiz Vibe Check — acima dos ingressos */}
+          <QuizVibeCheck
+            clienteId={cliente!.id}
+            clienteNome={cliente!.nome}
+            quizJaFeito={!!cliente?.quiz_feito}
+            perfilSalvo={perfilAtivo}
+            respostasSalvas={cliente?.quiz_respostas ?? null}
+            lgpdAceito={!!cliente?.lgpd_aceito}
+            badgeAtivo={badgeAtivo}
+            temaAtivo={temaAtivo}
+            onPerfilDefinido={handlePerfilDefinido}
+          />
+
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-dourado/15 to-transparent" />
+
+          {/* Header ingressos */}
+          <div className="flex items-center gap-2">
             <Ticket size={14} className="text-dourado/60" />
             <h2 className="font-accent text-xs tracking-[0.3em] uppercase text-bege-escuro/60">Meus Ingressos</h2>
             <span className="font-body text-xs text-bege-escuro/30">({ingressos.length})</span>
@@ -154,22 +260,16 @@ export default function MinhaContaPage() {
             </div>
           )}
 
-          {/* QUIZ VIBE CHECK */}
-          <div className="mt-2 mb-6">
-            <QuizVibeCheck clienteNome={cliente?.nome ?? 'Visitante'} />
-          </div>
-
           {ingressos.map(ing => {
             const dataISO = ing.eventos?.data_evento?.length === 10
               ? `${ing.eventos.data_evento}T00:00:00` : ing.eventos?.data_evento
-            const dataFormatada = dataISO ? format(new Date(dataISO), "dd/MM/yyyy", { locale: ptBR }) : '—'
+            const dataFormatada = dataISO ? format(new Date(dataISO), 'dd/MM/yyyy', { locale: ptBR }) : '—'
             const cor = STATUS_COR[ing.status] ?? STATUS_COR['pendente']
             const isAberto = aberto === ing.id
             const qrAtivo = ing.status === 'ativo'
 
             return (
               <div key={ing.id} className={`border rounded-sm overflow-hidden transition-all ${isAberto ? 'border-dourado/30' : 'border-white/8'}`}>
-                {/* CARD HEADER */}
                 <button onClick={() => toggleIngresso(ing.id, ing.status)}
                   className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/[0.02] transition-colors">
                   {ing.eventos?.flyer_url && (
@@ -187,7 +287,6 @@ export default function MinhaContaPage() {
                   </div>
                 </button>
 
-                {/* DETALHE + QR */}
                 {isAberto && (
                   <div className="border-t border-dourado/10 bg-black/20 p-5">
                     {qrAtivo && (
@@ -201,8 +300,7 @@ export default function MinhaContaPage() {
                           <>
                             <div className="bg-[#fefbf5] p-3 rounded-sm mb-3" style={{ WebkitUserSelect: 'none', userSelect: 'none' }}>
                               <img src={qrMap[ing.id]} width={200} height={200} alt="QR Code" draggable={false}
-                                onContextMenu={e => e.preventDefault()}
-                                style={{ display: 'block', pointerEvents: 'none' }} />
+                                onContextMenu={e => e.preventDefault()} style={{ display: 'block', pointerEvents: 'none' }} />
                             </div>
                             <p className="font-accent text-[9px] tracking-[0.3em] text-dourado/40 uppercase">Apresente na entrada</p>
                             <p className="font-body text-[10px] text-bege-escuro/25 mt-1">Uso único · Não compartilhe</p>
@@ -210,7 +308,6 @@ export default function MinhaContaPage() {
                         ) : null}
                       </div>
                     )}
-
                     {ing.status === 'utilizado' && (
                       <div className="flex flex-col items-center py-4 gap-2">
                         <CheckCircle2 size={32} className="text-blue-400" />
@@ -218,7 +315,6 @@ export default function MinhaContaPage() {
                         <p className="font-body text-xs text-bege-escuro/40">Entrada registrada com sucesso.</p>
                       </div>
                     )}
-
                     {(ing.status === 'expirado' || ing.status === 'cancelado') && (
                       <div className="flex flex-col items-center py-4 gap-2">
                         <AlertTriangle size={28} className="text-bege-escuro/30" />
@@ -227,15 +323,12 @@ export default function MinhaContaPage() {
                         </p>
                       </div>
                     )}
-
                     {ing.status === 'pendente' && (
                       <div className="flex flex-col items-center py-4 gap-2">
                         <Clock size={28} className="text-amber-400/50" />
                         <p className="font-body text-xs text-bege-escuro/40">Aguardando confirmação do pagamento.</p>
                       </div>
                     )}
-
-                    {/* DADOS */}
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       {ing.cadastro?.nome_completo && (
                         <div>

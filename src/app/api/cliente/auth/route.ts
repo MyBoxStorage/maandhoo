@@ -109,13 +109,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/cliente/auth — verificar sessão
+// GET /api/cliente/auth — verificar sessão + dados completos do perfil
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(CLIENTE_SESSION_COOKIE)?.value
   if (!token) return NextResponse.json({ autenticado: false }, { status: 401 })
   const payload = verificarTokenCliente(token)
   if (!payload) return NextResponse.json({ autenticado: false }, { status: 401 })
-  return NextResponse.json({ autenticado: true, cliente: { id: payload.id, nome: payload.nome, email: payload.email } })
+
+  // Busca dados atualizados do cliente incluindo quiz/perfil/lgpd
+  const { data: c } = await supabaseAdmin
+    .from('clientes')
+    .select('id, nome, email, quiz_feito, quiz_perfil_id, quiz_respostas, lgpd_aceito, badge_ativo, tema_ativo')
+    .eq('id', payload.id)
+    .single()
+
+  return NextResponse.json({
+    autenticado: true,
+    cliente: c ?? { id: payload.id, nome: payload.nome, email: payload.email },
+  })
 }
 
 // DELETE /api/cliente/auth — logout
