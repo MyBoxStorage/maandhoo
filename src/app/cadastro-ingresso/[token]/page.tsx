@@ -22,6 +22,7 @@ export default function CadastroIngressoPage() {
   const [fase, setFase] = useState<Fase>('carregando')
   const [ingresso, setIngresso] = useState<DadosIngresso | null>(null)
   const [erroMsg, setErroMsg] = useState('')
+  const [emailEnviado, setEmailEnviado] = useState(true)
 
   const [form, setForm] = useState({
     nome_completo: '',
@@ -72,8 +73,10 @@ export default function CadastroIngressoPage() {
         body: JSON.stringify({ link_token: token, ...form }),
       })
       const data = await res.json()
-      if (data.sucesso) setFase('sucesso')
-      else { setErroMsg(data.erro ?? 'Erro ao processar cadastro.'); setFase('erro') }
+      if (data.sucesso) {
+        setEmailEnviado(data.email_enviado !== false)
+        setFase('sucesso')
+      } else { setErroMsg(data.erro ?? 'Erro ao processar cadastro.'); setFase('erro') }
     } catch {
       setErroMsg('Erro de conexão. Tente novamente.')
       setFase('erro')
@@ -118,13 +121,22 @@ export default function CadastroIngressoPage() {
           <div className="border border-dourado/30 bg-dourado/5 rounded-sm p-8 text-center">
             <CheckCircle2 size={56} className="text-dourado mx-auto mb-5" />
             <p className="font-accent text-lg tracking-widest text-dourado mb-3">Cadastro Confirmado!</p>
-            <p className="font-body text-sm text-bege-escuro/70 leading-relaxed">
-              Seu ingresso foi enviado para o email informado.<br/>
-              Apresente o QR Code na entrada do evento.
-            </p>
+            {emailEnviado ? (
+              <p className="font-body text-sm text-bege-escuro/70 leading-relaxed">
+                Seu ingresso foi enviado para o email informado.<br/>
+                Apresente o QR Code na entrada do evento.
+              </p>
+            ) : (
+              <p className="font-body text-sm text-amber-400/80 leading-relaxed">
+                Seu cadastro foi realizado com sucesso, porém houve uma falha no envio do email.<br/>
+                Entre em contato conosco via WhatsApp para receber seu QR Code.
+              </p>
+            )}
             <div className="mt-6 border-t border-dourado/15 pt-5">
               <p className="font-body text-xs text-bege-escuro/40">
-                Não encontrou o email? Verifique a pasta de spam ou entre em contato via WhatsApp.
+                {emailEnviado
+                  ? 'Não encontrou o email? Verifique a pasta de spam ou entre em contato via WhatsApp.'
+                  : 'Seu ingresso está garantido. Fale conosco pelo WhatsApp para mais informações.'}
               </p>
             </div>
           </div>
