@@ -34,19 +34,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: 'Link inválido' }, { status: 404 })
     }
 
-    if (ingresso.link_usado) {
-      return NextResponse.json({ erro: 'Este link já foi utilizado' }, { status: 410 })
-    }
-
     if (ingresso.status === 'cancelado' || ingresso.status === 'utilizado') {
       return NextResponse.json({ erro: 'Ingresso não disponível' }, { status: 410 })
     }
 
-    // ── Verificar se CPF já tem ingresso neste evento ───────────
+    // ── Verificar se CPF já tem cadastro neste ingresso ─────────
     const cpfHash = hashCPF(cpf)
     const { data: cadastroExistente } = await supabaseAdmin
       .from('cadastros')
-      .select('id, ingresso_id')
+      .select('id')
       .eq('cpf_hash', cpfHash)
       .eq('ingresso_id', ingresso.id)
       .maybeSingle()
@@ -59,6 +55,26 @@ export async function POST(req: NextRequest) {
     let expiraEm = ingresso.expira_em
     if (!expiraEm && ingresso.eventos?.data_evento) {
       expiraEm = calcularExpiracao(ingresso.eventos.data_evento).toISOString()
+    }
+
+    // ── Lock atômico: marca link_usado = true SOMENTE se ainda false ──
+    // Isso evita race condition onde dois requests simultâneos passariam
+    // pela verificação anterior antes de um deles gravar o lock.
+    const { data: lockData, error: errLock } = await supabaseAdmin
+      .from('ingressos')
+      .update({
+        status: 'ativo',
+        link_usado: true,
+        expira_em: expiraEm,
+      })
+      .eq('id', ingresso.id)
+      .eq('link_usado', false)   // ← condição atômica: só atualiza se ainda não foi usado
+      .select('id')
+      .single()
+
+    if (errLock || !lockData) {
+      // Nenhuma linha foi afetada = outro request ganhou a corrida
+      return NextResponse.json({ erro: 'Este link já foi utilizado' }, { status: 410 })
     }
 
     // ── Salvar cadastro ─────────────────────────────────────────
@@ -77,22 +93,12 @@ export async function POST(req: NextRequest) {
 
     if (errCadastro) {
       console.error('[cadastro] Erro ao salvar cadastro:', errCadastro)
+      // Reverter o lock caso o cadastro falhe
+      await supabaseAdmin
+        .from('ingressos')
+        .update({ status: 'aguardando_cadastro', link_usado: false })
+        .eq('id', ingresso.id)
       return NextResponse.json({ erro: 'Erro ao salvar cadastro' }, { status: 500 })
-    }
-
-    // ── Ativar ingresso + marcar link como usado ────────────────
-    const { error: errAtualiza } = await supabaseAdmin
-      .from('ingressos')
-      .update({
-        status: 'ativo',
-        link_usado: true,
-        expira_em: expiraEm,
-      })
-      .eq('id', ingresso.id)
-
-    if (errAtualiza) {
-      console.error('[cadastro] Erro ao ativar ingresso:', errAtualiza)
-      return NextResponse.json({ erro: 'Erro ao ativar ingresso' }, { status: 500 })
     }
 
     // ── Enviar email com QR Code ────────────────────────────────
@@ -124,6 +130,9 @@ export async function POST(req: NextRequest) {
       sucesso: true,
       mensagem: 'Cadastro realizado! Seu ingresso foi enviado para o email.',
       email_enviado: resultadoEmail.sucesso,
+      aviso_email: resultadoEmail.sucesso
+        ? undefined
+        : 'Cadastro realizado, mas houve falha no envio do email. Entre em contato conosco.',
     })
   } catch (err) {
     console.error('[cadastro] Erro inesperado:', err)
