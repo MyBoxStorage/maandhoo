@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast, { Toaster } from 'react-hot-toast'
 import type { IngressoDB, CadastroDB } from '@/types/ingressos'
+import { labelTipoIngresso } from '@/lib/ingresso-utils'
 
 type IngressoComCadastro = IngressoDB & { cadastro?: CadastroDB | null }
 type StatusFiltro = 'todos' | 'ativo' | 'utilizado' | 'expirado' | 'cancelado' | 'pendente'
@@ -18,14 +19,6 @@ const STATUS_CONFIG: Record<string, { label: string; cor: string; icon: JSX.Elem
   pendente:  { label: 'Pendente',  cor: 'text-amber-400 bg-amber-400/10 border-amber-400/30',  icon: <Clock size={12} /> },
 }
 
-const TIPO_LABEL: Record<string, string> = {
-  lista_masc:  'Lista Masculino',
-  lista_fem:   'Lista Feminino',
-  pista_masc:  'Pista Masculino',
-  pista_fem:   'Pista Feminino',
-  camarote:    'Camarote',
-  cortesia:    'Cortesia',
-}
 
 export default function AdminIngressosPage() {
   const [ingressos, setIngressos] = useState<IngressoComCadastro[]>([])
@@ -69,7 +62,7 @@ export default function AdminIngressosPage() {
       linhas.push([
         `"${c?.nome_completo ?? ''}"`,
         `"${c?.email ?? ''}"`,
-        `"${TIPO_LABEL[i.tipo] ?? i.tipo}"`,
+        `"${labelTipoIngresso(i.tipo)}"`,
         `"${i.serial ?? ''}"`,
         `"${i.status}"`,
         `"${i.qr_enviado ? 'Sim' : 'Não'}"`,
@@ -163,7 +156,7 @@ export default function AdminIngressosPage() {
                       <p className="font-body text-xs text-bege-escuro/40">{c?.email ?? '—'}</p>
                     </td>
                     <td className="py-3 px-3">
-                      <p className="font-body text-xs text-bege-escuro/80 whitespace-nowrap">{TIPO_LABEL[ingresso.tipo] ?? ingresso.tipo}</p>
+                      <p className="font-body text-xs text-bege-escuro/80 whitespace-nowrap">{labelTipoIngresso(ingresso.tipo)}</p>
                     </td>
                     <td className="py-3 px-3">
                       <p className="font-mono text-xs text-bege-escuro/50 whitespace-nowrap">{ingresso.serial ?? '—'}</p>

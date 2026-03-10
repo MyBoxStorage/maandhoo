@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { labelTipoIngresso } from '@/lib/ingresso-utils'
 
 type StatData = {
   ingressosAtivos: number
@@ -37,14 +38,6 @@ type IngressoRecente = {
   evento: { nome: string } | null
 }
 
-const TIPO_LABEL: Record<string, string> = {
-  lista_masc: 'Lista Masc',
-  lista_fem: 'Lista Fem',
-  pista_masc: 'Pista Masc',
-  pista_fem: 'Pista Fem',
-  camarote: 'Camarote',
-  cortesia: 'Cortesia',
-}
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<StatData | null>(null)
@@ -215,7 +208,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-body text-xs text-bege truncate">
-                          {i.cadastro?.nome_completo ?? <span className="text-bege-escuro/40 italic">Sem cadastro</span>} — {TIPO_LABEL[i.tipo] ?? i.tipo}
+                          {i.cadastro?.nome_completo ?? <span className="text-bege-escuro/40 italic">Sem cadastro</span>} — {labelTipoIngresso(i.tipo)}
                         </p>
                         <p className="font-body text-xs text-bege-escuro/50 truncate">{i.evento?.nome ?? '—'}</p>
                       </div>

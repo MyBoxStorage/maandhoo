@@ -10,6 +10,7 @@ import {
 import toast, { Toaster } from 'react-hot-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { labelTipoIngresso } from '@/lib/ingresso-utils'
 
 // ─── TIPOS ───────────────────────────────────────────────────
 
@@ -422,7 +423,7 @@ export default function PortariaPage() {
               {resultado.nome && <p className="font-display text-2xl text-bege mb-1">{resultado.nome}</p>}
               {resultado.tipo_ingresso && (
                 <p className="font-body text-sm text-bege-escuro/60">
-                  {resultado.tipo_ingresso.replace('_', ' ').replace('pista masc', 'Pista — Masculino').replace('pista fem', 'Pista — Feminino').replace('lista masc', 'Lista — Masculino').replace('lista fem', 'Lista — Feminino').replace('camarote', 'Camarote').replace('cortesia', 'Cortesia')}
+                  {labelTipoIngresso(resultado.tipo_ingresso ?? '')}
                 </p>
               )}
             </>
