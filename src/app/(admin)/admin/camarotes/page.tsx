@@ -218,7 +218,8 @@ const GerarLinksModal: React.FC<{
   camarote: CamaroteComIngressos
   onClose: () => void
   onGerado: (links: Array<{ numero: number; url: string }>) => void
-}> = ({ camarote, onClose, onGerado }) => {
+  modoReenvio?: boolean
+}> = ({ camarote, onClose, onGerado, modoReenvio = false }) => {
   const [email, setEmail] = useState('')
   const [nomeResponsavel, setNomeResponsavel] = useState('')
   const [gerando, setGerando] = useState(false)
@@ -230,22 +231,43 @@ const GerarLinksModal: React.FC<{
     }
     setGerando(true)
     try {
-      const res = await fetch('/api/ingressos/camarote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          camarote_id: camarote.id,
-          email_responsavel: email,
-          nome_responsavel: nomeResponsavel || 'Responsável',
-        }),
-      })
-      const data = await res.json()
-      if (data.links) {
-        onGerado(data.links)
-        toast.success(`${data.links.length} ingressos gerados e enviados para ${email}!`)
-        onClose()
+      if (modoReenvio) {
+        // Reenviar links já existentes
+        const res = await fetch('/api/ingressos/camarote', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            camarote_id: camarote.id,
+            email_responsavel: email,
+            nome_responsavel: nomeResponsavel || 'Responsável',
+          }),
+        })
+        const data = await res.json()
+        if (data.sucesso) {
+          toast.success(`${data.total_links} links reenviados para ${email}!`)
+          onClose()
+        } else {
+          toast.error(data.erro ?? 'Erro ao reenviar')
+        }
       } else {
-        toast.error(data.erro ?? 'Erro ao gerar ingressos')
+        // Gerar novos ingressos
+        const res = await fetch('/api/ingressos/camarote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            camarote_id: camarote.id,
+            email_responsavel: email,
+            nome_responsavel: nomeResponsavel || 'Responsável',
+          }),
+        })
+        const data = await res.json()
+        if (data.links) {
+          onGerado(data.links)
+          toast.success(`${data.links.length} ingressos gerados e enviados para ${email}!`)
+          onClose()
+        } else {
+          toast.error(data.erro ?? 'Erro ao gerar ingressos')
+        }
       }
     } catch { toast.error('Erro de conexão') }
     finally { setGerando(false) }
@@ -258,15 +280,21 @@ const GerarLinksModal: React.FC<{
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-dourado/15">
           <div>
-            <h3 className="font-display text-xl text-bege">Gerar Ingressos</h3>
+            <h3 className="font-display text-xl text-bege">
+              {modoReenvio ? 'Reenviar Links' : 'Gerar Ingressos'}
+            </h3>
             <p className="font-body text-xs text-bege-escuro/50 mt-0.5">{camarote.identificador} · {camarote.capacidade} ingressos</p>
           </div>
           <button onClick={onClose} className="text-bege-escuro/50 hover:text-bege"><X size={18} /></button>
         </div>
         <div className="p-5 space-y-4">
           <div className="bg-dourado/5 border border-dourado/15 rounded-sm p-3 text-xs text-bege-escuro/60 leading-relaxed">
-            Após confirmar o pagamento via WhatsApp, informe o email do responsável pelo grupo.
-            Ele receberá <strong className="text-bege">{camarote.capacidade} links individuais</strong> — um para cada convidado.
+            {modoReenvio ? (
+              <>Os ingressos já foram gerados. Informe o email para reenviar os <strong className="text-bege">{camarote.total_ingressos} links</strong> já existentes.</>
+            ) : (
+              <>Após confirmar o pagamento via WhatsApp, informe o email do responsável pelo grupo.
+              Ele receberá <strong className="text-bege">{camarote.capacidade} links individuais</strong> — um para cada convidado.</>
+            )}
           </div>
           <div>
             <label className="admin-label">Nome do Responsável</label>
@@ -295,8 +323,8 @@ const GerarLinksModal: React.FC<{
               className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs"
             >
               {gerando
-                ? <><Loader2 size={12} className="animate-spin" /> Gerando e enviando...</>
-                : <><ExternalLink size={12} /> Gerar e Enviar por Email</>}
+                ? <><Loader2 size={12} className="animate-spin" /> {modoReenvio ? 'Reenviando...' : 'Gerando e enviando...'}</>
+                : <><ExternalLink size={12} /> {modoReenvio ? 'Reenviar Links por Email' : 'Gerar e Enviar por Email'}</>}
             </button>
             <button onClick={onClose} className="btn-outline text-xs">Cancelar</button>
           </div>
@@ -313,19 +341,40 @@ const GerarLinksButton: React.FC<{
   onGerado: (links: Array<{ numero: number; url: string }>) => void
 }> = ({ camarote, onGerado }) => {
   const [modalAberto, setModalAberto] = useState(false)
+  const [modoReenvio, setModoReenvio] = useState(false)
+  const jaReservado = !camarote.disponivel
+
+  const abrirGerar = () => { setModoReenvio(false); setModalAberto(true) }
+  const abrirReenvio = () => { setModoReenvio(true); setModalAberto(true) }
 
   return (
     <>
-      <button
-        onClick={() => setModalAberto(true)}
-        className="flex items-center gap-1.5 text-xs border border-dourado/30 hover:border-dourado text-dourado/80 hover:text-dourado px-3 py-2 rounded-sm transition-all whitespace-nowrap"
-      >
-        <ExternalLink size={12} />
-        Gerar Links
-      </button>
+      <div className="flex flex-col gap-1.5">
+        {!jaReservado ? (
+          <button
+            onClick={abrirGerar}
+            className="flex items-center gap-1.5 text-xs border border-dourado/30 hover:border-dourado text-dourado/80 hover:text-dourado px-3 py-2 rounded-sm transition-all whitespace-nowrap"
+          >
+            <ExternalLink size={12} />
+            Gerar Links
+          </button>
+        ) : (
+          <>
+            <span className="text-xs text-bege-escuro/30 px-1">Links gerados</span>
+            <button
+              onClick={abrirReenvio}
+              className="flex items-center gap-1.5 text-xs border border-bege-escuro/20 hover:border-dourado/50 text-bege-escuro/50 hover:text-dourado px-3 py-2 rounded-sm transition-all whitespace-nowrap"
+            >
+              <ExternalLink size={12} />
+              Reenviar Email
+            </button>
+          </>
+        )}
+      </div>
       {modalAberto && (
         <GerarLinksModal
           camarote={camarote}
+          modoReenvio={modoReenvio}
           onClose={() => setModalAberto(false)}
           onGerado={onGerado}
         />

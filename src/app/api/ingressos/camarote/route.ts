@@ -106,6 +106,65 @@ export async function POST(req: NextRequest) {
 }
 
 /**
+ * PATCH /api/ingressos/camarote
+ * Reenviar email com links já gerados para um camarote já reservado
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const { camarote_id, email_responsavel, nome_responsavel } = await req.json()
+
+    if (!camarote_id || !email_responsavel) {
+      return NextResponse.json({ erro: 'camarote_id e email_responsavel são obrigatórios' }, { status: 400 })
+    }
+
+    // Buscar camarote + evento
+    const { data: camarote } = await supabaseAdmin
+      .from('camarotes')
+      .select('identificador, evento_id, eventos(nome, data_evento)')
+      .eq('id', camarote_id)
+      .single()
+
+    if (!camarote) return NextResponse.json({ erro: 'Camarote não encontrado' }, { status: 404 })
+
+    // Buscar ingressos gerados para esse camarote
+    const { data: ingressos } = await supabaseAdmin
+      .from('ingressos')
+      .select('id, link_token, status')
+      .eq('camarote_id', camarote_id)
+      .order('created_at', { ascending: true })
+
+    if (!ingressos || ingressos.length === 0) {
+      return NextResponse.json({ erro: 'Nenhum ingresso encontrado para este camarote' }, { status: 404 })
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const links = ingressos.map((ing, i) => ({
+      numero: i + 1,
+      url: `${baseUrl}/cadastro-ingresso/${ing.link_token}`,
+    }))
+
+    const eventoData = (camarote as { eventos?: { nome?: string; data_evento?: string } | null })
+    const resultadoEmail = await enviarEmailCamarote({
+      para: email_responsavel,
+      nomeResponsavel: nome_responsavel ?? 'Responsável',
+      eventoNome: eventoData?.eventos?.nome ?? 'Evento Maandhoo',
+      eventoData: eventoData?.eventos?.data_evento ?? new Date().toISOString(),
+      camaroteId: camarote_id,
+      links,
+    })
+
+    if (!resultadoEmail.sucesso) {
+      return NextResponse.json({ erro: `Falha no envio: ${resultadoEmail.erro}` }, { status: 500 })
+    }
+
+    return NextResponse.json({ sucesso: true, total_links: links.length })
+  } catch (err) {
+    console.error('[camarote PATCH] Erro:', err)
+    return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
+  }
+}
+
+/**
  * GET /api/ingressos/camarote?evento_id=xxx
  * Lista camarotes com stats de ingressos
  */
