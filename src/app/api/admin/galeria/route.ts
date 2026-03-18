@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
+/**
+ * Injeta q_auto,f_auto em URLs do Cloudinary automaticamente.
+ * URLs de imagem (Supabase Storage, etc.) passam sem alteração.
+ */
+function otimizarUrlCloudinary(url: string): string {
+  if (!url) return url
+  if (!url.includes('cloudinary.com')) return url
+  if (url.includes('q_auto')) return url  // já tem otimização
+  return url.replace('/upload/', '/upload/q_auto,f_auto/')
+}
+
 // GET /api/admin/galeria
 export async function GET() {
   const { data, error } = await supabaseAdmin
@@ -12,7 +23,7 @@ export async function GET() {
   return NextResponse.json({ fotos: data })
 }
 
-// POST /api/admin/galeria — adicionar foto
+// POST /api/admin/galeria — adicionar mídia
 export async function POST(req: Request) {
   const body = await req.json()
   const { url, alt, evento_id, ordem } = body
@@ -21,7 +32,12 @@ export async function POST(req: Request) {
 
   const { data, error } = await supabaseAdmin
     .from('galeria')
-    .insert({ url, alt: alt || null, evento_id: evento_id || null, ordem: ordem ?? 0 })
+    .insert({
+      url: otimizarUrlCloudinary(url),
+      alt: alt || null,
+      evento_id: evento_id || null,
+      ordem: ordem ?? 0,
+    })
     .select()
     .single()
 
