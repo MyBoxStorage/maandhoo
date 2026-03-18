@@ -16,5 +16,13 @@ export async function GET() {
     return found?.galeria ?? null
   })
 
-  return NextResponse.json({ slots })
+  return NextResponse.json(
+    { slots },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    }
+  )
 }

@@ -59,7 +59,8 @@ export const GaleriaPreview: React.FC = () => {
   const [slots, setSlots] = useState<MidiaSlot[]>(Array(7).fill(null))
 
   useEffect(() => {
-    fetch('/api/galeria-home')
+    // cache: 'no-store' garante que sempre busca do servidor, nunca do cache do browser
+    fetch('/api/galeria-home', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => { if (Array.isArray(data.slots)) setSlots(data.slots) })
       .catch(() => {})

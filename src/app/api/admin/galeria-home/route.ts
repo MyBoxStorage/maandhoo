@@ -9,15 +9,19 @@ export async function GET() {
     .order('slot', { ascending: true })
 
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
-  return NextResponse.json({ slots: data ?? [] })
+
+  return NextResponse.json(
+    { slots: data ?? [] },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+  )
 }
 
-// PUT /api/admin/galeria-home — atualiza um slot { slot: 1-7, galeria_id: uuid | null }
+// PUT /api/admin/galeria-home
 export async function PUT(req: NextRequest) {
   return handleUpdate(req)
 }
 
-// POST como fallback (Vercel às vezes bloqueia PUT/PATCH)
+// POST como fallback (Vercel às vezes bloqueia PUT)
 export async function POST(req: NextRequest) {
   return handleUpdate(req)
 }
