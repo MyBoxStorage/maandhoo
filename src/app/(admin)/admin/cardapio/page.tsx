@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, RefreshCw, Loader2, X, GripVertical, Eye, EyeOff } from 'lucide-react'
@@ -23,7 +23,7 @@ const CATEGORIAS: { value: CategoriaCardapio; label: string; emoji: string }[] =
   { value: 'soft',       label: 'Soft Drinks', emoji: '🥤' },
   { value: 'combos',     label: 'Combos',     emoji: '🎯' },
   { value: 'espumantes', label: 'Espumantes', emoji: '🥂' },
-  { value: 'outros',     label: 'Outros',     emoji: '🍽️' },
+  { value: 'outros',     label: 'Bomboniere', emoji: '🍬' },
 ]
 
 const fmtMoeda = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -341,3 +341,4 @@ const ItemModal: React.FC<{
     </div>
   )
 }
+
