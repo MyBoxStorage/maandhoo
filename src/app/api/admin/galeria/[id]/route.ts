@@ -3,20 +3,17 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 /**
  * Injeta q_auto,f_auto em URLs do Cloudinary automaticamente.
- * URLs de imagem (Supabase Storage, etc.) passam sem alteração.
  */
 function otimizarUrlCloudinary(url: string): string {
   if (!url) return url
   if (!url.includes('cloudinary.com')) return url
-  if (url.includes('q_auto')) return url  // já tem otimização
+  if (url.includes('q_auto')) return url
   return url.replace('/upload/', '/upload/q_auto,f_auto/')
 }
 
-// PUT /api/admin/galeria/[id] — substituição completa
+// PUT /api/admin/galeria/[id]
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json()
-
-  // Otimiza URL se for Cloudinary
   if (body.url) body.url = otimizarUrlCloudinary(body.url)
 
   const { data, error } = await supabaseAdmin
@@ -30,11 +27,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ foto: data })
 }
 
-// PATCH /api/admin/galeria/[id] — atualização parcial (destaque, ordem, etc.)
+// PATCH /api/admin/galeria/[id]
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json()
-
-  // Otimiza URL se vier no body (ex: edição do campo URL)
   if (body.url) body.url = otimizarUrlCloudinary(body.url)
 
   const { data, error } = await supabaseAdmin

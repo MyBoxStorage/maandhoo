@@ -2,87 +2,23 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { X, ZoomIn, Play, Loader2 } from 'lucide-react'
+import { X, Play, Loader2 } from 'lucide-react'
 
 type MidiaGaleria = {
   id: string
   url: string
   alt: string | null
+  orientacao: 'portrait' | 'landscape'
 }
 
-// Detecta vídeo pelo URL — Cloudinary video ou extensão .mp4/.webm/.mov
 const isVideo = (url: string): boolean =>
   url.includes('/video/upload/') ||
   /\.(mp4|webm|mov)(\?.*)?$/i.test(url)
 
-// ─── Tile do grid ─────────────────────────────────────────────
-function MediaTile({
-  midia,
-  index,
-  onClick,
-}: {
-  midia: MidiaGaleria
-  index: number
-  onClick: () => void
-}) {
+// Lightbox
+function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void }) {
   const video = isVideo(midia.url)
 
-  return (
-    <div
-      className="group relative overflow-hidden rounded-sm border border-white/8 hover:border-dourado/40 cursor-pointer transition-all duration-300"
-      style={{ aspectRatio: index === 1 ? '9/16' : '4/3' }}
-      onClick={onClick}
-    >
-      {video ? (
-        <>
-          <video
-            src={midia.url}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          {/* Badge indicador de vídeo */}
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-white/10 px-2 py-1 rounded-sm">
-            <Play size={9} className="text-dourado fill-dourado" />
-            <span className="font-accent text-[9px] tracking-widest uppercase text-dourado/80">Vídeo</span>
-          </div>
-        </>
-      ) : (
-        <Image
-          src={midia.url}
-          alt={midia.alt ?? 'Foto da Maandhoo Club'}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 33vw"
-        />
-      )}
-
-      {/* Overlay hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between">
-        {midia.alt && (
-          <span className="font-body text-sm text-bege truncate">{midia.alt}</span>
-        )}
-        <ZoomIn size={18} className="text-dourado flex-shrink-0 ml-auto" />
-      </div>
-    </div>
-  )
-}
-
-// ─── Lightbox ─────────────────────────────────────────────────
-function Lightbox({
-  midia,
-  onClose,
-}: {
-  midia: MidiaGaleria
-  onClose: () => void
-}) {
-  const video = isVideo(midia.url)
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  // Fechar com ESC
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -90,53 +26,59 @@ function Lightbox({
   }, [onClose])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10"
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-4" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10">
         <X size={22} />
       </button>
-
-      <div
-        className="relative max-w-4xl w-full flex flex-col items-center gap-3"
-        style={{ maxHeight: '90vh' }}
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="relative max-w-4xl w-full flex flex-col items-center gap-3" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         {video ? (
-          <video
-            ref={videoRef}
-            src={midia.url}
-            autoPlay
-            loop
-            playsInline
-            controls
-            className="w-full rounded-sm"
-            style={{ maxHeight: '82vh', objectFit: 'contain' }}
-          />
+          <video src={midia.url} autoPlay loop playsInline controls className="w-full rounded-sm" style={{ maxHeight: '82vh', objectFit: 'contain' }} />
         ) : (
-          <Image
-            src={midia.url}
-            alt={midia.alt ?? 'Maandhoo Club'}
-            width={1200}
-            height={800}
-            className="object-contain w-full h-full rounded-sm"
-            style={{ maxHeight: '82vh' }}
-          />
+          <Image src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
+            className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }} />
         )}
-
-        {midia.alt && (
-          <p className="font-body text-sm text-bege-escuro/60 text-center">{midia.alt}</p>
-        )}
+        {midia.alt && <p className="font-body text-sm text-bege-escuro/60 text-center">{midia.alt}</p>}
       </div>
     </div>
   )
 }
 
-// ─── Página principal ──────────────────────────────────────────
+// Card de mídia com aspect-ratio correto por orientação
+function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
+  const video = isVideo(midia.url)
+  // portrait = 9:16, landscape = 4:3
+  const aspectRatio = midia.orientacao === 'portrait' ? '9/16' : '4/3'
+
+  return (
+    <div
+      className="group relative overflow-hidden rounded-sm border border-white/8 hover:border-dourado/40 cursor-pointer transition-all duration-300"
+      style={{ aspectRatio }}
+      onClick={onClick}
+    >
+      {video ? (
+        <>
+          <video src={midia.url} autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-white/10 px-2 py-1 rounded-sm">
+            <Play size={9} className="text-dourado fill-dourado" />
+            <span className="font-accent text-[9px] tracking-widest uppercase text-dourado/80">Vídeo</span>
+          </div>
+        </>
+      ) : (
+        <Image src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 33vw" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {midia.alt && (
+        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span className="font-body text-sm text-bege truncate block">{midia.alt}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function GaleriaPage() {
   const [midias, setMidias] = useState<MidiaGaleria[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -156,6 +98,20 @@ export default function GaleriaPage() {
     carregar()
   }, [])
 
+  // Separar portrait e landscape para colunas independentes (masonry sem JS)
+  const portraits  = midias.filter(m => m.orientacao === 'portrait')
+  const landscapes = midias.filter(m => m.orientacao === 'landscape')
+
+  // Distribuir em 3 colunas de forma equilibrada (sem quebra)
+  const col1: MidiaGaleria[] = []
+  const col2: MidiaGaleria[] = []
+  const col3: MidiaGaleria[] = []
+  midias.forEach((m, i) => {
+    if (i % 3 === 0) col1.push(m)
+    else if (i % 3 === 1) col2.push(m)
+    else col3.push(m)
+  })
+
   return (
     <div className="min-h-screen pt-28 pb-20 px-4">
       <div className="max-w-6xl mx-auto">
@@ -174,18 +130,16 @@ export default function GaleriaPage() {
             <Loader2 size={28} className="animate-spin text-dourado/50" />
           </div>
         ) : midias.length === 0 ? (
-          <p className="text-center text-sm text-bege-escuro/45 py-20">
-            Nenhuma mídia publicada no momento.
-          </p>
+          <p className="text-center text-sm text-bege-escuro/45 py-20">Nenhuma mídia publicada no momento.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {midias.map((midia, i) => (
-              <MediaTile
-                key={midia.id}
-                midia={midia}
-                index={i}
-                onClick={() => setMidiaAberta(midia)}
-              />
+          // Grid de 3 colunas — cada item mantém seu aspect-ratio natural
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+            {[col1, col2, col3].map((col, ci) => (
+              <div key={ci} className="flex flex-col gap-4">
+                {col.map(midia => (
+                  <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
+                ))}
+              </div>
             ))}
           </div>
         )}
@@ -195,10 +149,7 @@ export default function GaleriaPage() {
         </p>
       </div>
 
-      {/* Lightbox */}
-      {midiaAberta && (
-        <Lightbox midia={midiaAberta} onClose={() => setMidiaAberta(null)} />
-      )}
+      {midiaAberta && <Lightbox midia={midiaAberta} onClose={() => setMidiaAberta(null)} />}
     </div>
   )
 }

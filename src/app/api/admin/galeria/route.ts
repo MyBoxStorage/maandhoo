@@ -3,12 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 /**
  * Injeta q_auto,f_auto em URLs do Cloudinary automaticamente.
- * URLs de imagem (Supabase Storage, etc.) passam sem alteração.
  */
 function otimizarUrlCloudinary(url: string): string {
   if (!url) return url
   if (!url.includes('cloudinary.com')) return url
-  if (url.includes('q_auto')) return url  // já tem otimização
+  if (url.includes('q_auto')) return url
   return url.replace('/upload/', '/upload/q_auto,f_auto/')
 }
 
@@ -26,7 +25,7 @@ export async function GET() {
 // POST /api/admin/galeria — adicionar mídia
 export async function POST(req: Request) {
   const body = await req.json()
-  const { url, alt, evento_id, ordem } = body
+  const { url, alt, evento_id, ordem, orientacao } = body
 
   if (!url) return NextResponse.json({ erro: 'URL é obrigatória' }, { status: 400 })
 
@@ -37,6 +36,7 @@ export async function POST(req: Request) {
       alt: alt || null,
       evento_id: evento_id || null,
       ordem: ordem ?? 0,
+      orientacao: orientacao ?? 'landscape',
     })
     .select()
     .single()
