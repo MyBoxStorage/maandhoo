@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -162,7 +162,7 @@ export default function GaleriaPage() {
     const carregar = async () => {
       setCarregando(true)
       try {
-        const res = await fetch('/api/galeria')
+        const res = await fetch('/api/galeria', { cache: 'no-store' })
         const data = await res.json()
         setMidias(Array.isArray(data.fotos) ? data.fotos : [])
       } finally {

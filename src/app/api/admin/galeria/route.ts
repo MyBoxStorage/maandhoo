@@ -16,40 +16,30 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('galeria')
     .select('*, evento:eventos(id, nome)')
-    .order('ordem', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
-  return NextResponse.json({ fotos: data })
+
+  return NextResponse.json(
+    { fotos: data },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+  )
 }
 
-// POST /api/admin/galeria — adicionar mídia (sempre vai para o topo, ordem 0)
+// POST /api/admin/galeria — adicionar mídia
 export async function POST(req: Request) {
   const body = await req.json()
-  const { url, alt, evento_id, orientacao } = body
+  const { url, alt, evento_id, ordem, orientacao } = body
 
   if (!url) return NextResponse.json({ erro: 'URL é obrigatória' }, { status: 400 })
 
-  // Buscar todas as mídias existentes e incrementar suas ordens (+1)
-  const { data: todos } = await supabaseAdmin
-    .from('galeria')
-    .select('id, ordem')
-
-  if (todos && todos.length > 0) {
-    await Promise.all(
-      todos.map(item =>
-        supabaseAdmin.from('galeria').update({ ordem: item.ordem + 1 }).eq('id', item.id)
-      )
-    )
-  }
-
-  // Inserir nova mídia com ordem 0 (sempre no topo)
   const { data, error } = await supabaseAdmin
     .from('galeria')
     .insert({
       url: otimizarUrlCloudinary(url),
       alt: alt || null,
       evento_id: evento_id || null,
-      ordem: 0,
+      ordem: ordem ?? 0,
       orientacao: orientacao ?? 'landscape',
     })
     .select()
