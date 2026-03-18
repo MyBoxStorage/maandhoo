@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
@@ -35,7 +35,7 @@ const SLOT_LABELS: Record<number, string> = {
   4: 'Horizontal 1', 5: 'Horizontal 2', 6: 'Horizontal 3', 7: 'Horizontal 4',
 }
 const SLOT_HINT: Record<number, string> = {
-  1: 'Foto/vídeo portrait', 2: 'Foto/vídeo portrait', 3: 'Foto/vídeo portrait',
+  1: 'Foto/vÃ­deo portrait', 2: 'Foto/vÃ­deo portrait', 3: 'Foto/vÃ­deo portrait',
   4: 'Foto landscape', 5: 'Foto landscape', 6: 'Foto landscape', 7: 'Foto landscape',
 }
 
@@ -49,7 +49,7 @@ export default function AdminGaleriaPage() {
   const [editando, setEditando] = useState<FotoGaleria | null>(null)
   const [eventoFiltro, setEventoFiltro] = useState('todos')
   const [enviandoLote, setEnviandoLote] = useState(false)
-  // Slot selecionado para atribuir mídia
+  // Slot selecionado para atribuir mÃ­dia
   const [slotSelecionado, setSlotSelecionado] = useState<number | null>(null)
   const loteInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -92,16 +92,16 @@ export default function AdminGaleriaPage() {
   }
 
   const deletar = async (id: string) => {
-    if (!confirm('Remover esta mídia da galeria?')) return
+    if (!confirm('Remover esta mÃ­dia da galeria?')) return
     const res = await fetch(`/api/admin/galeria/${id}`, { method: 'DELETE' })
-    if (res.ok) { setFotos(prev => prev.filter(f => f.id !== id)); toast.success('Mídia removida!') }
+    if (res.ok) { setFotos(prev => prev.filter(f => f.id !== id)); toast.success('MÃ­dia removida!') }
     else toast.error('Erro ao remover')
   }
 
-  // ── Atribuir mídia a um slot da home ────────────────────────
+  // â”€â”€ Atribuir mÃ­dia a um slot da home â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const atribuirSlot = async (slot: number, galeriaId: string | null) => {
     const res = await fetch('/api/admin/galeria-home', {
-      method: 'PUT',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slot, galeria_id: galeriaId }),
     })
@@ -117,7 +117,7 @@ export default function AdminGaleriaPage() {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     if (files.length === 0) return
-    if (files.length > 20) { toast.error('Máximo 20 arquivos por vez.'); return }
+    if (files.length > 20) { toast.error('MÃ¡ximo 20 arquivos por vez.'); return }
     setEnviandoLote(true)
     let enviados = 0
     try {
@@ -157,7 +157,7 @@ export default function AdminGaleriaPage() {
         <div>
           <h1 className="font-display text-4xl text-bege">Galeria</h1>
           <p className="font-body text-sm text-bege-escuro/60 mt-1">
-            {fotos.length} item{fotos.length !== 1 ? 's' : ''} · fotos e vídeos
+            {fotos.length} item{fotos.length !== 1 ? 's' : ''} Â· fotos e vÃ­deos
           </p>
         </div>
         <div className="flex gap-2">
@@ -169,7 +169,7 @@ export default function AdminGaleriaPage() {
             Upload em lote
           </button>
           <button onClick={() => { setEditando(null); setModalAberto(true) }} className="btn-primary flex items-center gap-2 text-xs">
-            <Plus size={14} /> Adicionar Mídia
+            <Plus size={14} /> Adicionar MÃ­dia
           </button>
         </div>
       </div>
@@ -184,7 +184,7 @@ export default function AdminGaleriaPage() {
             aba === 'galeria' ? 'border-dourado text-dourado' : 'border-transparent text-bege-escuro/50 hover:text-bege-escuro/80'
           }`}
         >
-          <Grid size={13} /> Todas as Mídias
+          <Grid size={13} /> Todas as MÃ­dias
         </button>
         <button
           onClick={() => setAba('home')}
@@ -205,19 +205,19 @@ export default function AdminGaleriaPage() {
         <div className="flex items-center justify-center py-20"><Loader2 size={28} className="animate-spin text-dourado/50" /></div>
       ) : (
         <>
-          {/* ══════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {/* ABA: DESTAQUES DA HOME                     */}
-          {/* ══════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {aba === 'home' && (
             <div className="space-y-6">
               <div className="admin-card">
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h3 className="font-accent text-xs tracking-widest uppercase text-dourado mb-1">
-                      Seção &quot;Experiência&quot; — Home
+                      SeÃ§Ã£o &quot;ExperiÃªncia&quot; â€” Home
                     </h3>
                     <p className="font-body text-xs text-bege-escuro/50">
-                      Defina qual mídia aparece em cada card. Slots 1-3 são verticais (portrait), slots 4-7 são horizontais (landscape).
+                      Defina qual mÃ­dia aparece em cada card. Slots 1-3 sÃ£o verticais (portrait), slots 4-7 sÃ£o horizontais (landscape).
                     </p>
                   </div>
                 </div>
@@ -226,7 +226,7 @@ export default function AdminGaleriaPage() {
                 <div className="space-y-3">
                   {/* Linha 1: 3 slots verticais */}
                   <p className="font-accent text-[9px] tracking-[0.25em] uppercase text-bege-escuro/35">
-                    Linha 1 — Cards Verticais (portrait / instagram)
+                    Linha 1 â€” Cards Verticais (portrait / instagram)
                   </p>
                   <div className="grid grid-cols-3 gap-3">
                     {slotsHome.slice(0, 3).map(s => (
@@ -243,7 +243,7 @@ export default function AdminGaleriaPage() {
 
                   {/* Linha 2: 4 slots horizontais */}
                   <p className="font-accent text-[9px] tracking-[0.25em] uppercase text-bege-escuro/35 mt-4">
-                    Linha 2 — Cards Horizontais (landscape / wide)
+                    Linha 2 â€” Cards Horizontais (landscape / wide)
                   </p>
                   <div className="grid grid-cols-4 gap-3">
                     {slotsHome.slice(3, 7).map(s => (
@@ -260,16 +260,16 @@ export default function AdminGaleriaPage() {
                 </div>
               </div>
 
-              {/* Painel de seleção de mídia (aparece quando um slot está selecionado) */}
+              {/* Painel de seleÃ§Ã£o de mÃ­dia (aparece quando um slot estÃ¡ selecionado) */}
               {slotSelecionado !== null && (
                 <div className="admin-card border border-dourado/30">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="font-accent text-xs tracking-widest uppercase text-dourado">
-                        Escolher mídia para o Slot {slotSelecionado} — {SLOT_LABELS[slotSelecionado]}
+                        Escolher mÃ­dia para o Slot {slotSelecionado} â€” {SLOT_LABELS[slotSelecionado]}
                       </h4>
                       <p className="font-body text-[11px] text-bege-escuro/45 mt-0.5">
-                        Recomendado: {SLOT_HINT[slotSelecionado]}. Clique na mídia desejada.
+                        Recomendado: {SLOT_HINT[slotSelecionado]}. Clique na mÃ­dia desejada.
                       </p>
                     </div>
                     <button onClick={() => setSlotSelecionado(null)} className="text-bege-escuro/40 hover:text-bege transition-colors">
@@ -278,7 +278,7 @@ export default function AdminGaleriaPage() {
                   </div>
 
                   {fotos.length === 0 ? (
-                    <p className="text-center text-sm text-bege-escuro/40 py-8">Nenhuma mídia na galeria ainda.</p>
+                    <p className="text-center text-sm text-bege-escuro/40 py-8">Nenhuma mÃ­dia na galeria ainda.</p>
                   ) : (
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 max-h-80 overflow-y-auto pr-1">
                       {fotos.map(foto => {
@@ -304,7 +304,7 @@ export default function AdminGaleriaPage() {
                                 className="object-cover" sizes="120px" />
                             )}
 
-                            {/* Badge "já neste slot" */}
+                            {/* Badge "jÃ¡ neste slot" */}
                             {jaNesseSlot && (
                               <div className="absolute inset-0 bg-dourado/20 flex items-center justify-center">
                                 <div className="bg-dourado rounded-full p-1">
@@ -320,7 +320,7 @@ export default function AdminGaleriaPage() {
                               </div>
                             )}
 
-                            {/* Badge vídeo */}
+                            {/* Badge vÃ­deo */}
                             {ehVideo && (
                               <div className="absolute top-1 left-1 bg-black/70 border border-dourado/20 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
                                 <Play size={7} className="text-dourado fill-dourado" />
@@ -336,9 +336,9 @@ export default function AdminGaleriaPage() {
             </div>
           )}
 
-          {/* ══════════════════════════════════════════ */}
-          {/* ABA: TODAS AS MÍDIAS                       */}
-          {/* ══════════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+          {/* ABA: TODAS AS MÃDIAS                       */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           {aba === 'galeria' && (
             <>
               {/* Filtro por evento */}
@@ -357,9 +357,9 @@ export default function AdminGaleriaPage() {
               {filtradas.length === 0 ? (
                 <div className="admin-card text-center py-16">
                   <ImageIcon size={32} className="text-bege-escuro/20 mx-auto mb-3" />
-                  <p className="font-body text-bege-escuro/40 mb-4">Nenhuma mídia na galeria.</p>
+                  <p className="font-body text-bege-escuro/40 mb-4">Nenhuma mÃ­dia na galeria.</p>
                   <button onClick={() => { setEditando(null); setModalAberto(true) }} className="btn-primary text-xs">
-                    Adicionar primeira mídia
+                    Adicionar primeira mÃ­dia
                   </button>
                 </div>
               ) : (
@@ -376,7 +376,7 @@ export default function AdminGaleriaPage() {
                                 className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
                               <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 border border-dourado/20 px-1.5 py-0.5 rounded-sm">
                                 <Play size={9} className="text-dourado fill-dourado" />
-                                <span className="font-accent text-[8px] tracking-wider uppercase text-dourado/70">Vídeo</span>
+                                <span className="font-accent text-[8px] tracking-wider uppercase text-dourado/70">VÃ­deo</span>
                               </div>
                             </>
                           ) : (
@@ -392,7 +392,7 @@ export default function AdminGaleriaPage() {
                             </div>
                           )}
 
-                          {/* Overlay ações */}
+                          {/* Overlay aÃ§Ãµes */}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <button onClick={() => reordenar(foto.id, 'up')} disabled={idx === 0}
                               className="p-1.5 bg-white/10 hover:bg-white/20 rounded-sm disabled:opacity-30 transition-all">
@@ -404,7 +404,7 @@ export default function AdminGaleriaPage() {
                             </button>
                             <button onClick={() => { setEditando(foto); setModalAberto(true) }}
                               className="p-1.5 bg-white/10 hover:bg-white/20 rounded-sm transition-all">
-                              <span className="text-white text-xs">✏️</span>
+                              <span className="text-white text-xs">âœï¸</span>
                             </button>
                             <button onClick={() => deletar(foto.id)}
                               className="p-1.5 bg-red-500/40 hover:bg-red-500/60 rounded-sm transition-all">
@@ -415,7 +415,7 @@ export default function AdminGaleriaPage() {
                         {foto.alt && <p className="font-body text-xs text-bege-escuro/60 truncate px-1">{foto.alt}</p>}
                         {foto.evento?.nome && <p className="font-body text-[10px] text-dourado/60 truncate px-1">{foto.evento.nome}</p>}
                         <p className="font-body text-[10px] text-bege-escuro/25 px-1">
-                          #{foto.ordem + 1}{ehVideo ? ' · vídeo' : ''}{slotAtribuido ? ` · Home S${slotAtribuido.slot}` : ''}
+                          #{foto.ordem + 1}{ehVideo ? ' Â· vÃ­deo' : ''}{slotAtribuido ? ` Â· Home S${slotAtribuido.slot}` : ''}
                         </p>
                       </div>
                     )
@@ -435,7 +435,7 @@ export default function AdminGaleriaPage() {
   )
 }
 
-// ─── CARD DE SLOT ─────────────────────────────────────────────
+// â”€â”€â”€ CARD DE SLOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SlotCard({
   slot, selecionado, onSelecionar, onLimpar, alturaPreview,
 }: {
@@ -483,21 +483,21 @@ function SlotCard({
         )}
       </div>
 
-      {/* Rodapé do slot */}
+      {/* RodapÃ© do slot */}
       <div className="px-2 py-2 bg-black/20 flex items-center justify-between gap-1">
         <div className="min-w-0">
           <p className="font-accent text-[9px] tracking-[0.15em] uppercase text-dourado/60 leading-none">
             Slot {slot.slot}
           </p>
           <p className="font-body text-[10px] text-bege-escuro/40 mt-0.5 truncate">
-            {midia ? (midia.alt || 'Sem descrição') : SLOT_HINT[slot.slot]}
+            {midia ? (midia.alt || 'Sem descriÃ§Ã£o') : SLOT_HINT[slot.slot]}
           </p>
         </div>
         {midia && (
           <button
             onClick={e => { e.stopPropagation(); onLimpar() }}
             className="flex-shrink-0 p-1 text-bege-escuro/30 hover:text-red-400 transition-colors"
-            title="Remover mídia deste slot"
+            title="Remover mÃ­dia deste slot"
           >
             <X size={12} />
           </button>
@@ -507,7 +507,7 @@ function SlotCard({
   )
 }
 
-// ─── MODAL ADICIONAR/EDITAR MÍDIA ─────────────────────────────
+// â”€â”€â”€ MODAL ADICIONAR/EDITAR MÃDIA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MidiaModal: React.FC<{
   foto: FotoGaleria | null
   eventos: EventoOpt[]
@@ -531,7 +531,7 @@ const MidiaModal: React.FC<{
   const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0]; e.target.value = ''
     if (!file) return
-    if (file.size > 10 * 1024 * 1024) { toast.error('Máximo 10MB.'); return }
+    if (file.size > 10 * 1024 * 1024) { toast.error('MÃ¡ximo 10MB.'); return }
     setEnviandoUpload(true)
     try {
       const formData = new FormData(); formData.append('file', file)
@@ -554,9 +554,9 @@ const MidiaModal: React.FC<{
       const res = await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, evento_id: form.evento_id || null }) })
       const data = await res.json()
       if (data.erro) { toast.error(data.erro); return }
-      toast.success(foto ? 'Mídia atualizada!' : 'Mídia adicionada!')
+      toast.success(foto ? 'MÃ­dia atualizada!' : 'MÃ­dia adicionada!')
       onSalvo()
-    } catch { toast.error('Erro de conexão') }
+    } catch { toast.error('Erro de conexÃ£o') }
     finally { setSalvando(false) }
   }
 
@@ -565,7 +565,7 @@ const MidiaModal: React.FC<{
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-[#0f0c07] border border-dourado/30 rounded-sm max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-dourado/15">
-          <h3 className="font-display text-xl text-bege">{foto ? 'Editar Mídia' : 'Adicionar Mídia'}</h3>
+          <h3 className="font-display text-xl text-bege">{foto ? 'Editar MÃ­dia' : 'Adicionar MÃ­dia'}</h3>
           <button onClick={onClose} className="text-bege-escuro/50 hover:text-bege transition-colors"><X size={18} /></button>
         </div>
         <div className="p-5 space-y-5">
@@ -575,7 +575,7 @@ const MidiaModal: React.FC<{
                 <FolderOpen size={13} /> Upload de Foto
               </button>
               <button onClick={() => setModo('url')} className={`flex items-center justify-center gap-2 py-2.5 rounded-sm text-xs font-accent tracking-[0.15em] uppercase transition-all duration-200 ${modo === 'url' ? 'bg-dourado/15 text-dourado border border-dourado/30' : 'text-bege-escuro/50 hover:text-bege-escuro/80'}`}>
-                <LinkIcon size={13} /> URL / Vídeo
+                <LinkIcon size={13} /> URL / VÃ­deo
               </button>
             </div>
           )}
@@ -596,7 +596,7 @@ const MidiaModal: React.FC<{
                     </div>
                   </div>
                 ) : (
-                  <><div className="w-12 h-12 border border-dourado/20 rounded-sm flex items-center justify-center"><FolderOpen size={22} className="text-dourado/50" /></div><div className="text-center"><p className="font-body text-sm text-bege-escuro/70">Clique para selecionar uma foto</p><p className="font-body text-xs text-bege-escuro/35 mt-1">JPG, PNG, WEBP · Máx. 10MB</p></div></>
+                  <><div className="w-12 h-12 border border-dourado/20 rounded-sm flex items-center justify-center"><FolderOpen size={22} className="text-dourado/50" /></div><div className="text-center"><p className="font-body text-sm text-bege-escuro/70">Clique para selecionar uma foto</p><p className="font-body text-xs text-bege-escuro/35 mt-1">JPG, PNG, WEBP Â· MÃ¡x. 10MB</p></div></>
                 )}
               </button>
             </div>
@@ -604,15 +604,15 @@ const MidiaModal: React.FC<{
 
           {modo === 'url' && (
             <div>
-              <label className="admin-label">URL do Cloudinary ou vídeo *</label>
+              <label className="admin-label">URL do Cloudinary ou vÃ­deo *</label>
               <input className="admin-input font-mono text-xs" value={form.url} onChange={e => { setForm(p => ({ ...p, url: e.target.value })); setPreviewUrl(e.target.value) }} placeholder="https://res.cloudinary.com/.../video.mp4" autoFocus />
-              <p className="text-[10px] text-bege-escuro/30 mt-1.5">URL do Cloudinary (foto ou vídeo .mp4) ou URL externa</p>
+              <p className="text-[10px] text-bege-escuro/30 mt-1.5">URL do Cloudinary (foto ou vÃ­deo .mp4) ou URL externa</p>
               {previewUrl && (
                 <div className="relative mt-3 rounded-sm overflow-hidden bg-black/40" style={{ aspectRatio: '16/9' }}>
                   {ehVideo ? (
                     <><video src={previewUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 border border-dourado/20 px-2 py-1 rounded-sm">
-                      <Play size={10} className="text-dourado fill-dourado" /><span className="font-accent text-[9px] tracking-wider uppercase text-dourado/80">Vídeo</span>
+                      <Play size={10} className="text-dourado fill-dourado" /><span className="font-accent text-[9px] tracking-wider uppercase text-dourado/80">VÃ­deo</span>
                     </div></>
                   ) : (
                     <Image src={previewUrl} alt="Preview" fill className="object-cover" sizes="400px" onError={() => setPreviewUrl('')} />
@@ -625,8 +625,8 @@ const MidiaModal: React.FC<{
           <div className="h-px bg-white/5" />
 
           <div>
-            <label className="admin-label">Descrição</label>
-            <input className="admin-input" value={form.alt} onChange={e => setForm(p => ({ ...p, alt: e.target.value }))} placeholder="Ex: Ambiente da Maandhoo — sábado à noite" />
+            <label className="admin-label">DescriÃ§Ã£o</label>
+            <input className="admin-input" value={form.alt} onChange={e => setForm(p => ({ ...p, alt: e.target.value }))} placeholder="Ex: Ambiente da Maandhoo â€” sÃ¡bado Ã  noite" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -645,7 +645,7 @@ const MidiaModal: React.FC<{
 
           <div className="flex gap-3 pt-1">
             <button onClick={salvar} disabled={salvando || enviandoUpload || !form.url} className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-40">
-              {salvando ? <><Loader2 size={12} className="animate-spin" /> Salvando...</> : (foto ? 'Salvar Alterações' : 'Adicionar à Galeria')}
+              {salvando ? <><Loader2 size={12} className="animate-spin" /> Salvando...</> : (foto ? 'Salvar AlteraÃ§Ãµes' : 'Adicionar Ã  Galeria')}
             </button>
             <button onClick={onClose} className="btn-outline px-5">Cancelar</button>
           </div>
@@ -654,3 +654,4 @@ const MidiaModal: React.FC<{
     </div>
   )
 }
+

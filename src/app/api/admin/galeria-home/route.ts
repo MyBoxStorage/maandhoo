@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/admin/galeria-home
-// Retorna os 7 slots com os dados da mídia vinculada
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('galeria_home')
@@ -13,20 +12,41 @@ export async function GET() {
   return NextResponse.json({ slots: data ?? [] })
 }
 
-// PUT /api/admin/galeria-home
-// Atualiza um slot específico { slot: 1-7, galeria_id: uuid | null }
-export async function PUT(req: Request) {
-  const { slot, galeria_id } = await req.json()
+// PUT /api/admin/galeria-home — atualiza um slot { slot: 1-7, galeria_id: uuid | null }
+export async function PUT(req: NextRequest) {
+  return handleUpdate(req)
+}
 
-  if (!slot || slot < 1 || slot > 7) {
-    return NextResponse.json({ erro: 'Slot deve ser entre 1 e 7' }, { status: 400 })
+// POST como fallback (Vercel às vezes bloqueia PUT/PATCH)
+export async function POST(req: NextRequest) {
+  return handleUpdate(req)
+}
+
+async function handleUpdate(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { slot, galeria_id } = body
+
+    if (!slot || slot < 1 || slot > 7) {
+      return NextResponse.json({ erro: 'Slot deve ser entre 1 e 7' }, { status: 400 })
+    }
+
+    const { error } = await supabaseAdmin
+      .from('galeria_home')
+      .update({
+        galeria_id: galeria_id ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('slot', slot)
+
+    if (error) {
+      console.error('[galeria-home PUT]', error)
+      return NextResponse.json({ erro: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ sucesso: true })
+  } catch (err) {
+    console.error('[galeria-home PUT] erro:', err)
+    return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
   }
-
-  const { error } = await supabaseAdmin
-    .from('galeria_home')
-    .update({ galeria_id: galeria_id ?? null, updated_at: new Date().toISOString() })
-    .eq('slot', slot)
-
-  if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
-  return NextResponse.json({ sucesso: true })
 }
