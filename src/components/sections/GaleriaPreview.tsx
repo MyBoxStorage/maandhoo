@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Camera } from 'lucide-react'
@@ -65,7 +65,6 @@ export const GaleriaPreview: React.FC = () => {
       .catch(() => {})
   }, [])
 
-  // Slots 0-2 = verticais (portrait), slots 3-6 = horizontais (landscape)
   const [v0, v1, v2, h0, h1, h2, h3] = slots
 
   return (
@@ -80,11 +79,13 @@ export const GaleriaPreview: React.FC = () => {
 
         {/* ── MOBILE ── */}
         <div className="md:hidden space-y-3 mb-8">
+          {/* Verticais: proporção 9:16 real usando aspect-ratio */}
           <div className="grid grid-cols-2 gap-3">
-            <MediaTile midia={v0} className="h-[280px]" />
-            <MediaTile midia={v1} className="h-[280px]" />
+            <MediaTile midia={v0} className="aspect-[9/16]" />
+            <MediaTile midia={v1} className="aspect-[9/16]" />
           </div>
-          <MediaTile midia={v2} className="h-[340px]" />
+          <MediaTile midia={v2} className="aspect-[9/16]" />
+          {/* Horizontais */}
           <div className="grid grid-cols-2 gap-3">
             <MediaTile midia={h0} className="h-[160px]" />
             <MediaTile midia={h1} className="h-[160px]" />
@@ -95,18 +96,24 @@ export const GaleriaPreview: React.FC = () => {
 
         {/* ── DESKTOP ── */}
         <div className="hidden md:block mb-8">
-          {/* Linha 1 — 3 cards verticais */}
+
+          {/*
+            Linha 1 — 3 cards verticais em proporção 9:16 real
+            Cada card ocupa 1/3 da largura do container (max-w-7xl ≈ 1280px → ~410px cada)
+            aspect-[9/16] = altura automática proporcional → ~730px — perfeito para portrait
+          */}
           <div className="grid grid-cols-3 gap-3 mb-3">
-            <MediaTile midia={v0} className="h-[380px] lg:h-[440px]" />
-            <MediaTile midia={v1} className="h-[380px] lg:h-[440px]" />
-            <MediaTile midia={v2} className="h-[380px] lg:h-[440px]" />
+            <MediaTile midia={v0} className="aspect-[9/16]" />
+            <MediaTile midia={v1} className="aspect-[9/16]" />
+            <MediaTile midia={v2} className="aspect-[9/16]" />
           </div>
-          {/* Linha 2 — 4 cards horizontais */}
+
+          {/* Linha 2 — 4 cards horizontais, altura fixa */}
           <div className="grid grid-cols-12 gap-3">
-            <MediaTile midia={h0} className="col-span-3 h-[170px] lg:h-[190px]" />
-            <MediaTile midia={h1} className="col-span-3 h-[170px] lg:h-[190px]" />
-            <MediaTile midia={h2} className="col-span-4 h-[170px] lg:h-[190px]" />
-            <MediaTile midia={h3} className="col-span-2 h-[170px] lg:h-[190px]" />
+            <MediaTile midia={h0} className="col-span-3 h-[180px] lg:h-[200px]" />
+            <MediaTile midia={h1} className="col-span-3 h-[180px] lg:h-[200px]" />
+            <MediaTile midia={h2} className="col-span-4 h-[180px] lg:h-[200px]" />
+            <MediaTile midia={h3} className="col-span-2 h-[180px] lg:h-[200px]" />
           </div>
         </div>
 
