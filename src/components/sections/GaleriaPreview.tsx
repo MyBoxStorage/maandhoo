@@ -73,19 +73,17 @@ export const GaleriaPreview: React.FC = () => {
 
         <div className="text-center mb-14 sm:mb-16">
           <p className="section-subtitle mb-3">Experiência</p>
-          <h2 className="section-title mb-4">A Maandhoo em Fotos</h2>
+          <h2 className="section-title mb-4">A Experiência Maandhoo</h2>
           <div className="divider-gold w-24 mx-auto" />
         </div>
 
         {/* ── MOBILE ── */}
         <div className="md:hidden space-y-3 mb-8">
-          {/* Verticais: proporção 9:16 real usando aspect-ratio */}
           <div className="grid grid-cols-2 gap-3">
             <MediaTile midia={v0} className="aspect-[9/16]" />
             <MediaTile midia={v1} className="aspect-[9/16]" />
           </div>
           <MediaTile midia={v2} className="aspect-[9/16]" />
-          {/* Horizontais */}
           <div className="grid grid-cols-2 gap-3">
             <MediaTile midia={h0} className="h-[160px]" />
             <MediaTile midia={h1} className="h-[160px]" />
@@ -96,19 +94,11 @@ export const GaleriaPreview: React.FC = () => {
 
         {/* ── DESKTOP ── */}
         <div className="hidden md:block mb-8">
-
-          {/*
-            Linha 1 — 3 cards verticais em proporção 9:16 real
-            Cada card ocupa 1/3 da largura do container (max-w-7xl ≈ 1280px → ~410px cada)
-            aspect-[9/16] = altura automática proporcional → ~730px — perfeito para portrait
-          */}
           <div className="grid grid-cols-3 gap-3 mb-3">
             <MediaTile midia={v0} className="aspect-[9/16]" />
             <MediaTile midia={v1} className="aspect-[9/16]" />
             <MediaTile midia={v2} className="aspect-[9/16]" />
           </div>
-
-          {/* Linha 2 — 4 cards horizontais, altura fixa */}
           <div className="grid grid-cols-12 gap-3">
             <MediaTile midia={h0} className="col-span-3 h-[180px] lg:h-[200px]" />
             <MediaTile midia={h1} className="col-span-3 h-[180px] lg:h-[200px]" />
