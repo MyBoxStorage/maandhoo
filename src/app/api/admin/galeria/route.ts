@@ -22,20 +22,34 @@ export async function GET() {
   return NextResponse.json({ fotos: data })
 }
 
-// POST /api/admin/galeria — adicionar mídia
+// POST /api/admin/galeria — adicionar mídia (sempre vai para o topo, ordem 0)
 export async function POST(req: Request) {
   const body = await req.json()
-  const { url, alt, evento_id, ordem, orientacao } = body
+  const { url, alt, evento_id, orientacao } = body
 
   if (!url) return NextResponse.json({ erro: 'URL é obrigatória' }, { status: 400 })
 
+  // Buscar todas as mídias existentes e incrementar suas ordens (+1)
+  const { data: todos } = await supabaseAdmin
+    .from('galeria')
+    .select('id, ordem')
+
+  if (todos && todos.length > 0) {
+    await Promise.all(
+      todos.map(item =>
+        supabaseAdmin.from('galeria').update({ ordem: item.ordem + 1 }).eq('id', item.id)
+      )
+    )
+  }
+
+  // Inserir nova mídia com ordem 0 (sempre no topo)
   const { data, error } = await supabaseAdmin
     .from('galeria')
     .insert({
       url: otimizarUrlCloudinary(url),
       alt: alt || null,
       evento_id: evento_id || null,
-      ordem: ordem ?? 0,
+      ordem: 0,
       orientacao: orientacao ?? 'landscape',
     })
     .select()
