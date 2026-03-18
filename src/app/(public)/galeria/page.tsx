@@ -55,16 +55,26 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
 }
 
 // Card de mídia
-// Lógica de aspect-ratio:
-//   - Vídeo portrait  → 9/16  (reels/instagram, altura máxima — intencional)
-//   - Foto portrait   → 3/4   (compacto, altura similar ao landscape, sem dominar o scroll)
-//   - Landscape       → 4/3   (formato wide padrão)
+// Layout em fileiras mistas:
+//   - Foto portrait  → ocupa 1 coluna em grid de 4  → mesma altura que landscape 4/3
+//   - Foto landscape → ocupa 1 coluna em grid de 3  → 4/3
+//   - Vídeo portrait → ocupa 1 coluna, mantém 9/16  → destaque visual
+//   - Vídeo landscape→ 16/9
+//
+// Regra para o admin:
+//   Fotos portrait: adicionar 4 seguidas (preenchem 1 fileira de 4)
+//   Fotos landscape: adicionar 3 seguidas (preenchem 1 fileira de 3)
+
 function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
   const video = isVideo(midia.url)
 
+  // Vídeos mantêm proporção real (destacados)
+  // Fotos portrait e landscape têm a MESMA altura-alvo via aspect-ratio
+  // portrait num grid de 4 colunas ≈ landscape num grid de 3 colunas (largura ~75%)
+  // Usamos aspect-[3/4] para portrait e aspect-[4/3] para landscape — alturas quase idênticas
   const aspectRatio = video
-    ? (midia.orientacao === 'portrait' ? '9/16' : '16/9')  // vídeos: proporção real
-    : (midia.orientacao === 'portrait' ? '3/4'  : '4/3')   // fotos: portrait compacto
+    ? (midia.orientacao === 'portrait' ? '9/16' : '16/9')
+    : (midia.orientacao === 'portrait' ? '3/4'  : '4/3')
 
   return (
     <div
@@ -75,8 +85,7 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
       {video ? (
         <>
           <video
-            src={midia.url}
-            autoPlay muted loop playsInline
+            src={midia.url} autoPlay muted loop playsInline
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-white/10 px-2 py-1 rounded-sm">
@@ -86,21 +95,62 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
         </>
       ) : (
         <Image
-          src={midia.url}
-          alt={midia.alt ?? 'Maandhoo Club'}
-          fill
+          src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 33vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       {midia.alt && (
         <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="font-body text-sm text-bege truncate block">{midia.alt}</span>
+          <span className="font-body text-xs text-bege truncate block">{midia.alt}</span>
         </div>
       )}
     </div>
   )
+}
+
+// ─── Agrupa mídias em fileiras mistas ────────────────────────
+// Lê a sequência e monta fileiras:
+//   - 4 portraits seguidos → fileira de 4 colunas
+//   - 3 landscapes seguidos → fileira de 3 colunas
+//   - Vídeos → fileira própria de 1 (destaque)
+//   - Misto → fileira de 3 colunas genérica
+type Fileira = { itens: MidiaGaleria[]; cols: number }
+
+function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
+  const fileiras: Fileira[] = []
+  let i = 0
+
+  while (i < midias.length) {
+    const atual = midias[i]
+    const ehVideo = isVideo(atual.url)
+
+    if (ehVideo) {
+      // Vídeo: fileira própria com 1 item (destaque largo)
+      fileiras.push({ itens: [atual], cols: 1 })
+      i++
+      continue
+    }
+
+    if (atual.orientacao === 'portrait') {
+      // Coletar até 4 portraits seguidos (sem vídeos)
+      const grupo: MidiaGaleria[] = []
+      while (i < midias.length && grupo.length < 4 && !isVideo(midias[i].url) && midias[i].orientacao === 'portrait') {
+        grupo.push(midias[i++])
+      }
+      fileiras.push({ itens: grupo, cols: 4 })
+    } else {
+      // Coletar até 3 landscapes seguidos (sem vídeos)
+      const grupo: MidiaGaleria[] = []
+      while (i < midias.length && grupo.length < 3 && !isVideo(midias[i].url) && midias[i].orientacao === 'landscape') {
+        grupo.push(midias[i++])
+      }
+      fileiras.push({ itens: grupo, cols: 3 })
+    }
+  }
+
+  return fileiras
 }
 
 export default function GaleriaPage() {
@@ -122,15 +172,7 @@ export default function GaleriaPage() {
     carregar()
   }, [])
 
-  // Distribuir em 3 colunas equilibradas (masonry CSS puro — sem quebra de linha)
-  const col1: MidiaGaleria[] = []
-  const col2: MidiaGaleria[] = []
-  const col3: MidiaGaleria[] = []
-  midias.forEach((m, i) => {
-    if (i % 3 === 0) col1.push(m)
-    else if (i % 3 === 1) col2.push(m)
-    else col3.push(m)
-  })
+  const fileiras = montarFileiras(midias)
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-4">
@@ -154,19 +196,34 @@ export default function GaleriaPage() {
             Nenhuma mídia publicada no momento.
           </p>
         ) : (
-          // 3 colunas masonry — items-start garante que cada coluna cresce independente
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            {[col1, col2, col3].map((col, ci) => (
-              <div key={ci} className="flex flex-col gap-4">
-                {col.map(midia => (
-                  <MediaCard
-                    key={midia.id}
-                    midia={midia}
-                    onClick={() => setMidiaAberta(midia)}
-                  />
-                ))}
-              </div>
-            ))}
+          <div className="space-y-4">
+            {fileiras.map((fileira, fi) => {
+              const ehVideoDestaque = fileira.cols === 1 && isVideo(fileira.itens[0]?.url)
+
+              if (ehVideoDestaque) {
+                // Vídeo: ocupa até metade da largura, centralizado
+                return (
+                  <div key={fi} className="flex justify-center">
+                    <div className="w-full max-w-sm">
+                      <MediaCard midia={fileira.itens[0]} onClick={() => setMidiaAberta(fileira.itens[0])} />
+                    </div>
+                  </div>
+                )
+              }
+
+              // Fileira de fotos: cols=4 (portrait) ou cols=3 (landscape)
+              const gridClass = fileira.cols === 4
+                ? 'grid grid-cols-2 sm:grid-cols-4 gap-3'
+                : 'grid grid-cols-1 sm:grid-cols-3 gap-3'
+
+              return (
+                <div key={fi} className={gridClass}>
+                  {fileira.itens.map(midia => (
+                    <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
+                  ))}
+                </div>
+              )
+            })}
           </div>
         )}
 
