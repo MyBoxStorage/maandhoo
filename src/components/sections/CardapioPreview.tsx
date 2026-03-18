@@ -15,11 +15,11 @@ type CardapioItem = {
 }
 
 const categoriaIcone: Record<string, React.ReactNode> = {
-  drinks: <Coffee size={16} />,
-  longneck: <Beer size={16} />,
-  doses: <Wine size={16} />,
-  soft: <Zap size={16} />,
-  combos: <Package size={16} />,
+  drinks:  <Coffee  size={16} />,
+  longneck:<Beer    size={16} />,
+  doses:   <Wine    size={16} />,
+  soft:    <Zap     size={16} />,
+  combos:  <Package size={16} />,
 }
 
 export const CardapioPreview: React.FC = () => {
@@ -43,20 +43,20 @@ export const CardapioPreview: React.FC = () => {
   }, [])
 
   const itensDisponiveis = useMemo(
-    () => itens.filter((item) => item.disponivel),
+    () => itens.filter(item => item.disponivel),
     [itens],
   )
 
   const bebidas = useMemo(
-    () => itensDisponiveis.filter((item) => item.categoria !== 'combos').slice(0, 8),
+    () => itensDisponiveis.filter(item => item.categoria !== 'combos').slice(0, 8),
     [itensDisponiveis],
   )
 
+  // 3 combos em destaque, ordenados por destaque=true primeiro
   const combosDestaque = useMemo(
     () => itensDisponiveis
-      .filter((item) => item.categoria === 'combos')
-      .sort((a, b) => Number(b.destaque) - Number(a.destaque))
-      .slice(0, 2),
+      .filter(item => item.categoria === 'combos' && item.destaque)
+      .slice(0, 3),
     [itensDisponiveis],
   )
 
@@ -73,7 +73,7 @@ export const CardapioPreview: React.FC = () => {
           </p>
         </div>
 
-        {/* DRINKS — lista limpa estilo premium */}
+        {/* BEBIDAS */}
         <div className="mb-10">
           <p className="font-accent text-[10px] tracking-[0.30em] uppercase text-dourado/60 mb-5 text-center">
             Bebidas
@@ -111,7 +111,7 @@ export const CardapioPreview: React.FC = () => {
           )}
         </div>
 
-        {/* COMBOS — cards destacados */}
+        {/* COMBOS — 3 cards em grid responsivo */}
         <div className="mb-10">
           <p className="font-accent text-[10px] tracking-[0.30em] uppercase text-dourado/60 mb-5 text-center">
             Combos
@@ -121,31 +121,51 @@ export const CardapioPreview: React.FC = () => {
               <Loader2 size={20} className="animate-spin text-dourado/50" />
             </div>
           ) : combosDestaque.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {combosDestaque.map(combo => (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {combosDestaque.map((combo, idx) => (
                 <div
                   key={combo.id}
-                  className="relative bg-card border border-gold/20 hover:border-gold/50 p-5 rounded-sm transition-all duration-300 group overflow-hidden"
+                  className={`relative bg-card border rounded-sm p-5 transition-all duration-300 group overflow-hidden
+                    ${idx === 1
+                      ? 'border-dourado/50 sm:-mt-2 sm:mb-2'   // card central levemente elevado
+                      : 'border-gold/20 hover:border-gold/50'
+                    }`}
                 >
-                  {/* Glow de fundo sutil */}
+                  {/* Linha dourada no topo do card central */}
+                  {idx === 1 && (
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dourado to-transparent" />
+                  )}
+
+                  {/* Glow sutil no hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-dourado/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                  <div className="flex items-start justify-between gap-4 relative">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 bg-dourado/15 text-dourado px-2 py-0.5 text-[10px] font-accent tracking-widest uppercase rounded-sm mb-2">
-                        <Package size={10} />
-                        {combo.destaque ? 'Destaque' : 'Combo'}
-                      </div>
-                      <h4 className="font-body text-sm font-medium text-bege mb-1">{combo.nome}</h4>
-                      {combo.descricao && (
-                        <p className="font-body text-xs text-bege-escuro/50">{combo.descricao}</p>
-                      )}
+                  <div className="relative space-y-3">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-1.5 bg-dourado/15 text-dourado px-2 py-0.5 text-[10px] font-accent tracking-widest uppercase rounded-sm">
+                      <Package size={10} />
+                      Destaque
                     </div>
-                    <div className="text-right flex-shrink-0">
+
+                    {/* Nome */}
+                    <h4 className="font-body text-sm font-medium text-bege leading-snug">
+                      {combo.nome}
+                    </h4>
+
+                    {/* Descrição */}
+                    {combo.descricao && (
+                      <p className="font-body text-xs text-bege-escuro/50 leading-relaxed">
+                        {combo.descricao}
+                      </p>
+                    )}
+
+                    {/* Preço + label */}
+                    <div className="pt-2 border-t border-white/5 flex items-end justify-between">
+                      <span className="font-body text-[10px] text-bege-escuro/40 uppercase tracking-wider">
+                        garrafa
+                      </span>
                       <div className="font-display text-2xl text-gradient-gold">
                         R$ {Number(combo.preco).toLocaleString('pt-BR')}
                       </div>
-                      <div className="font-body text-[10px] text-bege-escuro/40">garrafa</div>
                     </div>
                   </div>
                 </div>
@@ -156,7 +176,6 @@ export const CardapioPreview: React.FC = () => {
           )}
         </div>
 
-        {/* NOTA SEM TAXA */}
         <p className="text-center text-xs text-bege-escuro/40 mb-8 italic">
           Não cobramos 10% de taxa de serviço
         </p>
