@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Camera } from 'lucide-react'
 
-type FotoGaleriaPublica = {
+type MidiaGaleria = {
   id: string
   url: string
   alt: string | null
@@ -25,8 +25,13 @@ const DESKTOP_LAYOUT_CLASSES = [
 
 const MOBILE_HEIGHTS = ['h-72', 'h-56', 'h-56', 'h-64', 'h-56', 'h-64', 'h-72', 'h-56']
 
-function FotoTile({ foto, className }: { foto: FotoGaleriaPublica | null; className?: string }) {
-  if (!foto) {
+// Detecta vídeo pelo URL — funciona com Cloudinary e qualquer .mp4/.webm
+const isVideo = (url: string): boolean =>
+  url.includes('/video/upload/') ||
+  /\.(mp4|webm|mov)(\?.*)?$/i.test(url)
+
+function MediaTile({ midia, className }: { midia: MidiaGaleria | null; className?: string }) {
+  if (!midia) {
     return (
       <div className={`relative rounded-sm border border-white/10 bg-black/35 flex items-center justify-center ${className ?? ''}`}>
         <div className="flex flex-col items-center gap-2 text-bege-escuro/35">
@@ -37,39 +42,52 @@ function FotoTile({ foto, className }: { foto: FotoGaleriaPublica | null; classN
     )
   }
 
+  const video = isVideo(midia.url)
+
   return (
     <div className={`relative rounded-sm overflow-hidden group ${className ?? ''}`}>
-      <Image
-        src={foto.url}
-        alt={foto.alt ?? 'Foto da Maandhoo Club'}
-        fill
-        className="object-cover transition-transform duration-700 group-hover:scale-105"
-        sizes="(max-width: 768px) 100vw, 33vw"
-      />
+      {video ? (
+        <video
+          src={midia.url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+      ) : (
+        <Image
+          src={midia.url}
+          alt={midia.alt ?? 'Foto da Maandhoo Club'}
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 33vw"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>
   )
 }
 
 export const GaleriaPreview: React.FC = () => {
-  const [fotos, setFotos] = useState<FotoGaleriaPublica[]>([])
+  const [midias, setMidias] = useState<MidiaGaleria[]>([])
 
   useEffect(() => {
     const carregar = async () => {
       try {
         const res = await fetch('/api/galeria?destaques=true')
         const data = await res.json()
-        setFotos(Array.isArray(data.fotos) ? data.fotos.slice(0, 8) : [])
+        setMidias(Array.isArray(data.fotos) ? data.fotos.slice(0, 8) : [])
       } catch {
-        setFotos([])
+        setMidias([])
       }
     }
     carregar()
   }, [])
 
   const slots = useMemo(
-    () => Array.from({ length: 8 }, (_, i) => fotos[i] ?? null),
-    [fotos],
+    () => Array.from({ length: 8 }, (_, i) => midias[i] ?? null),
+    [midias],
   )
 
   return (
@@ -84,15 +102,15 @@ export const GaleriaPreview: React.FC = () => {
 
         {/* Mobile: coluna única com alturas variadas */}
         <div className="md:hidden space-y-3 mb-8">
-          {slots.map((foto, i) => (
-            <FotoTile key={`m-${i}`} foto={foto} className={MOBILE_HEIGHTS[i]} />
+          {slots.map((midia, i) => (
+            <MediaTile key={`m-${i}`} midia={midia} className={MOBILE_HEIGHTS[i]} />
           ))}
         </div>
 
         {/* Desktop: grid 12 colunas, 3 linhas, h-[600px] */}
         <div className="hidden md:grid md:grid-cols-12 md:grid-rows-3 gap-3 h-[600px] mb-8">
-          {slots.map((foto, i) => (
-            <FotoTile key={`d-${i}`} foto={foto} className={DESKTOP_LAYOUT_CLASSES[i]} />
+          {slots.map((midia, i) => (
+            <MediaTile key={`d-${i}`} midia={midia} className={DESKTOP_LAYOUT_CLASSES[i]} />
           ))}
         </div>
 
