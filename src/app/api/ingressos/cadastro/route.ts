@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { hashCPF, formatarCPF, validarCPF, calcularExpiracao } from '@/lib/ingresso-utils'
-import { enviarEmailIngresso } from '@/lib/email-ingresso'
 import type { CadastroPayload } from '@/types/ingressos'
 
 /**
  * POST /api/ingressos/cadastro
- * Recebe dados do formulário de cadastro via link único
- * Valida, salva cadastro, ativa ingresso e envia QR Code por email
+ * Recebe dados do formulário via link único (camarote ou ingresso avulso).
+ * Salva cadastro, ativa ingresso e vincula ao cliente (se já tiver conta).
+ * O QR Code é exibido em /minha-conta — NÃO é mais enviado por email aqui.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -57,16 +57,34 @@ export async function POST(req: NextRequest) {
       expiraEm = calcularExpiracao(ingresso.eventos.data_evento).toISOString()
     }
 
+    // ── Verificar se já existe um cliente com este email ────────
+    // Feito ANTES do lock para ter o cliente_id pronto para gravar junto
+    const emailNormalizado = email.trim().toLowerCase()
+    const { data: clienteExistente } = await supabaseAdmin
+      .from('clientes')
+      .select('id')
+      .eq('email', emailNormalizado)
+      .maybeSingle()
+
+    const clienteId = clienteExistente?.id ?? null
+
     // ── Lock atômico: marca link_usado = true SOMENTE se ainda false ──
-    // Isso evita race condition onde dois requests simultâneos passariam
+    // Evita race condition onde dois requests simultâneos passariam
     // pela verificação anterior antes de um deles gravar o lock.
+    const updatePayload: Record<string, unknown> = {
+      status: 'ativo',
+      link_usado: true,
+      expira_em: expiraEm,
+    }
+
+    // Vincula ao cliente já na mesma operação atômica (se tiver conta)
+    if (clienteId) {
+      updatePayload.cliente_id = clienteId
+    }
+
     const { data: lockData, error: errLock } = await supabaseAdmin
       .from('ingressos')
-      .update({
-        status: 'ativo',
-        link_usado: true,
-        expira_em: expiraEm,
-      })
+      .update(updatePayload)
       .eq('id', ingresso.id)
       .eq('link_usado', false)   // ← condição atômica: só atualiza se ainda não foi usado
       .select('id')
@@ -85,10 +103,10 @@ export async function POST(req: NextRequest) {
         nome_completo: nome_completo.trim(),
         cpf: formatarCPF(cpf),
         cpf_hash: cpfHash,
-        email: email.trim().toLowerCase(),
+        email: emailNormalizado,
         whatsapp: whatsapp.replace(/[^0-9]/g, ''),
         genero,
-        email_enviado: email.trim().toLowerCase(),
+        email_enviado: emailNormalizado,
       })
 
     if (errCadastro) {
@@ -96,43 +114,15 @@ export async function POST(req: NextRequest) {
       // Reverter o lock caso o cadastro falhe
       await supabaseAdmin
         .from('ingressos')
-        .update({ status: 'aguardando_cadastro', link_usado: false })
+        .update({ status: 'aguardando_cadastro', link_usado: false, cliente_id: null })
         .eq('id', ingresso.id)
       return NextResponse.json({ erro: 'Erro ao salvar cadastro' }, { status: 500 })
     }
 
-    // ── Enviar email com QR Code ────────────────────────────────
-    const resultadoEmail = await enviarEmailIngresso({
-      para: email,
-      nomeCompleto: nome_completo,
-      cpf,
-      eventoNome: ingresso.eventos?.nome ?? 'Evento Maandhoo',
-      eventoData: ingresso.eventos?.data_evento ?? new Date().toISOString(),
-      eventoHora: ingresso.eventos?.hora_abertura ?? '22:00',
-      tipoIngresso: ingresso.tipo,
-      qrToken: ingresso.qr_token,
-      ingressoId: ingresso.id,
-      loteNome: ingresso.lotes?.nome,
-      precoPago: ingresso.preco_pago,
-    })
-
-    // ── Marcar email como enviado ───────────────────────────────
-    if (resultadoEmail.sucesso) {
-      await supabaseAdmin
-        .from('cadastros')
-        .update({ qr_enviado: true, qr_enviado_em: new Date().toISOString() })
-        .eq('ingresso_id', ingresso.id)
-    } else {
-      console.error('[cadastro] Falha ao enviar email:', resultadoEmail.erro)
-    }
-
     return NextResponse.json({
       sucesso: true,
-      mensagem: 'Cadastro realizado! Seu ingresso foi enviado para o email.',
-      email_enviado: resultadoEmail.sucesso,
-      aviso_email: resultadoEmail.sucesso
-        ? undefined
-        : 'Cadastro realizado, mas houve falha no envio do email. Entre em contato conosco.',
+      mensagem: 'Cadastro realizado com sucesso! Acesse sua conta para ver o ingresso.',
+      tem_conta: !!clienteId,
     })
   } catch (err) {
     console.error('[cadastro] Erro inesperado:', err)

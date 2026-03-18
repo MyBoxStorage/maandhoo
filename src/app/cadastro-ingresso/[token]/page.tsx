@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
-import { CheckCircle2, XCircle, Loader2, User, Mail, Phone, CreditCard, ChevronDown } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, User, Mail, Phone, CreditCard, ChevronDown, ArrowRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import Link from 'next/link'
 
 type Fase = 'carregando' | 'formulario' | 'enviando' | 'sucesso' | 'erro'
 
@@ -18,11 +19,12 @@ interface DadosIngresso {
 
 export default function CadastroIngressoPage() {
   const { token } = useParams<{ token: string }>()
+  const router = useRouter()
 
   const [fase, setFase] = useState<Fase>('carregando')
   const [ingresso, setIngresso] = useState<DadosIngresso | null>(null)
   const [erroMsg, setErroMsg] = useState('')
-  const [emailEnviado, setEmailEnviado] = useState(true)
+  const [temConta, setTemConta] = useState(false)
 
   const [form, setForm] = useState({
     nome_completo: '',
@@ -74,7 +76,7 @@ export default function CadastroIngressoPage() {
       })
       const data = await res.json()
       if (data.sucesso) {
-        setEmailEnviado(data.email_enviado !== false)
+        setTemConta(!!data.tem_conta)
         setFase('sucesso')
       } else { setErroMsg(data.erro ?? 'Erro ao processar cadastro.'); setFase('erro') }
     } catch {
@@ -121,22 +123,31 @@ export default function CadastroIngressoPage() {
           <div className="border border-dourado/30 bg-dourado/5 rounded-sm p-8 text-center">
             <CheckCircle2 size={56} className="text-dourado mx-auto mb-5" />
             <p className="font-accent text-lg tracking-widest text-dourado mb-3">Cadastro Confirmado!</p>
-            {emailEnviado ? (
-              <p className="font-body text-sm text-bege-escuro/70 leading-relaxed">
-                Seu ingresso foi enviado para o email informado.<br/>
-                Apresente o QR Code na entrada do evento.
+            <p className="font-body text-sm text-bege-escuro/70 leading-relaxed">
+              Seu ingresso está garantido e disponível na sua área do cliente.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {/* Botão principal: ir para /acesso */}
+              <Link
+                href={`/acesso?email=${encodeURIComponent(form.email)}`}
+                className="flex items-center justify-center gap-2 w-full bg-dourado hover:bg-dourado/90 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all"
+              >
+                {temConta ? 'Entrar na Minha Conta' : 'Criar Conta e Ver Ingresso'}
+                <ArrowRight size={14} />
+              </Link>
+
+              {/* Instrução secundária */}
+              <p className="font-body text-xs text-bege-escuro/40 leading-relaxed pt-1">
+                {temConta
+                  ? 'Acesse sua conta para visualizar o QR Code do ingresso.'
+                  : 'Crie sua conta com o mesmo email informado no cadastro para acessar o ingresso.'}
               </p>
-            ) : (
-              <p className="font-body text-sm text-amber-400/80 leading-relaxed">
-                Seu cadastro foi realizado com sucesso, porém houve uma falha no envio do email.<br/>
-                Entre em contato conosco via WhatsApp para receber seu QR Code.
-              </p>
-            )}
+            </div>
+
             <div className="mt-6 border-t border-dourado/15 pt-5">
-              <p className="font-body text-xs text-bege-escuro/40">
-                {emailEnviado
-                  ? 'Não encontrou o email? Verifique a pasta de spam ou entre em contato via WhatsApp.'
-                  : 'Seu ingresso está garantido. Fale conosco pelo WhatsApp para mais informações.'}
+              <p className="font-body text-xs text-bege-escuro/30 leading-relaxed">
+                Dúvidas? Entre em contato via WhatsApp.
               </p>
             </div>
           </div>
@@ -185,7 +196,7 @@ export default function CadastroIngressoPage() {
                   <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-bege-escuro/30 pointer-events-none" />
                   <select
                     value={form.genero}
-                    onChange={e => handleChange('genero', e.target.value)}
+                    onChange={e => handleChange('genero', e.target.value as typeof form.genero)}
                     className="w-full appearance-none bg-black/30 border border-white/10 focus:border-dourado/40 rounded-sm px-4 py-3.5 font-body text-sm text-bege outline-none transition-colors"
                     disabled={fase === 'enviando'}
                   >
@@ -229,7 +240,9 @@ export default function CadastroIngressoPage() {
                     disabled={fase === 'enviando'}
                   />
                 </div>
-                <p className="font-body text-[10px] text-bege-escuro/35 mt-1.5 pl-1">O QR Code será enviado para este email</p>
+                <p className="font-body text-[10px] text-bege-escuro/35 mt-1.5 pl-1">
+                  Use o mesmo email ao criar sua conta para acessar o ingresso
+                </p>
               </div>
 
               {/* WhatsApp */}
@@ -256,14 +269,14 @@ export default function CadastroIngressoPage() {
                 className="w-full bg-dourado hover:bg-dourado/90 disabled:bg-dourado/40 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all duration-200 flex items-center justify-center gap-2 mt-2"
               >
                 {fase === 'enviando'
-                  ? <><Loader2 size={14} className="animate-spin" /> Enviando ingresso...</>
-                  : 'Confirmar e Receber Ingresso'
+                  ? <><Loader2 size={14} className="animate-spin" /> Processando...</>
+                  : 'Confirmar Cadastro'
                 }
               </button>
 
               {/* Aviso LGPD */}
               <p className="font-body text-[10px] text-bege-escuro/25 text-center leading-relaxed">
-                Seus dados são utilizados exclusivamente para identificação e envio do ingresso, conforme a LGPD.
+                Seus dados são utilizados exclusivamente para identificação e acesso ao ingresso, conforme a LGPD.
               </p>
             </div>
           </>

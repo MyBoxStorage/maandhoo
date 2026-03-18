@@ -196,7 +196,10 @@ export default function EventoPage({ params }: PageProps) {
                 <Ticket size={18} className="text-dourado" />
                 <h3 className="font-accent text-xs tracking-widest uppercase text-dourado">Comprar Ingresso</h3>
               </div>
-              <p className="font-body text-xs text-bege-escuro/60">Ingresso nominal com CPF. QR Code enviado por email.</p>
+              {/* Atualizado: ingresso disponível na área do cliente */}
+              <p className="font-body text-xs text-bege-escuro/60">
+                Ingresso nominal com CPF. Disponível na sua área do cliente após a compra.
+              </p>
               <div className="divider-gold" />
 
               {/* PISTA */}
@@ -285,7 +288,7 @@ export default function EventoPage({ params }: PageProps) {
               <div className="flex items-start gap-2 mt-3 pt-3 border-t border-white/5">
                 <Shield size={13} className="text-dourado/60 mt-0.5 flex-shrink-0" />
                 <p className="font-body text-xs text-bege-escuro/40 leading-relaxed">
-                  Compra segura · Ingresso nominal com CPF · Enviado por email · Política de reembolso aplicável
+                  Compra segura · Ingresso nominal com CPF · Acesse em Minha Conta · Política de reembolso aplicável
                 </p>
               </div>
             </div>

@@ -92,7 +92,6 @@ export default function ListaPage({ params }: PageProps) {
     }
     setLoading(true)
     try {
-      // POST /api/lista — gera QR Code e envia email
       const res = await fetch('/api/lista', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,7 +103,7 @@ export default function ListaPage({ params }: PageProps) {
         return
       }
       setSucesso(true)
-      toast.success('Nome adicionado! Verifique seu email.')
+      toast.success('Nome adicionado à lista!')
     } catch {
       toast.error('Erro ao entrar na lista. Tente novamente.')
     } finally {
@@ -209,17 +208,20 @@ export default function ListaPage({ params }: PageProps) {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="admin-input pl-9"
-                      placeholder="Para receber seu QR Code"
+                      placeholder="Para confirmação de inscrição"
                       required
                     />
                   </div>
+                  <p className="text-xs text-bege-escuro/40 mt-1">
+                    Você receberá uma confirmação de inscrição por email
+                  </p>
                 </div>
 
                 <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-sm">
                   <AlertCircle size={14} className="text-amber-500/80 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-bege-escuro/60">
                     Lista válida até 00:00. Pode ocorrer alteração conforme horário e lotação.
-                    O QR Code é pessoal e intransferível.
+                    Inscrição pessoal e intransferível.
                   </p>
                 </div>
 
@@ -242,12 +244,12 @@ export default function ListaPage({ params }: PageProps) {
                 <CheckCircle size={48} className="text-dourado mx-auto animate-pulse-gold" />
                 <h3 className="font-display text-2xl text-bege">Você está na lista!</h3>
                 <p className="font-body text-sm text-bege-escuro/70">
-                  <strong className="text-bege">{nome}</strong>, você foi adicionado(a) à lista {genero}.<br />
-                  Enviamos um QR Code para <strong className="text-bege">{email}</strong>
+                  <strong className="text-bege">{nome}</strong>, sua inscrição na lista {genero} está confirmada.<br />
+                  Enviamos uma confirmação para <strong className="text-bege">{email}</strong>.
                 </p>
                 <div className="bg-black/30 rounded-sm p-3">
                   <p className="text-xs text-bege-escuro/60">
-                    Apresente o QR Code ou informe seu nome na portaria até 00:00
+                    Informe seu nome na portaria até 00:00 para garantir a entrada
                   </p>
                 </div>
                 <Link href={`/eventos/${eventoSlug}`} className="btn-outline block text-center text-xs">

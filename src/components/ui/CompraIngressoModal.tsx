@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, User, Mail, Phone, CreditCard, QrCode, Shield, CheckCircle, Copy, Check, Loader2 } from 'lucide-react'
+import { X, User, Mail, Phone, CreditCard, QrCode, Shield, CheckCircle, Copy, Check, Loader2, ArrowRight } from 'lucide-react'
 import { TipoIngresso, GeneroIngresso } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 type Step = 'dados' | 'pagamento' | 'pix' | 'sucesso'
 type MetodoPagamento = 'pix' | 'cartao'
@@ -38,7 +39,6 @@ export const CompraIngressoModal: React.FC<Props> = ({
     whatsapp: '',
   })
 
-  // Dados simulados do PIX (serão reais com Mercado Pago)
   const [pixData, setPixData] = useState({
     qrCodeBase64: '',
     copiaCola: 'PIX_COPIA_COLA_PLACEHOLDER_CONFIGURE_MERCADOPAGO',
@@ -100,18 +100,17 @@ export const CompraIngressoModal: React.FC<Props> = ({
     setLoading(true)
     try {
       // Chamada real: POST /api/pagamentos
-      // Por ora simulamos a resposta (configure MERCADOPAGO_ACCESS_TOKEN no .env)
+      // Configure MERCADOPAGO_ACCESS_TOKEN no .env para ativar
       await new Promise(r => setTimeout(r, 1500))
 
       if (metodo === 'pix') {
         setPixData({
-          qrCodeBase64: '', // virá da API do Mercado Pago
+          qrCodeBase64: '',
           copiaCola: 'Configure MERCADOPAGO_ACCESS_TOKEN no .env.local para gerar PIX real',
           expiresAt: new Date(Date.now() + 30 * 60 * 1000),
         })
         setStep('pix')
       } else {
-        // Cartão: redireciona para checkout do MP ou abre SDK
         toast('Integração de cartão: configure o Mercado Pago SDK', { icon: 'ℹ️' })
       }
     } catch {
@@ -128,14 +127,17 @@ export const CompraIngressoModal: React.FC<Props> = ({
     setTimeout(() => setCopiado(false), 3000)
   }
 
-  // Simular confirmação de pagamento (em prod: webhook do MP faz isso)
+  // Simular confirmação de pagamento (só em dev — em prod: webhook do MP)
   const simularConfirmacao = async () => {
     setLoading(true)
     await new Promise(r => setTimeout(r, 1200))
     setStep('sucesso')
     setLoading(false)
-    toast.success('Ingresso gerado! Verifique seu email.')
+    toast.success('Ingresso gerado! Acesse Minha Conta para ver o QR Code.')
   }
+
+  // Suprimir warning de eventoId não usado (será usado quando MP for integrado)
+  void eventoId
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
@@ -221,7 +223,6 @@ export const CompraIngressoModal: React.FC<Props> = ({
                     onChange={e => handleInput('nome', e.target.value)}
                     className="admin-input pl-9"
                     placeholder="Seu nome completo"
-                    required
                   />
                 </div>
               </div>
@@ -235,7 +236,6 @@ export const CompraIngressoModal: React.FC<Props> = ({
                   className="admin-input"
                   placeholder="000.000.000-00"
                   maxLength={14}
-                  required
                 />
               </div>
 
@@ -249,10 +249,12 @@ export const CompraIngressoModal: React.FC<Props> = ({
                     onChange={e => handleInput('email', e.target.value)}
                     className="admin-input pl-9"
                     placeholder="seu@email.com"
-                    required
                   />
                 </div>
-                <p className="text-xs text-bege-escuro/40 mt-1">O ingresso será enviado para este email</p>
+                {/* Atualizado: instrução para acessar em Minha Conta */}
+                <p className="text-xs text-bege-escuro/40 mt-1">
+                  Use o mesmo email ao acessar <strong className="text-bege-escuro/60">Minha Conta</strong> para ver o QR Code
+                </p>
               </div>
 
               <div>
@@ -375,7 +377,7 @@ export const CompraIngressoModal: React.FC<Props> = ({
                 <p>1. Abra o app do seu banco</p>
                 <p>2. Acesse a área PIX e escolha "Pagar com QR Code" ou "Copia e Cola"</p>
                 <p>3. Confirme o valor de <strong className="text-bege">R$ {preco.toFixed(2).replace('.', ',')}</strong></p>
-                <p>4. Após o pagamento, o ingresso é gerado e enviado ao seu email em instantes</p>
+                <p>4. Após o pagamento, acesse <strong className="text-bege">Minha Conta</strong> para ver o QR Code de entrada</p>
               </div>
 
               {/* DEV: botão simulação — apenas em desenvolvimento */}
@@ -404,8 +406,7 @@ export const CompraIngressoModal: React.FC<Props> = ({
               <div>
                 <h3 className="font-display text-3xl text-bege mb-2">Ingresso Confirmado!</h3>
                 <p className="font-body text-sm text-bege-escuro/70">
-                  Seu ingresso foi gerado e enviado para<br />
-                  <strong className="text-bege">{form.email}</strong>
+                  Seu ingresso está disponível na sua área do cliente.
                 </p>
               </div>
 
@@ -428,11 +429,16 @@ export const CompraIngressoModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              <p className="text-xs text-bege-escuro/50">
-                Você também receberá uma confirmação pelo WhatsApp com seu QR Code de entrada.
-              </p>
+              {/* CTA principal: ir para Minha Conta */}
+              <Link
+                href={`/acesso?email=${encodeURIComponent(form.email)}`}
+                className="flex items-center justify-center gap-2 w-full bg-dourado hover:bg-dourado/90 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all"
+              >
+                Ver Ingresso em Minha Conta
+                <ArrowRight size={14} />
+              </Link>
 
-              <button onClick={onClose} className="btn-primary w-full">
+              <button onClick={onClose} className="w-full text-center text-xs text-bege-escuro/40 hover:text-bege-escuro transition-colors">
                 Fechar
               </button>
             </div>

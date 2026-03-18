@@ -8,36 +8,36 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   if (!Array.isArray(lotes)) return NextResponse.json({ erro: 'Lotes inválidos' }, { status: 400 })
 
-  // Separar novos dos existentes
-  const novos = lotes.filter(l => l.id.startsWith('new-'))
+  const novos      = lotes.filter(l => l.id.startsWith('new-'))
   const existentes = lotes.filter(l => !l.id.startsWith('new-'))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ops: PromiseLike<any>[] = []
 
-  // Upsert existentes
+  // Upsert lotes existentes — inclui campos de backstage
   if (existentes.length > 0) {
     ops.push(
       supabaseAdmin.from('lotes').upsert(
         existentes.map((l, i) => ({
-          id: l.id,
-          evento_id: eventoId,
-          numero: l.numero ?? (i + 1),
-          nome: l.nome,
-          preco_masc: l.preco_masc,
-          preco_fem: l.preco_fem,
-          limite_masc: l.limite_masc ?? 100,
-          limite_fem: l.limite_fem ?? 100,
-          ativo: l.ativo,
-          updated_at: new Date().toISOString(),
+          id:                   l.id,
+          evento_id:            eventoId,
+          numero:               l.numero ?? (i + 1),
+          nome:                 l.nome,
+          preco_masc:           l.preco_masc,
+          preco_fem:            l.preco_fem,
+          preco_backstage_masc: l.preco_backstage_masc ?? null,
+          preco_backstage_fem:  l.preco_backstage_fem ?? null,
+          limite_masc:          l.limite_masc ?? 100,
+          limite_fem:           l.limite_fem ?? 100,
+          ativo:                l.ativo,
+          updated_at:           new Date().toISOString(),
         }))
       ).then(r => r)
     )
   }
 
-  // Inserir novos
+  // Inserir lotes novos — inclui campos de backstage
   if (novos.length > 0) {
-    // Buscar o maior numero existente para continuar a sequência
     const { data: lotesExistentes } = await supabaseAdmin
       .from('lotes')
       .select('numero')
@@ -50,14 +50,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     ops.push(
       supabaseAdmin.from('lotes').insert(
         novos.map((l, i) => ({
-          evento_id: eventoId,
-          numero: l.numero ?? (maxNumero + i + 1),
-          nome: l.nome,
-          preco_masc: l.preco_masc,
-          preco_fem: l.preco_fem,
-          limite_masc: l.limite_masc ?? 100,
-          limite_fem: l.limite_fem ?? 100,
-          ativo: l.ativo,
+          evento_id:            eventoId,
+          numero:               l.numero ?? (maxNumero + i + 1),
+          nome:                 l.nome,
+          preco_masc:           l.preco_masc,
+          preco_fem:            l.preco_fem,
+          preco_backstage_masc: l.preco_backstage_masc ?? null,
+          preco_backstage_fem:  l.preco_backstage_fem ?? null,
+          limite_masc:          l.limite_masc ?? 100,
+          limite_fem:           l.limite_fem ?? 100,
+          ativo:                l.ativo,
         }))
       ).then(r => r)
     )

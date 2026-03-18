@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Download, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, QrCode, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Download, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import toast, { Toaster } from 'react-hot-toast'
@@ -14,23 +14,25 @@ type StatusFiltro = 'todos' | 'ativo' | 'utilizado' | 'expirado' | 'cancelado' |
 interface Paginacao { page: number; pageSize: number; total: number; totalPages: number }
 
 const STATUS_CONFIG: Record<string, { label: string; cor: string; icon: JSX.Element }> = {
-  ativo:     { label: 'Ativo',     cor: 'text-green-400 bg-green-400/10 border-green-400/30',  icon: <CheckCircle2 size={12} /> },
-  utilizado: { label: 'Utilizado', cor: 'text-blue-400 bg-blue-400/10 border-blue-400/30',    icon: <CheckCircle2 size={12} /> },
-  expirado:  { label: 'Expirado',  cor: 'text-bege-escuro/50 bg-white/5 border-white/10',     icon: <Clock size={12} /> },
-  cancelado: { label: 'Cancelado', cor: 'text-red-400 bg-red-400/10 border-red-400/30',       icon: <XCircle size={12} /> },
-  pendente:  { label: 'Pendente',  cor: 'text-amber-400 bg-amber-400/10 border-amber-400/30', icon: <Clock size={12} /> },
+  ativo:               { label: 'Ativo',              cor: 'text-green-400 bg-green-400/10 border-green-400/30',  icon: <CheckCircle2 size={12} /> },
+  utilizado:           { label: 'Utilizado',           cor: 'text-blue-400 bg-blue-400/10 border-blue-400/30',    icon: <CheckCircle2 size={12} /> },
+  expirado:            { label: 'Expirado',            cor: 'text-bege-escuro/50 bg-white/5 border-white/10',     icon: <Clock size={12} /> },
+  cancelado:           { label: 'Cancelado',           cor: 'text-red-400 bg-red-400/10 border-red-400/30',       icon: <XCircle size={12} /> },
+  pendente:            { label: 'Pendente',            cor: 'text-amber-400 bg-amber-400/10 border-amber-400/30', icon: <Clock size={12} /> },
+  aguardando_cadastro: { label: 'Aguard. Cadastro',   cor: 'text-amber-400 bg-amber-400/10 border-amber-400/30', icon: <Clock size={12} /> },
+  pendente_pagamento:  { label: 'Aguard. Pagamento',  cor: 'text-amber-300 bg-amber-300/10 border-amber-300/30', icon: <Clock size={12} /> },
 }
 
 export default function AdminIngressosPage() {
-  const [ingressos, setIngressos]     = useState<IngressoComCadastro[]>([])
-  const [paginacao, setPaginacao]     = useState<Paginacao>({ page: 1, pageSize: 50, total: 0, totalPages: 1 })
-  const [carregando, setCarregando]   = useState(true)
+  const [ingressos, setIngressos]       = useState<IngressoComCadastro[]>([])
+  const [paginacao, setPaginacao]       = useState<Paginacao>({ page: 1, pageSize: 50, total: 0, totalPages: 1 })
+  const [carregando, setCarregando]     = useState(true)
   const [filtroStatus, setFiltroStatus] = useState<StatusFiltro>('todos')
   const [filtroEvento, setFiltroEvento] = useState('todos')
-  const [busca, setBusca]             = useState('')
-  const [buscaInput, setBuscaInput]   = useState('') // input antes de confirmar
-  const [page, setPage]               = useState(1)
-  const [eventos, setEventos]         = useState<{ id: string; nome: string }[]>([])
+  const [busca, setBusca]               = useState('')
+  const [buscaInput, setBuscaInput]     = useState('')
+  const [page, setPage]                 = useState(1)
+  const [eventos, setEventos]           = useState<{ id: string; nome: string }[]>([])
 
   const carregar = useCallback(async (pg = page) => {
     setCarregando(true)
@@ -60,11 +62,10 @@ export default function AdminIngressosPage() {
 
   useEffect(() => { carregar() }, [carregar])
 
-  // Ao mudar filtro, volta para página 1
   const mudarFiltro = (fn: () => void) => { fn(); setPage(1) }
 
   const exportarCSV = () => {
-    const linhas = ['Nome,Email,Tipo,Serial,Status,QR Enviado,Criado']
+    const linhas = ['Nome,Email,Tipo,Serial,Status,Cadastro,Criado']
     ingressos.forEach(i => {
       const c = i.cadastro
       linhas.push([
@@ -73,7 +74,7 @@ export default function AdminIngressosPage() {
         `"${labelTipoIngresso(i.tipo)}"`,
         `"${i.serial ?? ''}"`,
         `"${i.status}"`,
-        `"${i.qr_enviado ? 'Sim' : 'Não'}"`,
+        `"${c ? 'Sim' : 'Não'}"`,
         `"${i.created_at ? format(new Date(i.created_at), 'dd/MM/yyyy HH:mm') : ''}"`,
       ].join(','))
     })
@@ -124,8 +125,8 @@ export default function AdminIngressosPage() {
           </select>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(['todos', 'ativo', 'utilizado', 'pendente', 'expirado', 'cancelado'] as StatusFiltro[]).map(s => (
-            <button key={s} onClick={() => mudarFiltro(() => setFiltroStatus(s))}
+          {(['todos', 'ativo', 'utilizado', 'aguardando_cadastro', 'pendente', 'expirado', 'cancelado'] as (StatusFiltro | 'aguardando_cadastro')[]).map(s => (
+            <button key={s} onClick={() => mudarFiltro(() => setFiltroStatus(s as StatusFiltro))}
               className={`px-3 py-1.5 rounded-sm border text-xs font-accent tracking-wider uppercase transition-all
                 ${filtroStatus === s ? 'border-dourado bg-dourado/10 text-dourado' : 'border-white/10 text-bege-escuro/60 hover:border-dourado/30'}`}>
               {s === 'todos' ? 'Todos' : STATUS_CONFIG[s]?.label ?? s}
@@ -144,7 +145,7 @@ export default function AdminIngressosPage() {
           <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="border-b border-white/8">
-                {['Nome / Email', 'Tipo', 'Serial', 'Status', 'QR', 'Criado'].map(h => (
+                {['Nome / Email', 'Tipo', 'Serial', 'Status', 'Cadastro', 'Criado'].map(h => (
                   <th key={h} className="text-left py-3 px-3 font-accent text-xs tracking-wider text-bege-escuro/50 uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -153,10 +154,13 @@ export default function AdminIngressosPage() {
               {ingressos.map(ingresso => {
                 const sc = STATUS_CONFIG[ingresso.status] ?? STATUS_CONFIG['pendente']
                 const c = ingresso.cadastro
+                const temCadastro = !!c?.nome_completo
                 return (
                   <tr key={ingresso.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-3 px-3">
-                      <p className="font-body text-bege text-sm">{c?.nome_completo ?? <span className="text-bege-escuro/30 italic">Sem cadastro</span>}</p>
+                      <p className="font-body text-bege text-sm">
+                        {c?.nome_completo ?? <span className="text-bege-escuro/30 italic">Sem cadastro</span>}
+                      </p>
                       <p className="font-body text-xs text-bege-escuro/40">{c?.email ?? '—'}</p>
                     </td>
                     <td className="py-3 px-3">
@@ -171,8 +175,12 @@ export default function AdminIngressosPage() {
                       </span>
                     </td>
                     <td className="py-3 px-3">
-                      <span title={ingresso.qr_enviado ? 'QR enviado' : 'QR não enviado'}>
-                        <QrCode size={14} className={ingresso.qr_enviado ? 'text-green-400' : 'text-bege-escuro/25'} />
+                      {/* Indica se o portador já preencheu o cadastro (nome, cpf, email) */}
+                      <span title={temCadastro ? 'Cadastro realizado' : 'Aguardando cadastro do portador'}>
+                        <User
+                          size={14}
+                          className={temCadastro ? 'text-green-400' : 'text-bege-escuro/25'}
+                        />
                       </span>
                     </td>
                     <td className="py-3 px-3 text-xs text-bege-escuro/40 whitespace-nowrap">

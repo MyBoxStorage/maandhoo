@@ -54,12 +54,10 @@ export async function GET(req: NextRequest) {
     .map((i: { id: string }) => i.id)
 
   if (semCliente.length > 0) {
-    supabaseAdmin
+    void supabaseAdmin
       .from('ingressos')
       .update({ cliente_id: payload.id })
       .in('id', semCliente)
-      .then(() => {})
-      .catch(() => {})
   }
 
   // Remove duplicatas (por segurança)

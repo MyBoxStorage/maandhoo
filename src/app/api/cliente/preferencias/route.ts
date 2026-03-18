@@ -1,32 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
+import { verificarTokenCliente, CLIENTE_SESSION_COOKIE } from '@/lib/cliente-session'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
+// PATCH /api/cliente/preferencias
+// Atualiza preferências visuais do cliente (badge_ativo, tema_ativo)
 export async function PATCH(req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const sessao = cookieStore.get('cliente_sessao')?.value
-    if (!sessao) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
-    let clienteId: string
-    try { clienteId = JSON.parse(sessao).id } catch { return NextResponse.json({ erro: 'Sessão inválida' }, { status: 401 }) }
+    const token = req.cookies.get(CLIENTE_SESSION_COOKIE)?.value
+    if (!token) return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 })
+
+    const payload = verificarTokenCliente(token)
+    if (!payload) return NextResponse.json({ erro: 'Sessão expirada' }, { status: 401 })
 
     const body = await req.json()
-    const allowed = ['badge_ativo', 'tema_ativo']
+
+    // Só permite atualizar campos de preferência — nunca dados sensíveis
+    const camposPermitidos = ['badge_ativo', 'tema_ativo']
     const updates: Record<string, unknown> = {}
-    allowed.forEach(k => { if (k in body) updates[k] = body[k] })
+    camposPermitidos.forEach(k => {
+      if (k in body) updates[k] = body[k]
+    })
 
-    if (Object.keys(updates).length === 0)
-      return NextResponse.json({ erro: 'Nenhum campo válido' }, { status: 400 })
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ erro: 'Nenhum campo válido informado' }, { status: 400 })
+    }
 
-    await supabase.from('clientes').update(updates).eq('id', clienteId)
+    const { error } = await supabaseAdmin
+      .from('clientes')
+      .update(updates)
+      .eq('id', payload.id)
+
+    if (error) {
+      console.error('[preferencias PATCH]', error)
+      return NextResponse.json({ erro: 'Erro ao salvar preferências' }, { status: 500 })
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('Preferencias PATCH error:', err)
+    console.error('[preferencias PATCH] Erro inesperado:', err)
     return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
   }
 }

@@ -18,7 +18,6 @@ const ESTADOS_BR = [
   'MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
 ]
 
-// ── Fora do AcessoForm para evitar remontagem a cada render ─────────
 function Campo({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div>
@@ -35,6 +34,9 @@ function AcessoForm() {
   const router = useRouter()
   const params = useSearchParams()
   const linkToken = params.get('link') ?? ''
+  // Quando vem de /cadastro-ingresso, o email é passado via ?email=
+  // para pré-preencher o formulário e facilitar o login/cadastro.
+  const emailParam = params.get('email') ?? ''
 
   const [modo, setModo] = useState<Modo>('login')
   const [fase, setFase] = useState<Fase>('idle')
@@ -44,7 +46,7 @@ function AcessoForm() {
   const [termosAceitos, setTermosAceitos] = useState(false)
   const [lgpdAceito, setLgpdAceito] = useState(false)
   const [form, setForm] = useState({
-    nome: '', email: '', whatsapp: '', cpf: '',
+    nome: '', email: emailParam, whatsapp: '', cpf: '',
     data_nascimento: '', estado: '', cidade: '', senha: '',
   })
 
@@ -56,6 +58,13 @@ function AcessoForm() {
   useEffect(() => {
     fetch('/api/cliente/auth').then(r => { if (r.ok) router.replace('/minha-conta') })
   }, [router])
+
+  // Garante que o email do param seja aplicado mesmo após hidratação
+  useEffect(() => {
+    if (emailParam) {
+      setForm(prev => ({ ...prev, email: emailParam }))
+    }
+  }, [emailParam])
 
   const campo = (f: string, v: string) => setForm(prev => ({ ...prev, [f]: v }))
 
@@ -88,8 +97,6 @@ function AcessoForm() {
     } catch { toast.error('Erro de conexão'); setFase('idle') }
   }
 
-  // Campo movido para fora do componente (ver abaixo)
-
   return (
     <div className="min-h-screen bg-preto-profundo flex flex-col items-center justify-center px-4 py-12">
       <Toaster position="top-center" toastOptions={{ style: { background: '#1a1208', color: '#e8ddd0', border: '1px solid rgba(201,168,76,0.3)' } }} />
@@ -102,6 +109,16 @@ function AcessoForm() {
           <p className="font-body text-[10px] text-bege-escuro/35 tracking-widest uppercase mt-1">Área do Cliente</p>
         </div>
       </Link>
+
+      {/* Banner informativo quando vem de cadastro via link */}
+      {emailParam && (
+        <div className="w-full max-w-sm mb-4 border border-dourado/25 bg-dourado/8 rounded-sm px-4 py-3 flex items-start gap-3">
+          <span className="text-dourado mt-0.5 flex-shrink-0">✓</span>
+          <p className="font-body text-xs text-bege-escuro/70 leading-relaxed">
+            Cadastro confirmado! <span className="text-bege">Entre na sua conta ou crie uma</span> com o email <span className="text-dourado">{emailParam}</span> para acessar seu ingresso.
+          </p>
+        </div>
+      )}
 
       <div className="w-full max-w-sm">
         {/* Tabs */}
@@ -116,7 +133,6 @@ function AcessoForm() {
 
         <div className="border border-dourado/20 bg-black/30 rounded-sm p-7 space-y-4">
 
-          {/* CAMPOS DE CADASTRO */}
           {modo === 'cadastro' && (
             <Campo label="Nome completo" icon={User}>
               <input type="text" value={form.nome} onChange={e => campo('nome', e.target.value)}
@@ -151,7 +167,6 @@ function AcessoForm() {
                 disabled={fase === 'enviando'} />
             </Campo>
 
-            {/* Estado + Cidade lado a lado */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-accent text-[9px] tracking-[0.3em] uppercase text-bege-escuro/50 mb-2">Estado</label>
@@ -175,7 +190,6 @@ function AcessoForm() {
             </div>
           </>}
 
-          {/* Senha */}
           <Campo label="Senha" icon={Lock}>
             <input type={verSenha ? 'text' : 'password'} value={form.senha} onChange={e => campo('senha', e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -207,11 +221,8 @@ function AcessoForm() {
             </Campo>
           )}
 
-          {/* ── CHECKBOXES DE CADASTRO ──────────────────────────── */}
           {modo === 'cadastro' && (
             <div className="space-y-3 pt-2 border-t border-white/5">
-
-              {/* 1. Termos — OBRIGATÓRIO */}
               <label className="flex items-start gap-3 cursor-pointer group select-none">
                 <div
                   className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-all duration-200 ${termosAceitos ? 'bg-dourado border-dourado' : 'border-bege-escuro/30 group-hover:border-dourado/60'}`}
@@ -234,7 +245,6 @@ function AcessoForm() {
                 </div>
               </label>
 
-              {/* 2. LGPD — OPCIONAL, com benefícios claros */}
               <label className="flex items-start gap-3 cursor-pointer group select-none p-3 border border-dourado/10 hover:border-dourado/25 rounded-sm bg-dourado/[0.02] hover:bg-dourado/[0.04] transition-all duration-200">
                 <div
                   className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-sm border-2 flex items-center justify-center transition-all duration-200 ${lgpdAceito ? 'bg-dourado border-dourado' : 'border-bege-escuro/30 group-hover:border-dourado/50'}`}
