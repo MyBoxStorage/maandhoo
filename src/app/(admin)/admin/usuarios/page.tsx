@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import {
   Users, Download, RefreshCw, Phone, Mail,
   CheckCircle, XCircle, Clock, MessageCircle,
-  Loader2, UserCircle2, Search, ChevronDown
+  Loader2, UserCircle2, Search, DatabaseZap
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -98,21 +98,13 @@ export default function UsuariosLeadsPage() {
     if (clientesCarregados) return
     setCarregandoClientes(true)
     try {
-      const res = await fetch('/api/cliente/auth', { method: 'GET' })
-      if (!res.ok) throw new Error()
+      const res = await fetch('/api/admin/usuarios')
       const data = await res.json()
+      if (data.erro) throw new Error(data.erro)
       setClientes(data.clientes ?? [])
       setClientesCarregados(true)
     } catch {
-      // fallback: tenta endpoint admin de clientes
-      try {
-        const res2 = await fetch('/api/admin/usuarios')
-        const data2 = await res2.json()
-        setClientes(data2.clientes ?? [])
-        setClientesCarregados(true)
-      } catch {
-        toast.error('Erro ao carregar clientes registrados')
-      }
+      toast.error('Erro ao carregar clientes registrados')
     } finally {
       setCarregandoClientes(false)
     }
@@ -122,7 +114,28 @@ export default function UsuariosLeadsPage() {
     if (aba === 'clientes') carregarClientes()
   }, [aba, carregarClientes])
 
-  // ─── ATUALIZAR STATUS LEAD ────────────────────────────────────────────────
+  const [sincronizando, setSincronizando] = useState(false)
+
+  // ─── SINCRONIZAÇÃO RETROATIVA ─────────────────────────────────────────────
+  const sincronizarLeads = async () => {
+    setSincronizando(true)
+    try {
+      const res = await fetch('/api/admin/sync-leads', { method: 'POST' })
+      const data = await res.json()
+      if (data.sucesso) {
+        toast.success(`${data.total_importados} leads importados! (Lista: ${data.detalhes.lista_amiga}, Clientes: ${data.detalhes.clientes}, Reservas: ${data.detalhes.reservas})`)
+        carregarLeads()
+      } else {
+        toast.error('Erro na sincronização')
+      }
+    } catch {
+      toast.error('Erro ao sincronizar leads')
+    } finally {
+      setSincronizando(false)
+    }
+  }
+
+
   const atualizarStatus = async (leadId: string, novoStatus: StatusLead) => {
     setAtualizando(leadId)
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: novoStatus } : l))
@@ -210,6 +223,15 @@ export default function UsuariosLeadsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={sincronizarLeads}
+            disabled={sincronizando}
+            className="btn-outline text-xs flex items-center gap-2 px-4"
+            title="Importar retroativamente leads de lista amiga, reservas e clientes cadastrados"
+          >
+            {sincronizando ? <Loader2 size={14} className="animate-spin" /> : <DatabaseZap size={14} />}
+            {sincronizando ? 'Sincronizando...' : 'Sincronizar dados'}
+          </button>
           <button
             onClick={aba === 'leads' ? carregarLeads : () => { setClientesCarregados(false); carregarClientes() }}
             className="btn-outline p-2.5"

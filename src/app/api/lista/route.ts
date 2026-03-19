@@ -110,6 +110,24 @@ export async function POST(req: NextRequest) {
       console.error('[lista] Exceção ao enviar email:', e)
     }
 
+    // 7. Capturar lead automaticamente
+    try {
+      await supabaseAdmin.from('leads').insert({
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        whatsapp: null,
+        origem: 'popup_lista',
+        evento_id: eventoId,
+        evento_nome: evento.nome,
+        observacoes: `Gênero: ${genero}`,
+        consentimento_lgpd: true,
+        data_consentimento: new Date().toISOString(),
+        status: 'novo',
+      })
+    } catch (e) {
+      console.warn('[lista] Falha ao capturar lead:', e)
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Nome adicionado à lista com sucesso',

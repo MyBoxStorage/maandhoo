@@ -73,6 +73,22 @@ export async function POST(req: NextRequest) {
           .eq('link_usado', true) // só vincula se já foi cadastrado
       }
 
+      // Capturar lead automaticamente
+      try {
+        await supabaseAdmin.from('leads').insert({
+          nome: nome.trim(),
+          email: email.toLowerCase(),
+          whatsapp: whatsapp ?? null,
+          origem: 'compra_ingresso',
+          observacoes: 'Cadastro via área do cliente (/minha-conta)',
+          consentimento_lgpd: !!lgpd_aceito,
+          data_consentimento: new Date().toISOString(),
+          status: 'novo',
+        })
+      } catch (e) {
+        console.warn('[cliente-auth] Falha ao capturar lead:', e)
+      }
+
       return _responderComSessao(cliente)
     }
 
