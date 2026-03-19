@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { X, Play, Loader2, Download, Lock } from 'lucide-react'
+import { X, Loader2, Download, Lock } from 'lucide-react'
 
 type MidiaGaleria = {
   id: string
@@ -115,7 +115,14 @@ function Lightbox({
 function VideoCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const [tocando, setTocando] = useState(false)
+  const [, setTocando] = useState(false)
+
+  // Gera URL do poster do Cloudinary: frame do meio do vídeo (so_0.5 = 50% da duração)
+  const posterUrl = midia.url.includes('cloudinary.com')
+    ? midia.url
+        .replace('/video/upload/', '/video/upload/so_0.5,f_jpg,q_auto/')
+        .replace(/\.(mp4|webm|mov)(\?.*)?$/i, '.jpg')
+    : undefined
 
   useEffect(() => {
     const wrapper = wrapperRef.current
@@ -134,7 +141,7 @@ function VideoCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
           setTocando(false)
         }
       },
-      { threshold: 0.4 } // 40% visível para ativar
+      { threshold: 0.4 }
     )
 
     observer.observe(wrapper)
@@ -148,14 +155,6 @@ function VideoCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
       style={{ aspectRatio: '9/16' }}
       onClick={onClick}
     >
-      {/* Placeholder com ícone de play enquanto não está tocando */}
-      {!tocando && (
-        <div className="absolute inset-0 flex items-center justify-center bg-preto-profundo/80 z-10 pointer-events-none transition-opacity duration-300">
-          <div className="w-12 h-12 rounded-full bg-black/60 border border-dourado/40 flex items-center justify-center">
-            <Play size={20} className="text-dourado fill-dourado ml-1" />
-          </div>
-        </div>
-      )}
       {/* src omitido intencionalmente — atribuído pelo IntersectionObserver */}
       <video
         ref={videoRef}
@@ -163,6 +162,7 @@ function VideoCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
         loop
         playsInline
         preload="none"
+        poster={posterUrl}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
