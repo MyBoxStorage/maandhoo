@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/galeria — retorna todas as mídias, mais recentes primeiro
-// Cache desabilitado para refletir uploads imediatamente
+// Cache totalmente desabilitado para refletir uploads imediatamente
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('galeria')
@@ -15,8 +18,9 @@ export async function GET() {
     { fotos: data ?? [] },
     {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         'Pragma': 'no-cache',
+        'Surrogate-Control': 'no-store',
       },
     }
   )

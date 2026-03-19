@@ -1,6 +1,6 @@
-﻿'use client'
+'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { X, Play, Loader2 } from 'lucide-react'
 
@@ -15,7 +15,7 @@ const isVideo = (url: string): boolean =>
   url.includes('/video/upload/') ||
   /\.(mp4|webm|mov)(\?.*)?$/i.test(url)
 
-// Lightbox
+// ─── Lightbox ────────────────────────────────────────────────
 function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void }) {
   const video = isVideo(midia.url)
 
@@ -30,8 +30,10 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <button onClick={onClose}
-        className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10">
+      <button
+        onClick={onClose}
+        className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10"
+      >
         <X size={22} />
       </button>
       <div
@@ -40,11 +42,15 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
         onClick={e => e.stopPropagation()}
       >
         {video ? (
-          <video src={midia.url} autoPlay loop playsInline controls
-            className="w-full rounded-sm" style={{ maxHeight: '82vh', objectFit: 'contain' }} />
+          <video
+            src={midia.url} autoPlay loop playsInline controls
+            className="w-full rounded-sm" style={{ maxHeight: '82vh', objectFit: 'contain' }}
+          />
         ) : (
-          <Image src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
-            className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }} />
+          <Image
+            src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
+            className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }}
+          />
         )}
         {midia.alt && (
           <p className="font-body text-sm text-bege-escuro/60 text-center">{midia.alt}</p>
@@ -54,27 +60,19 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
   )
 }
 
-// Card de mídia
-// Layout em fileiras mistas:
-//   - Foto portrait  → ocupa 1 coluna em grid de 4  → mesma altura que landscape 4/3
-//   - Foto landscape → ocupa 1 coluna em grid de 3  → 4/3
-//   - Vídeo portrait → ocupa 1 coluna, mantém 9/16  → destaque visual
-//   - Vídeo landscape→ 16/9
-//
-// Regra para o admin:
-//   Fotos portrait: adicionar 4 seguidas (preenchem 1 fileira de 4)
-//   Fotos landscape: adicionar 3 seguidas (preenchem 1 fileira de 3)
-
+// ─── Card de mídia ────────────────────────────────────────────
 function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
   const video = isVideo(midia.url)
 
-  // Vídeos mantêm proporção real (destacados)
-  // Fotos portrait e landscape têm a MESMA altura-alvo via aspect-ratio
-  // portrait num grid de 4 colunas ≈ landscape num grid de 3 colunas (largura ~75%)
-  // Usamos aspect-[3/4] para portrait e aspect-[4/3] para landscape — alturas quase idênticas
+  // Proporções:
+  //   foto portrait  → 3/4  (fileira de 4)
+  //   foto landscape → 4/3  (fileira de 3)
+  //   vídeo          → 9/16 (fileira de 3, tamanho maior)
   const aspectRatio = video
-    ? (midia.orientacao === 'portrait' ? '9/16' : '16/9')
-    : (midia.orientacao === 'portrait' ? '3/4'  : '4/3')
+    ? '9/16'
+    : midia.orientacao === 'portrait'
+      ? '3/4'
+      : '4/3'
 
   return (
     <div
@@ -97,7 +95,7 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
         <Image
           src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
+          sizes="(max-width: 640px) 50vw, 33vw"
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -110,14 +108,19 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
   )
 }
 
-// ─── Agrupa mídias em fileiras mistas ────────────────────────
-// Lê a sequência e monta fileiras:
-//   - 4 portraits seguidos → fileira de 4 colunas
-//   - 3 landscapes seguidos → fileira de 3 colunas
-//   - Vídeos → fileira própria de 1 (destaque)
-//   - Misto → fileira de 3 colunas genérica
-type Fileira = { itens: MidiaGaleria[]; cols: number }
+// ─── Tipos de fileira ─────────────────────────────────────────
+// 'portrait'  → sempre exatamente 4 itens lado a lado
+// 'landscape' → sempre exatamente 3 itens lado a lado
+// 'video'     → sempre exatamente 3 vídeos lado a lado
+type TipoFileira = 'portrait' | 'landscape' | 'video'
+type Fileira = { tipo: TipoFileira; itens: MidiaGaleria[] }
 
+// ─── Montar fileiras com grupos exatos ───────────────────────
+// Regras:
+//   • Vídeos agrupados em lotes de 3 (se sobrar menos de 3, ainda exibe)
+//   • Fotos portrait agrupadas em lotes de 4 (se sobrar menos de 4, ainda exibe)
+//   • Fotos landscape agrupadas em lotes de 3 (se sobrar menos de 3, ainda exibe)
+//   • Cada tipo forma sua própria sequência; nunca mistura tipos numa fileira
 function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
   const fileiras: Fileira[] = []
   let i = 0
@@ -127,50 +130,78 @@ function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
     const ehVideo = isVideo(atual.url)
 
     if (ehVideo) {
-      // Vídeo: fileira própria com 1 item (destaque largo)
-      fileiras.push({ itens: [atual], cols: 1 })
-      i++
+      // Coletar todos os vídeos consecutivos em grupos de 3
+      const grupo: MidiaGaleria[] = []
+      while (i < midias.length && isVideo(midias[i].url) && grupo.length < 3) {
+        grupo.push(midias[i++])
+      }
+      fileiras.push({ tipo: 'video', itens: grupo })
+      // Se ainda há vídeos consecutivos, continua no próximo loop
       continue
     }
 
     if (atual.orientacao === 'portrait') {
-      // Coletar até 4 portraits seguidos (sem vídeos)
+      // Coletar fotos portrait consecutivas em grupos de 4
       const grupo: MidiaGaleria[] = []
-      while (i < midias.length && grupo.length < 4 && !isVideo(midias[i].url) && midias[i].orientacao === 'portrait') {
+      while (i < midias.length && !isVideo(midias[i].url) && midias[i].orientacao === 'portrait' && grupo.length < 4) {
         grupo.push(midias[i++])
       }
-      fileiras.push({ itens: grupo, cols: 4 })
+      fileiras.push({ tipo: 'portrait', itens: grupo })
     } else {
-      // Coletar até 3 landscapes seguidos (sem vídeos)
+      // Coletar fotos landscape consecutivas em grupos de 3
       const grupo: MidiaGaleria[] = []
-      while (i < midias.length && grupo.length < 3 && !isVideo(midias[i].url) && midias[i].orientacao === 'landscape') {
+      while (i < midias.length && !isVideo(midias[i].url) && midias[i].orientacao === 'landscape' && grupo.length < 3) {
         grupo.push(midias[i++])
       }
-      fileiras.push({ itens: grupo, cols: 3 })
+      fileiras.push({ tipo: 'landscape', itens: grupo })
     }
   }
 
   return fileiras
 }
 
+// ─── Página principal ─────────────────────────────────────────
+const INTERVALO_ATUALIZACAO = 30_000 // 30 segundos
+
 export default function GaleriaPage() {
   const [midias, setMidias] = useState<MidiaGaleria[]>([])
   const [carregando, setCarregando] = useState(true)
   const [midiaAberta, setMidiaAberta] = useState<MidiaGaleria | null>(null)
 
-  useEffect(() => {
-    const carregar = async () => {
-      setCarregando(true)
-      try {
-        const res = await fetch('/api/galeria', { cache: 'no-store' })
-        const data = await res.json()
-        setMidias(Array.isArray(data.fotos) ? data.fotos : [])
-      } finally {
-        setCarregando(false)
-      }
+  const carregar = useCallback(async (silencioso = false) => {
+    if (!silencioso) setCarregando(true)
+    try {
+      // cache: 'no-store' garante que sempre busca dados frescos do servidor
+      const res = await fetch('/api/galeria', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
+      const data = await res.json()
+      setMidias(Array.isArray(data.fotos) ? data.fotos : [])
+    } catch {
+      // falha silenciosa nas atualizações automáticas
+    } finally {
+      if (!silencioso) setCarregando(false)
     }
-    carregar()
   }, [])
+
+  // Carga inicial
+  useEffect(() => {
+    carregar(false)
+  }, [carregar])
+
+  // Polling automático a cada 30s para refletir novos uploads sem recarregar a página
+  useEffect(() => {
+    const intervalo = setInterval(() => carregar(true), INTERVALO_ATUALIZACAO)
+    return () => clearInterval(intervalo)
+  }, [carregar])
+
+  // Recarrega quando a aba volta ao foco (usuário troca de aba e volta)
+  useEffect(() => {
+    const onFocus = () => carregar(true)
+    window.addEventListener('visibilitychange', onFocus)
+    return () => window.removeEventListener('visibilitychange', onFocus)
+  }, [carregar])
 
   const fileiras = montarFileiras(midias)
 
@@ -198,28 +229,45 @@ export default function GaleriaPage() {
         ) : (
           <div className="space-y-4">
             {fileiras.map((fileira, fi) => {
-              const ehVideoDestaque = fileira.cols === 1 && isVideo(fileira.itens[0]?.url)
-
-              if (ehVideoDestaque) {
-                // Vídeo: ocupa até metade da largura, centralizado
+              // ── Vídeos: 3 lado a lado, tamanho grande (aspect 9/16) ──
+              if (fileira.tipo === 'video') {
                 return (
-                  <div key={fi} className="flex justify-center">
-                    <div className="w-full max-w-sm">
-                      <MediaCard midia={fileira.itens[0]} onClick={() => setMidiaAberta(fileira.itens[0])} />
-                    </div>
+                  <div key={fi} className="grid grid-cols-3 gap-3">
+                    {fileira.itens.map(midia => (
+                      <MediaCard
+                        key={midia.id}
+                        midia={midia}
+                        onClick={() => setMidiaAberta(midia)}
+                      />
+                    ))}
                   </div>
                 )
               }
 
-              // Fileira de fotos: cols=4 (portrait) ou cols=3 (landscape)
-              const gridClass = fileira.cols === 4
-                ? 'grid grid-cols-2 sm:grid-cols-4 gap-3'
-                : 'grid grid-cols-1 sm:grid-cols-3 gap-3'
+              // ── Fotos portrait: 4 lado a lado (2 colunas no mobile) ──
+              if (fileira.tipo === 'portrait') {
+                return (
+                  <div key={fi} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {fileira.itens.map(midia => (
+                      <MediaCard
+                        key={midia.id}
+                        midia={midia}
+                        onClick={() => setMidiaAberta(midia)}
+                      />
+                    ))}
+                  </div>
+                )
+              }
 
+              // ── Fotos landscape: 3 lado a lado (1 coluna no mobile) ──
               return (
-                <div key={fi} className={gridClass}>
+                <div key={fi} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {fileira.itens.map(midia => (
-                    <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
+                    <MediaCard
+                      key={midia.id}
+                      midia={midia}
+                      onClick={() => setMidiaAberta(midia)}
+                    />
                   ))}
                 </div>
               )
