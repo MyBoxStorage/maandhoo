@@ -82,40 +82,43 @@ const SETORES_MAPA: Record<string, { label: string; tipo: TipoReserva }> = {
 
 // ─── COMPONENTE MAPA SVG ──────────────────────────────────────────────────────
 interface MapaProps {
-  setoresReservados: Set<string>   // ids de setores com reserva ativa
+  setoresReservados: Set<string>
   setorSelecionado: string | null
   onSetorClick: (id: string) => void
   somenteLeitura?: boolean
 }
 
 function MapaCasa({ setoresReservados, setorSelecionado, onSetorClick, somenteLeitura }: MapaProps) {
-  const cor = (id: string) => {
-    if (setorSelecionado === id) return { fill: 'rgba(201,168,76,0.5)', stroke: '#C9A84C', sw: '2' }
-    if (setoresReservados.has(id)) return { fill: 'rgba(255,80,80,0.18)', stroke: '#ff5050', sw: '1.5' }
-    return { fill: 'rgba(201,168,76,0.07)', stroke: '#C9A84C66', sw: '1.2' }
+  // Cores por estado do setor
+  const corSetor = (id: string) => {
+    if (setorSelecionado === id)    return { fill: 'rgba(201,168,76,0.45)', stroke: '#C9A84C', sw: 2 }
+    if (setoresReservados.has(id))  return { fill: 'rgba(255,80,80,0.18)',  stroke: '#ff5050', sw: 1.5 }
+    return                                 { fill: 'rgba(201,168,76,0.08)', stroke: '#C9A84C88', sw: 1.2 }
   }
 
+  // Componente de camarote/sofá clicável — mesmas coordenadas do site público
   const Cam = ({ id, x, y, w, h, label }: { id: string; x: number; y: number; w: number; h: number; label: string }) => {
-    const c = cor(id)
+    const c = corSetor(id)
     const reservado = setoresReservados.has(id)
-    const titulo = label.replace('Camarote ', '').replace('Sofá ', 'S')
+    const num = label.replace('Camarote ', '').replace('Sofá ', 'S')
     return (
-      <g
-        onClick={() => !somenteLeitura && onSetorClick(id)}
-        style={{ cursor: somenteLeitura ? 'default' : 'pointer' }}
-      >
+      <g onClick={() => !somenteLeitura && onSetorClick(id)}
+        style={{ cursor: somenteLeitura ? 'default' : 'pointer' }}>
         <rect x={x} y={y} width={w} height={h} rx="3"
           fill={c.fill} stroke={c.stroke} strokeWidth={c.sw}
-          style={{ transition: 'fill 0.15s, stroke 0.15s' }}
-        />
-        <circle cx={x + w / 2} cy={y + 11} r={9}
-          fill={c.stroke} opacity="0.85"
-        />
-        <text x={x + w / 2} y={y + 15} textAnchor="middle"
-          fill="#0a0604" fontSize="7.5" fontFamily="Cinzel" fontWeight="700">{titulo}</text>
+          style={{ transition: 'fill 0.15s, stroke 0.15s' }} />
+        {/* Ícone sofá estilizado */}
+        <rect x={x+3}   y={y+h*0.28} width={w-6} height={h*0.22} rx="2" fill={c.stroke} opacity="0.18" />
+        <rect x={x+3}   y={y+h*0.52} width={w-6} height={h*0.30} rx="2" fill={c.stroke} opacity="0.28" />
+        <rect x={x+1}   y={y+h*0.32} width={7}   height={h*0.48} rx="2" fill={c.stroke} opacity="0.22" />
+        <rect x={x+w-8} y={y+h*0.32} width={7}   height={h*0.48} rx="2" fill={c.stroke} opacity="0.22" />
+        {/* Número */}
+        <circle cx={x+w/2} cy={y+12} r={9} fill={c.stroke} opacity="0.85" />
+        <text x={x+w/2} y={y+16} textAnchor="middle"
+          fill="#0a0604" fontSize="7.5" fontFamily="Cinzel" fontWeight="700">{num}</text>
         {reservado && (
-          <text x={x + w / 2} y={y + h - 6} textAnchor="middle"
-            fill="#ff8080" fontSize="6.5" fontFamily="DM Sans">reservado</text>
+          <text x={x+w/2} y={y+h-5} textAnchor="middle"
+            fill="#ff8080" fontSize="6" fontFamily="DM Sans">reservado</text>
         )}
         {setorSelecionado === id && (
           <rect x={x} y={y} width={w} height={h} rx="3"
@@ -125,71 +128,106 @@ function MapaCasa({ setoresReservados, setorSelecionado, onSetorClick, somenteLe
     )
   }
 
-  return (
-    <svg viewBox="0 0 700 760" width="100%" style={{ maxHeight: 600 }}>
-      {/* FUNDO */}
-      <rect width="700" height="760" fill="#0d0805" rx="4" />
-      <rect x="10" y="10" width="680" height="740" fill="#130905" rx="3" stroke="#2a140a" strokeWidth="1" />
-      <text x="350" y="38" textAnchor="middle" fill="#C9A84C" fontSize="10" fontFamily="Cinzel" letterSpacing="5" opacity="0.6">MAANDHOO</text>
+  // Marcador de mesa (decorativo, não clicável)
+  const MesaMark = ({ cx, cy }: { cx: number; cy: number }) => (
+    <circle cx={cx} cy={cy} r={14}
+      fill="rgba(201,168,76,0.06)" stroke="#C9A84C33" strokeWidth="1" />
+  )
 
-      {/* ESTRUTURA: paredes e escadas */}
-      <rect x="150" y="48" width="310" height="148" fill="rgba(201,168,76,0.04)" stroke="#2a1408" strokeWidth="1" rx="2" />
-      <rect x="508" y="48" width="162" height="510" fill="rgba(201,168,76,0.04)" stroke="#2a1408" strokeWidth="1" rx="2" />
-      <rect x="200" y="128" width="260" height="28" fill="#1a0d05" stroke="#2a1408" strokeWidth="0.8" rx="1" />
-      <text x="330" y="146" textAnchor="middle" fill="#3a2008" fontSize="8" fontFamily="DM Sans">escadas</text>
+  return (
+    <svg viewBox="20 30 660 860" width="100%" style={{ maxHeight: 640 }}
+      preserveAspectRatio="xMidYMid meet">
+
+      {/* FUNDO — idêntico ao site público */}
+      <rect width="700" height="900" fill="#0d0805" rx="4" />
+      <rect x="10" y="10" width="680" height="880" fill="#130905" rx="3" stroke="#2a140a" strokeWidth="1" />
+      <text x="350" y="42" textAnchor="middle" fill="#C9A84C"
+        fontSize="11" fontFamily="Cinzel" letterSpacing="5" opacity="0.7">MAANDHOO</text>
+
+      {/* PAREDES — coordenadas do MapaInterativo.tsx */}
+      <rect x="162" y="44"  width="351" height="148" rx="2"
+        fill="rgba(60,35,15,0.35)" stroke="#3a2010" strokeWidth="1.5" />
+      <rect x="527" y="184" width="162" height="440" rx="2"
+        fill="rgba(45,25,10,0.4)"  stroke="#3a2010" strokeWidth="1.5" />
 
       {/* DIVISÓRIAS */}
-      <line x1="108" y1="340" x2="108" y2="660" stroke="#2a1408" strokeWidth="1" />
-      <line x1="22" y1="340" x2="108" y2="340" stroke="#2a1408" strokeWidth="1" />
-      <line x1="190" y1="340" x2="190" y2="580" stroke="#2a1408" strokeWidth="0.7" strokeDasharray="3,2" />
-      <line x1="22" y1="660" x2="620" y2="660" stroke="#2a1408" strokeWidth="1" />
+      <line x1="166" y1="392" x2="166" y2="735" stroke="#3a2010" strokeWidth="2" />
+      <line x1="82"  y1="380" x2="150" y2="380"  stroke="#3a2010" strokeWidth="2" />
+      <line x1="261" y1="493" x2="261" y2="733"
+        stroke="#3a2010" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.6" />
+      <line x1="69"  y1="745" x2="667" y2="745"  stroke="#3a2010" strokeWidth="1.5" />
+
+      {/* ESCADAS */}
+      <line x1="154" y1="201" x2="512" y2="201" stroke="#3a2010" strokeWidth="1.5" />
+      <line x1="154" y1="210" x2="154" y2="334" stroke="#3a2010" strokeWidth="1.5" />
+      <line x1="513" y1="208" x2="514" y2="337" stroke="#3a2010" strokeWidth="1.5" />
+      <line x1="152" y1="341" x2="510" y2="341" stroke="#3a2010" strokeWidth="1.5" />
 
       {/* PALCO */}
-      <ellipse cx="570" cy="360" rx="68" ry="80" fill="rgba(201,168,76,0.06)" stroke="#C9A84C55" strokeWidth="1.2" />
-      <text x="570" y="364" textAnchor="middle" fill="#C9A84C66" fontSize="9" fontFamily="Cinzel" letterSpacing="2">PALCO</text>
+      <ellipse cx={605} cy={442} rx={68} ry={80}
+        fill="rgba(201,168,76,0.04)" stroke="#C9A84C" strokeWidth="1.8" strokeDasharray="6,3" />
+      <text x={605} y={437} textAnchor="middle" fill="#C9A84C"
+        fontSize="10" fontFamily="Cinzel" letterSpacing="2">PALCO</text>
+      <text x={605} y={452} textAnchor="middle" fill="#C9A84C"
+        fontSize="7.5" fontFamily="DM Sans" opacity="0.55">DJ BOOTH</text>
 
-      {/* CAMAROTES SUPERIORES */}
-      <Cam id="c4"  x={168} y={58}  w={68} h={58} label="Camarote 4" />
-      <Cam id="c5"  x={242} y={58}  w={68} h={58} label="Camarote 5" />
-      <Cam id="c6"  x={316} y={58}  w={68} h={58} label="Camarote 6" />
-      <Cam id="c7"  x={390} y={58}  w={68} h={58} label="Camarote 7" />
-      {/* CAMAROTES LATERAIS DIREITOS */}
-      <Cam id="c8"  x={530} y={165} w={72} h={58} label="Camarote 8" />
-      <Cam id="c9"  x={530} y={232} w={72} h={58} label="Camarote 9" />
-      <Cam id="c10" x={530} y={420} w={72} h={58} label="Camarote 10" />
-      {/* CAMAROTES LATERAIS ESQUERDOS */}
-      <Cam id="c11" x={22}  y={348} w={80} h={62} label="Camarote 11" />
-      <Cam id="c12" x={22}  y={418} w={80} h={62} label="Camarote 12" />
-      <Cam id="c13" x={22}  y={488} w={80} h={62} label="Camarote 13" />
-      <Cam id="c14" x={22}  y={558} w={80} h={62} label="Camarote 14" />
-      <Cam id="c15" x={22}  y={628} w={80} h={62} label="Camarote 15" />
+      {/* CAMAROTES 4,5,6,7 — topo */}
+      <Cam id="c4" x={179} y={85} w={68} h={58} label="Camarote 4" />
+      <Cam id="c5" x={267} y={85} w={68} h={58} label="Camarote 5" />
+      <Cam id="c6" x={358} y={85} w={68} h={58} label="Camarote 6" />
+      <Cam id="c7" x={437} y={85} w={68} h={58} label="Camarote 7" />
 
-      {/* SOFÁS */}
-      <Cam id="s1" x={112} y={500} w={72} h={55} label="Sofá 1" />
-      <Cam id="s2" x={112} y={430} w={72} h={55} label="Sofá 2" />
-      <Cam id="s3" x={112} y={360} w={72} h={55} label="Sofá 3" />
+      {/* CAMAROTES 8,9 — lateral direita superior */}
+      <Cam id="c8" x={599} y={195} w={72} h={58} label="Camarote 8" />
+      <Cam id="c9" x={599} y={261} w={72} h={58} label="Camarote 9" />
 
-      {/* MESAS — apenas marcadores circulares (não clicáveis individualmente) */}
-      {[
-        [200,184],[248,184],[296,184],[344,184],[392,184],[440,184],
-        [200,224],[296,224],[440,224],
-        [200,290],[200,340],[200,390],[200,440],[200,490],[200,540],
-        [268,290],[268,340],[268,390],[268,440],[268,490],[268,540],
-        [336,290],[336,340],[336,390],[336,440],
-        [110,290],[110,340],[110,390],[110,440],[110,490],[110,540],
-        [150,620],[218,620],[286,620],[354,620],[422,620],
-        [120,690],[200,690],[280,690],[360,690],[440,690],
-      ].map(([cx,cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r={13} fill="rgba(201,168,76,0.06)" stroke="#C9A84C33" strokeWidth="1" />
-      ))}
+      {/* CAMAROTE 10 — lateral direita inferior */}
+      <Cam id="c10" x={599} y={558} w={72} h={58} label="Camarote 10" />
+
+      {/* CAMAROTES 11–15 — lateral esquerda */}
+      <Cam id="c11" x={76} y={392} w={80} h={62} label="Camarote 11" />
+      <Cam id="c12" x={76} y={462} w={80} h={62} label="Camarote 12" />
+      <Cam id="c13" x={76} y={532} w={80} h={62} label="Camarote 13" />
+      <Cam id="c14" x={76} y={602} w={80} h={62} label="Camarote 14" />
+      <Cam id="c15" x={76} y={672} w={80} h={62} label="Camarote 15" />
+
+      {/* SOFÁS 1,2,3 */}
+      <Cam id="s1" x={179} y={684} w={72} h={55} label="Sofá 1" />
+      <Cam id="s2" x={179} y={618} w={72} h={55} label="Sofá 2" />
+      <Cam id="s3" x={179} y={548} w={72} h={55} label="Sofá 3" />
+
+      {/* MESAS — decorativas, mesmas posições do site público */}
+      {/* Mesas 21–29 */}
+      <MesaMark cx={248} cy={224} /><MesaMark cx={369} cy={224} />
+      <MesaMark cx={182} cy={266} /><MesaMark cx={301} cy={266} />
+      <MesaMark cx={409} cy={266} /><MesaMark cx={471} cy={240} />
+      <MesaMark cx={230} cy={307} /><MesaMark cx={350} cy={307} /><MesaMark cx={471} cy={307} />
+      {/* Mesas 31–36 */}
+      <MesaMark cx={301} cy={413} /><MesaMark cx={301} cy={463} /><MesaMark cx={301} cy={513} />
+      <MesaMark cx={301} cy={563} /><MesaMark cx={301} cy={613} /><MesaMark cx={301} cy={663} />
+      {/* Mesas 41–46 */}
+      <MesaMark cx={369} cy={413} /><MesaMark cx={369} cy={463} /><MesaMark cx={369} cy={513} />
+      <MesaMark cx={369} cy={563} /><MesaMark cx={369} cy={613} /><MesaMark cx={369} cy={663} />
+      {/* Mesas 51–54 */}
+      <MesaMark cx={437} cy={413} /><MesaMark cx={437} cy={463} />
+      <MesaMark cx={437} cy={513} /><MesaMark cx={437} cy={563} />
+      {/* Mesas 61–65 */}
+      <MesaMark cx={276} cy={776} /><MesaMark cx={344} cy={776} /><MesaMark cx={412} cy={776} />
+      <MesaMark cx={480} cy={776} /><MesaMark cx={548} cy={776} />
+      {/* Mesas 66–70 */}
+      <MesaMark cx={220} cy={819} /><MesaMark cx={266} cy={861} /><MesaMark cx={336} cy={861} />
+      <MesaMark cx={410} cy={861} /><MesaMark cx={489} cy={861} />
+      {/* Mesas 71–76 */}
+      <MesaMark cx={34} cy={360} /><MesaMark cx={34} cy={423} /><MesaMark cx={34} cy={493} />
+      <MesaMark cx={34} cy={563} /><MesaMark cx={34} cy={644} /><MesaMark cx={34} cy={725} />
 
       {/* LEGENDA */}
-      <g transform="translate(16, 710)">
-        <rect x={0} y={0} width={10} height={10} rx="2" fill="rgba(201,168,76,0.07)" stroke="#C9A84C66" strokeWidth="1" />
-        <text x={14} y={9} fill="#5a3518" fontSize="9" fontFamily="DM Sans">Disponível</text>
-        <rect x={90} y={0} width={10} height={10} rx="2" fill="rgba(255,80,80,0.18)" stroke="#ff5050" strokeWidth="1" />
+      <g transform="translate(70, 878)">
+        <rect x={0}   y={0} width={10} height={10} rx="2" fill="rgba(201,168,76,0.08)" stroke="#C9A84C88" strokeWidth="1" />
+        <text x={14}  y={9} fill="#5a3518" fontSize="9" fontFamily="DM Sans">Disponível</text>
+        <rect x={90}  y={0} width={10} height={10} rx="2" fill="rgba(255,80,80,0.18)"  stroke="#ff5050"   strokeWidth="1" />
         <text x={104} y={9} fill="#ff8080" fontSize="9" fontFamily="DM Sans">Reservado</text>
-        <rect x={188} y={0} width={10} height={10} rx="2" fill="rgba(201,168,76,0.5)" stroke="#C9A84C" strokeWidth="2" />
+        <rect x={188} y={0} width={10} height={10} rx="2" fill="rgba(201,168,76,0.45)" stroke="#C9A84C"   strokeWidth="2" />
         <text x={202} y={9} fill="#C9A84C" fontSize="9" fontFamily="DM Sans">Selecionado</text>
       </g>
     </svg>
