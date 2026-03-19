@@ -63,6 +63,7 @@ const TIPO_CONFIG: Record<TipoReserva, { label: string; cor: string }> = {
 
 // Áreas reservadas por setor no mapa (id → label)
 const SETORES_MAPA: Record<string, { label: string; tipo: TipoReserva }> = {
+  // Camarotes
   'c4':  { label: 'Camarote 4',  tipo: 'camarote' },
   'c5':  { label: 'Camarote 5',  tipo: 'camarote' },
   'c6':  { label: 'Camarote 6',  tipo: 'camarote' },
@@ -75,9 +76,33 @@ const SETORES_MAPA: Record<string, { label: string; tipo: TipoReserva }> = {
   'c13': { label: 'Camarote 13', tipo: 'camarote' },
   'c14': { label: 'Camarote 14', tipo: 'camarote' },
   'c15': { label: 'Camarote 15', tipo: 'camarote' },
-  's1':  { label: 'Sofá 1',      tipo: 'camarote' },
-  's2':  { label: 'Sofá 2',      tipo: 'camarote' },
-  's3':  { label: 'Sofá 3',      tipo: 'camarote' },
+  // Sofás
+  's1':  { label: 'Sofá 1', tipo: 'camarote' },
+  's2':  { label: 'Sofá 2', tipo: 'camarote' },
+  's3':  { label: 'Sofá 3', tipo: 'camarote' },
+  // Mesas
+  'm21': { label: 'Mesa 21', tipo: 'mesa' }, 'm22': { label: 'Mesa 22', tipo: 'mesa' },
+  'm23': { label: 'Mesa 23', tipo: 'mesa' }, 'm24': { label: 'Mesa 24', tipo: 'mesa' },
+  'm25': { label: 'Mesa 25', tipo: 'mesa' }, 'm26': { label: 'Mesa 26', tipo: 'mesa' },
+  'm27': { label: 'Mesa 27', tipo: 'mesa' }, 'm28': { label: 'Mesa 28', tipo: 'mesa' },
+  'm29': { label: 'Mesa 29', tipo: 'mesa' },
+  'm31': { label: 'Mesa 31', tipo: 'mesa' }, 'm32': { label: 'Mesa 32', tipo: 'mesa' },
+  'm33': { label: 'Mesa 33', tipo: 'mesa' }, 'm34': { label: 'Mesa 34', tipo: 'mesa' },
+  'm35': { label: 'Mesa 35', tipo: 'mesa' }, 'm36': { label: 'Mesa 36', tipo: 'mesa' },
+  'm41': { label: 'Mesa 41', tipo: 'mesa' }, 'm42': { label: 'Mesa 42', tipo: 'mesa' },
+  'm43': { label: 'Mesa 43', tipo: 'mesa' }, 'm44': { label: 'Mesa 44', tipo: 'mesa' },
+  'm45': { label: 'Mesa 45', tipo: 'mesa' }, 'm46': { label: 'Mesa 46', tipo: 'mesa' },
+  'm51': { label: 'Mesa 51', tipo: 'mesa' }, 'm52': { label: 'Mesa 52', tipo: 'mesa' },
+  'm53': { label: 'Mesa 53', tipo: 'mesa' }, 'm54': { label: 'Mesa 54', tipo: 'mesa' },
+  'm61': { label: 'Mesa 61', tipo: 'mesa' }, 'm62': { label: 'Mesa 62', tipo: 'mesa' },
+  'm63': { label: 'Mesa 63', tipo: 'mesa' }, 'm64': { label: 'Mesa 64', tipo: 'mesa' },
+  'm65': { label: 'Mesa 65', tipo: 'mesa' },
+  'm66': { label: 'Mesa 66', tipo: 'mesa' }, 'm67': { label: 'Mesa 67', tipo: 'mesa' },
+  'm68': { label: 'Mesa 68', tipo: 'mesa' }, 'm69': { label: 'Mesa 69', tipo: 'mesa' },
+  'm70': { label: 'Mesa 70', tipo: 'mesa' },
+  'm71': { label: 'Mesa 71', tipo: 'mesa' }, 'm72': { label: 'Mesa 72', tipo: 'mesa' },
+  'm73': { label: 'Mesa 73', tipo: 'mesa' }, 'm74': { label: 'Mesa 74', tipo: 'mesa' },
+  'm75': { label: 'Mesa 75', tipo: 'mesa' }, 'm76': { label: 'Mesa 76', tipo: 'mesa' },
 }
 
 // ─── COMPONENTE MAPA SVG ──────────────────────────────────────────────────────
@@ -128,11 +153,27 @@ function MapaCasa({ setoresReservados, setorSelecionado, onSetorClick, somenteLe
     )
   }
 
-  // Marcador de mesa (decorativo, não clicável)
-  const MesaMark = ({ cx, cy }: { cx: number; cy: number }) => (
-    <circle cx={cx} cy={cy} r={14}
-      fill="rgba(201,168,76,0.06)" stroke="#C9A84C33" strokeWidth="1" />
-  )
+  // Componente de mesa clicável — círculo numerado com estado do banco
+  const Mesa = ({ id, cx, cy }: { id: string; cx: number; cy: number }) => {
+    const c = corSetor(id)
+    const reservado = setoresReservados.has(id)
+    const num = id.replace('m', '')
+    return (
+      <g onClick={() => !somenteLeitura && onSetorClick(id)}
+        style={{ cursor: somenteLeitura ? 'default' : 'pointer' }}>
+        <circle cx={cx} cy={cy} r={15}
+          fill={c.fill} stroke={c.stroke} strokeWidth={c.sw}
+          style={{ transition: 'fill 0.15s, stroke 0.15s' }} />
+        <text x={cx} y={cy + 4} textAnchor="middle"
+          fill={reservado ? '#ff8080' : c.stroke}
+          fontSize="7.5" fontFamily="DM Sans" fontWeight="500">{num}</text>
+        {setorSelecionado === id && (
+          <circle cx={cx} cy={cy} r={15}
+            fill="none" stroke="#C9A84C" strokeWidth="2" strokeDasharray="3,2" />
+        )}
+      </g>
+    )
+  }
 
   return (
     <svg viewBox="20 30 660 860" width="100%" style={{ maxHeight: 640 }}
@@ -196,30 +237,30 @@ function MapaCasa({ setoresReservados, setorSelecionado, onSetorClick, somenteLe
       <Cam id="s2" x={179} y={618} w={72} h={55} label="Sofá 2" />
       <Cam id="s3" x={179} y={548} w={72} h={55} label="Sofá 3" />
 
-      {/* MESAS — decorativas, mesmas posições do site público */}
+      {/* MESAS — todas clicáveis, numeradas, com estado real do banco */}
       {/* Mesas 21–29 */}
-      <MesaMark cx={248} cy={224} /><MesaMark cx={369} cy={224} />
-      <MesaMark cx={182} cy={266} /><MesaMark cx={301} cy={266} />
-      <MesaMark cx={409} cy={266} /><MesaMark cx={471} cy={240} />
-      <MesaMark cx={230} cy={307} /><MesaMark cx={350} cy={307} /><MesaMark cx={471} cy={307} />
+      <Mesa id="m21" cx={248} cy={224} /><Mesa id="m22" cx={369} cy={224} />
+      <Mesa id="m23" cx={182} cy={266} /><Mesa id="m24" cx={301} cy={266} />
+      <Mesa id="m25" cx={409} cy={266} /><Mesa id="m26" cx={471} cy={240} />
+      <Mesa id="m27" cx={230} cy={307} /><Mesa id="m28" cx={350} cy={307} /><Mesa id="m29" cx={471} cy={307} />
       {/* Mesas 31–36 */}
-      <MesaMark cx={301} cy={413} /><MesaMark cx={301} cy={463} /><MesaMark cx={301} cy={513} />
-      <MesaMark cx={301} cy={563} /><MesaMark cx={301} cy={613} /><MesaMark cx={301} cy={663} />
+      <Mesa id="m31" cx={301} cy={413} /><Mesa id="m32" cx={301} cy={463} /><Mesa id="m33" cx={301} cy={513} />
+      <Mesa id="m34" cx={301} cy={563} /><Mesa id="m35" cx={301} cy={613} /><Mesa id="m36" cx={301} cy={663} />
       {/* Mesas 41–46 */}
-      <MesaMark cx={369} cy={413} /><MesaMark cx={369} cy={463} /><MesaMark cx={369} cy={513} />
-      <MesaMark cx={369} cy={563} /><MesaMark cx={369} cy={613} /><MesaMark cx={369} cy={663} />
+      <Mesa id="m41" cx={369} cy={413} /><Mesa id="m42" cx={369} cy={463} /><Mesa id="m43" cx={369} cy={513} />
+      <Mesa id="m44" cx={369} cy={563} /><Mesa id="m45" cx={369} cy={613} /><Mesa id="m46" cx={369} cy={663} />
       {/* Mesas 51–54 */}
-      <MesaMark cx={437} cy={413} /><MesaMark cx={437} cy={463} />
-      <MesaMark cx={437} cy={513} /><MesaMark cx={437} cy={563} />
+      <Mesa id="m51" cx={437} cy={413} /><Mesa id="m52" cx={437} cy={463} />
+      <Mesa id="m53" cx={437} cy={513} /><Mesa id="m54" cx={437} cy={563} />
       {/* Mesas 61–65 */}
-      <MesaMark cx={276} cy={776} /><MesaMark cx={344} cy={776} /><MesaMark cx={412} cy={776} />
-      <MesaMark cx={480} cy={776} /><MesaMark cx={548} cy={776} />
+      <Mesa id="m61" cx={276} cy={776} /><Mesa id="m62" cx={344} cy={776} /><Mesa id="m63" cx={412} cy={776} />
+      <Mesa id="m64" cx={480} cy={776} /><Mesa id="m65" cx={548} cy={776} />
       {/* Mesas 66–70 */}
-      <MesaMark cx={220} cy={819} /><MesaMark cx={266} cy={861} /><MesaMark cx={336} cy={861} />
-      <MesaMark cx={410} cy={861} /><MesaMark cx={489} cy={861} />
+      <Mesa id="m66" cx={220} cy={819} /><Mesa id="m67" cx={266} cy={861} /><Mesa id="m68" cx={336} cy={861} />
+      <Mesa id="m69" cx={410} cy={861} /><Mesa id="m70" cx={489} cy={861} />
       {/* Mesas 71–76 */}
-      <MesaMark cx={34} cy={360} /><MesaMark cx={34} cy={423} /><MesaMark cx={34} cy={493} />
-      <MesaMark cx={34} cy={563} /><MesaMark cx={34} cy={644} /><MesaMark cx={34} cy={725} />
+      <Mesa id="m71" cx={34} cy={360} /><Mesa id="m72" cx={34} cy={423} /><Mesa id="m73" cx={34} cy={493} />
+      <Mesa id="m74" cx={34} cy={563} /><Mesa id="m75" cx={34} cy={644} /><Mesa id="m76" cx={34} cy={725} />
 
       {/* LEGENDA */}
       <g transform="translate(70, 878)">
