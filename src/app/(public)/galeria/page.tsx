@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { X, Play, Loader2, Download, Lock } from 'lucide-react'
 
@@ -15,7 +15,6 @@ const isVideo = (url: string): boolean =>
   url.includes('/video/upload/') ||
   /\.(mp4|webm|mov)(\?.*)?$/i.test(url)
 
-// Foto hospedada no Supabase Storage (upload direto pelo admin)
 const isSupabase = (url: string): boolean =>
   url.includes('supabase.co') || url.includes('/storage/v1/object/public/')
 
@@ -40,30 +39,21 @@ function Lightbox({
   }, [onClose])
 
   const handleDownload = async () => {
-    if (!logado) {
-      window.location.href = '/acesso'
-      return
-    }
+    if (!logado) { window.location.href = '/acesso'; return }
     setBaixando(true)
     try {
       const res = await fetch(midia.url, { cache: 'no-store' })
       const blob = await res.blob()
       const blobUrl = URL.createObjectURL(blob)
       const ext = midia.url.split('.').pop()?.split('?')[0] ?? 'jpg'
-      const nome = (midia.alt ?? 'maandhoo')
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
+      const nome = (midia.alt ?? 'maandhoo').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
       const a = document.createElement('a')
       a.href = blobUrl
       a.download = `${nome}.${ext}`
       a.click()
       URL.revokeObjectURL(blobUrl)
-    } catch {
-      // silencioso
-    } finally {
-      setBaixando(false)
-    }
+    } catch { /* silencioso */ }
+    finally { setBaixando(false) }
   }
 
   return (
@@ -71,15 +61,12 @@ function Lightbox({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      {/* Fechar */}
       <button
         onClick={onClose}
         className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10"
       >
         <X size={22} />
       </button>
-
-
 
       <div
         className="relative max-w-4xl w-full flex flex-col items-center gap-3"
@@ -97,7 +84,6 @@ function Lightbox({
               src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
               className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }}
             />
-            {/* Botão de download — fixo no canto superior direito da foto */}
             {podeDownload && (
               <button
                 onClick={e => { e.stopPropagation(); handleDownload() }}
@@ -109,13 +95,7 @@ function Lightbox({
                     : 'border-white/20 bg-black/70 text-bege-escuro/50 hover:border-white/40'
                   }`}
               >
-                {baixando ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : logado ? (
-                  <Download size={13} />
-                ) : (
-                  <Lock size={13} />
-                )}
+                {baixando ? <Loader2 size={13} className="animate-spin" /> : logado ? <Download size={13} /> : <Lock size={13} />}
                 {logado ? (baixando ? 'Baixando...' : 'Download') : 'Login para baixar'}
               </button>
             )}
@@ -129,15 +109,75 @@ function Lightbox({
   )
 }
 
-// ─── Card de mídia ────────────────────────────────────────────
-function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
-  const video = isVideo(midia.url)
+// ─── Card de vídeo com autoplay por scroll (Intersection Observer) ────────────
+// O src do vídeo só é atribuído quando o card entra na viewport.
+// Ao sair, o vídeo pausa — nunca mais de um tocando ao mesmo tempo.
+function VideoCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [tocando, setTocando] = useState(false)
 
-  const aspectRatio = video
-    ? '9/16'
-    : midia.orientacao === 'portrait'
-      ? '3/4'
-      : '4/3'
+  useEffect(() => {
+    const wrapper = wrapperRef.current
+    const video = videoRef.current
+    if (!wrapper || !video) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Entra na viewport → atribui src (lazy) e toca
+          if (!video.src) video.src = midia.url
+          video.play().then(() => setTocando(true)).catch(() => {})
+        } else {
+          // Sai da viewport → pausa
+          video.pause()
+          setTocando(false)
+        }
+      },
+      { threshold: 0.4 } // 40% visível para ativar
+    )
+
+    observer.observe(wrapper)
+    return () => observer.disconnect()
+  }, [midia.url])
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="group relative overflow-hidden rounded-sm border border-white/8 hover:border-dourado/40 cursor-pointer transition-all duration-300"
+      style={{ aspectRatio: '9/16' }}
+      onClick={onClick}
+    >
+      {/* Placeholder com ícone de play enquanto não está tocando */}
+      {!tocando && (
+        <div className="absolute inset-0 flex items-center justify-center bg-preto-profundo/80 z-10 pointer-events-none transition-opacity duration-300">
+          <div className="w-12 h-12 rounded-full bg-black/60 border border-dourado/40 flex items-center justify-center">
+            <Play size={20} className="text-dourado fill-dourado ml-1" />
+          </div>
+        </div>
+      )}
+      {/* src omitido intencionalmente — atribuído pelo IntersectionObserver */}
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="none"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {midia.alt && (
+        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+          <span className="font-body text-xs text-bege truncate block">{midia.alt}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Card de foto ─────────────────────────────────────────────
+function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
+  const aspectRatio = midia.orientacao === 'portrait' ? '3/4' : '4/3'
 
   return (
     <div
@@ -145,30 +185,17 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
       style={{ aspectRatio }}
       onClick={onClick}
     >
-      {video ? (
-        <>
-          <video
-            src={midia.url} autoPlay muted loop playsInline
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-
-        </>
-      ) : (
-        <>
-          <Image
-            src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 640px) 50vw, 33vw"
-          />
-          {/* Indicador de download disponível (só Supabase) */}
-          {isSupabase(midia.url) && (
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-dourado/30 px-1.5 py-1 rounded-sm">
-                <Download size={9} className="text-dourado" />
-              </div>
-            </div>
-          )}
-        </>
+      <Image
+        src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
+        className="object-cover transition-transform duration-700 group-hover:scale-105"
+        sizes="(max-width: 640px) 50vw, 33vw"
+      />
+      {isSupabase(midia.url) && (
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-dourado/30 px-1.5 py-1 rounded-sm">
+            <Download size={9} className="text-dourado" />
+          </div>
+        </div>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       {midia.alt && (
@@ -180,7 +207,7 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
   )
 }
 
-// ─── Tipos de fileira ─────────────────────────────────────────
+// ─── Agrupamento em fileiras ──────────────────────────────────
 type TipoFileira = 'portrait' | 'landscape' | 'video'
 type Fileira = { tipo: TipoFileira; itens: MidiaGaleria[] }
 
@@ -231,42 +258,28 @@ export default function GaleriaPage() {
   const carregar = useCallback(async (silencioso = false) => {
     if (!silencioso) setCarregando(true)
     try {
-      const res = await fetch('/api/galeria', {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
-      })
+      const res = await fetch('/api/galeria', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } })
       const data = await res.json()
       setMidias(Array.isArray(data.fotos) ? data.fotos : [])
-    } catch {
-      // silencioso
-    } finally {
-      if (!silencioso) setCarregando(false)
-    }
+    } catch { /* silencioso */ }
+    finally { if (!silencioso) setCarregando(false) }
   }, [])
 
-  // Verifica sessão do cliente silenciosamente
   const verificarSessao = useCallback(async () => {
     try {
       const res = await fetch('/api/cliente/auth', { cache: 'no-store' })
       const data = await res.json()
       setLogado(data.autenticado === true)
-    } catch {
-      setLogado(false)
-    }
+    } catch { setLogado(false) }
   }, [])
 
-  useEffect(() => {
-    carregar(false)
-    verificarSessao()
-  }, [carregar, verificarSessao])
+  useEffect(() => { carregar(false); verificarSessao() }, [carregar, verificarSessao])
 
-  // Polling automático a cada 30s
   useEffect(() => {
     const intervalo = setInterval(() => carregar(true), INTERVALO_ATUALIZACAO)
     return () => clearInterval(intervalo)
   }, [carregar])
 
-  // Recarrega ao voltar foco na aba
   useEffect(() => {
     const onFocus = () => carregar(true)
     window.addEventListener('visibilitychange', onFocus)
@@ -303,7 +316,7 @@ export default function GaleriaPage() {
                 return (
                   <div key={fi} className="grid grid-cols-3 gap-3">
                     {fileira.itens.map(midia => (
-                      <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
+                      <VideoCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
                     ))}
                   </div>
                 )
@@ -334,11 +347,7 @@ export default function GaleriaPage() {
       </div>
 
       {midiaAberta && (
-        <Lightbox
-          midia={midiaAberta}
-          logado={logado}
-          onClose={() => setMidiaAberta(null)}
-        />
+        <Lightbox midia={midiaAberta} logado={logado} onClose={() => setMidiaAberta(null)} />
       )}
     </div>
   )
