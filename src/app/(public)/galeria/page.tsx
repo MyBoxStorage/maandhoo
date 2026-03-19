@@ -79,28 +79,7 @@ function Lightbox({
         <X size={22} />
       </button>
 
-      {/* Botão de download — só para fotos do Supabase */}
-      {podeDownload && (
-        <button
-          onClick={e => { e.stopPropagation(); handleDownload() }}
-          disabled={baixando}
-          title={logado ? 'Baixar foto em alta qualidade' : 'Faça login para baixar'}
-          className={`absolute top-5 right-16 z-10 flex items-center gap-2 px-3 py-2 rounded-sm border text-xs font-accent tracking-widest uppercase transition-all
-            ${logado
-              ? 'border-dourado/50 bg-black/60 text-dourado hover:bg-dourado/15 hover:border-dourado'
-              : 'border-white/15 bg-black/60 text-bege-escuro/40 cursor-pointer hover:border-white/30'
-            }`}
-        >
-          {baixando ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : logado ? (
-            <Download size={13} />
-          ) : (
-            <Lock size={13} />
-          )}
-          {logado ? (baixando ? 'Baixando...' : 'Baixar') : 'Login para baixar'}
-        </button>
-      )}
+
 
       <div
         className="relative max-w-4xl w-full flex flex-col items-center gap-3"
@@ -113,10 +92,34 @@ function Lightbox({
             className="w-full rounded-sm" style={{ maxHeight: '82vh', objectFit: 'contain' }}
           />
         ) : (
-          <Image
-            src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
-            className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }}
-          />
+          <div className="relative w-full">
+            <Image
+              src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} width={1200} height={800}
+              className="object-contain w-full h-full rounded-sm" style={{ maxHeight: '82vh' }}
+            />
+            {/* Botão de download — fixo no canto superior direito da foto */}
+            {podeDownload && (
+              <button
+                onClick={e => { e.stopPropagation(); handleDownload() }}
+                disabled={baixando}
+                title={logado ? 'Download em alta qualidade' : 'Faça login para baixar'}
+                className={`absolute top-3 right-3 flex items-center gap-2 px-3 py-2 rounded-sm border text-xs font-accent tracking-widest uppercase transition-all
+                  ${logado
+                    ? 'border-dourado/60 bg-black/70 text-dourado hover:bg-dourado/20 hover:border-dourado'
+                    : 'border-white/20 bg-black/70 text-bege-escuro/50 hover:border-white/40'
+                  }`}
+              >
+                {baixando ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : logado ? (
+                  <Download size={13} />
+                ) : (
+                  <Lock size={13} />
+                )}
+                {logado ? (baixando ? 'Baixando...' : 'Download') : 'Login para baixar'}
+              </button>
+            )}
+          </div>
         )}
         {midia.alt && (
           <p className="font-body text-sm text-bege-escuro/60 text-center">{midia.alt}</p>
