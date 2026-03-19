@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { eventoId, nome, email, genero, origem } = body
+    const { eventoId, nome, email, genero, origem, consentimentoLGPD, lgpdVersao } = body
 
     if (!eventoId || !nome || !email || !genero) {
       return NextResponse.json({ error: 'Dados obrigatórios faltando' }, { status: 400 })

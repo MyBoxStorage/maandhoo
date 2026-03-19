@@ -30,9 +30,21 @@ export const CookieBanner: React.FC = () => {
   }, [])
 
   const salvar = (c: ConsentState) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      ...c, dataConsentimento: new Date().toISOString(),
-    }))
+    const registro = { ...c, dataConsentimento: new Date().toISOString() }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(registro))
+
+    // Registrar consentimento de cookies no banco (anônimo, sem identificação pessoal)
+    fetch('/api/consentimento-cookies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        analytics: c.analytics,
+        marketing: c.marketing,
+        dataConsentimento: registro.dataConsentimento,
+        versao: '1.0',
+      }),
+    }).catch(() => {}) // fire-and-forget, não bloqueia UX
+
     setVisible(false)
   }
 

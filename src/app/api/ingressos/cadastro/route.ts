@@ -119,6 +119,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: 'Erro ao salvar cadastro' }, { status: 500 })
     }
 
+    // ── Capturar lead com consentimento ────────────────────────
+    try {
+      await supabaseAdmin.from('leads').insert({
+        nome: nome_completo.trim(),
+        email: emailNormalizado,
+        whatsapp: whatsapp.replace(/[^0-9]/g, ''),
+        origem: 'compra_ingresso',
+        evento_id: ingresso.evento_id ?? null,
+        evento_nome: ingresso.eventos?.nome ?? null,
+        observacoes: `Cadastro via link de ingresso · Gênero: ${genero} · Tipo: ${ingresso.tipo}`,
+        consentimento_lgpd: true,
+        data_consentimento: new Date().toISOString(),
+        status: 'novo',
+      })
+    } catch (e) {
+      console.warn('[cadastro] Falha ao capturar lead:', e)
+    }
+
     return NextResponse.json({
       sucesso: true,
       mensagem: 'Cadastro realizado com sucesso! Acesse sua conta para ver o ingresso.',

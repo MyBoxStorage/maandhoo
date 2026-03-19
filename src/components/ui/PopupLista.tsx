@@ -17,6 +17,8 @@ export const PopupLista: React.FC = () => {
   const [visible, setVisible] = useState(false)
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
+  const [genero, setGenero] = useState<'masculino' | 'feminino'>('feminino')
+  const [lgpdAceito, setLgpdAceito] = useState(false)
   const [loading, setLoading] = useState(false)
   const [proximoEvento, setProximoEvento] = useState<EventoPublico | null>(null)
 
@@ -49,22 +51,31 @@ export const PopupLista: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nome.trim() || !email.trim()) return
+    if (!lgpdAceito) {
+      toast.error('Você precisa aceitar a Política de Privacidade para continuar.')
+      return
+    }
     setLoading(true)
     try {
-      // Captura lead com consentimento LGPD
-      await fetch('/api/leads', {
+      // Chama /api/lista — que inscreve na lista amiga, gera QR, envia email e captura lead
+      const res = await fetch('/api/lista', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: nome.trim(),
-          email: email.trim(),
-          origem: 'popup_lista',
           eventoId: proximoEvento?.id,
-          eventoNome: proximoEvento?.nome,
+          nome: nome.trim(),
+          email: email.trim().toLowerCase(),
+          genero,
+          origem: 'popup_lista',
           consentimentoLGPD: true,
+          lgpdVersao: '1.0',
         }),
       })
-
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? 'Erro ao entrar na lista.')
+        return
+      }
       toast.success('Nome adicionado à lista! Confira seu email.')
       fechar()
     } catch {
@@ -86,7 +97,6 @@ export const PopupLista: React.FC = () => {
           <X size={20} />
         </button>
 
-        {/* TOPO */}
         <div className="flex items-center gap-3 mb-5">
           <PartyPopper size={22} className="text-dourado" />
           <div>
@@ -103,6 +113,23 @@ export const PopupLista: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label className="admin-label">Gênero</label>
+            <div className="flex gap-2">
+              {(['feminino', 'masculino'] as const).map(g => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGenero(g)}
+                  className={`flex-1 py-2 text-xs font-accent tracking-wider uppercase rounded-sm border transition-all
+                    ${genero === g ? 'border-dourado bg-dourado/15 text-dourado' : 'border-white/10 text-bege-escuro/60 hover:border-dourado/30'}`}
+                >
+                  {g === 'feminino' ? 'Feminino' : 'Masculino'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label className="admin-label">Seu Nome Completo</label>
             <input
               type="text"
@@ -113,6 +140,7 @@ export const PopupLista: React.FC = () => {
               required
             />
           </div>
+
           <div>
             <label className="admin-label">Seu Email</label>
             <input
@@ -125,18 +153,40 @@ export const PopupLista: React.FC = () => {
             />
           </div>
 
+          {/* CONSENTIMENTO LGPD EXPLÍCITO */}
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div className="relative flex-shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                checked={lgpdAceito}
+                onChange={e => setLgpdAceito(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`w-4 h-4 rounded-sm border transition-all ${
+                lgpdAceito ? 'bg-dourado border-dourado' : 'border-white/30 bg-black/30 group-hover:border-dourado/50'
+              }`}>
+                {lgpdAceito && (
+                  <svg viewBox="0 0 12 12" fill="none" className="w-full h-full p-0.5">
+                    <path d="M2 6l3 3 5-5" stroke="#0a0604" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+            </div>
+            <span className="font-body text-[11px] text-bege-escuro/50 leading-relaxed">
+              Concordo com o uso dos meus dados para comunicação sobre eventos, conforme a{' '}
+              <a href="/politicas#privacidade" target="_blank" className="text-dourado/70 hover:text-dourado underline" onClick={e => e.stopPropagation()}>
+                Política de Privacidade (LGPD)
+              </a>.
+            </span>
+          </label>
+
           <p className="text-xs text-bege-escuro/40 italic">
             * Lista válida até 00:00. Sujeita a alteração conforme lotação.
           </p>
 
-          <p className="text-[10px] text-bege-escuro/30 leading-relaxed">
-            Ao se cadastrar, você concorda com o uso dos seus dados para fins de comunicação sobre eventos, conforme nossa{' '}
-            <a href="/politicas#privacidade" className="underline hover:text-bege-escuro/50">Política de Privacidade (LGPD)</a>.
-          </p>
-
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !lgpdAceito}
             className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? 'Entrando...' : 'Quero Entrar na Lista!'}

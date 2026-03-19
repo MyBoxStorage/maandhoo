@@ -45,6 +45,8 @@ export const CompraIngressoModal: React.FC<Props> = ({
     expiresAt: new Date(Date.now() + 30 * 60 * 1000),
   })
 
+  const [lgpdAceito, setLgpdAceito] = useState(false)
+
   const loteAtivo = lotes.find(l => l.ativo) ?? lotes[0]
 
   const precos = {
@@ -93,6 +95,26 @@ export const CompraIngressoModal: React.FC<Props> = ({
 
   const handleProsseguir = () => {
     if (!validarDados()) return
+    if (!lgpdAceito) {
+      toast.error('Você precisa aceitar a Política de Privacidade para continuar.')
+      return
+    }
+    fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: form.nome.trim(),
+        email: form.email.trim(),
+        whatsapp: form.whatsapp,
+        origem: 'compra_ingresso',
+        eventoId,
+        eventoNome,
+        observacoes: `Tipo: ${tipo} · Gênero: ${genero} · Lote: ${loteAtivo?.nome ?? 'N/A'}`,
+        consentimentoLGPD: true,
+        lgpdVersao: '1.0',
+      }),
+    }).catch(() => {}) // fire-and-forget
+
     setStep('pagamento')
   }
 
@@ -274,6 +296,33 @@ export const CompraIngressoModal: React.FC<Props> = ({
               <button onClick={handleProsseguir} className="btn-primary w-full">
                 Continuar para Pagamento
               </button>
+
+              <div className="flex items-start gap-3">
+                <div className="relative flex-shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    id="lgpd-modal"
+                    checked={lgpdAceito}
+                    onChange={e => setLgpdAceito(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <label htmlFor="lgpd-modal" className={`block w-4 h-4 rounded-sm border cursor-pointer transition-all ${
+                    lgpdAceito ? 'bg-dourado border-dourado' : 'border-white/30 bg-black/30 hover:border-dourado/50'
+                  }`}>
+                    {lgpdAceito && (
+                      <svg viewBox="0 0 12 12" fill="none" className="w-full h-full p-0.5">
+                        <path d="M2 6l3 3 5-5" stroke="#0a0604" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </label>
+                </div>
+                <label htmlFor="lgpd-modal" className="font-body text-[11px] text-bege-escuro/50 leading-relaxed cursor-pointer">
+                  Concordo com o uso dos meus dados para processamento do ingresso, conforme a{' '}
+                  <a href="/politicas#privacidade" target="_blank" className="text-dourado/70 hover:text-dourado underline" onClick={e => e.stopPropagation()}>
+                    Política de Privacidade (LGPD)
+                  </a>.
+                </label>
+              </div>
 
               <div className="flex items-center gap-2 justify-center">
                 <Shield size={13} className="text-dourado/50" />
