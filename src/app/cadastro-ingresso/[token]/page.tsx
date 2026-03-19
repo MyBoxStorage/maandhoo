@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { LogoElefante } from '@/components/ui/LogoElefante'
-import { CheckCircle2, XCircle, Loader2, User, Mail, Phone, CreditCard, ChevronDown, ArrowRight } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, User, Mail, Phone, CreditCard, ChevronDown, ArrowRight, Shield } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
@@ -25,6 +25,9 @@ export default function CadastroIngressoPage() {
   const [ingresso, setIngresso] = useState<DadosIngresso | null>(null)
   const [erroMsg, setErroMsg] = useState('')
   const [temConta, setTemConta] = useState(false)
+
+  // ── LGPD: consentimento explícito ───────────────────────────
+  const [lgpdAceito, setLgpdAceito] = useState(false)
 
   const [form, setForm] = useState({
     nome_completo: '',
@@ -67,12 +70,23 @@ export default function CadastroIngressoPage() {
       alert('Preencha todos os campos.')
       return
     }
+    // ── Validação LGPD obrigatória ──────────────────────────
+    if (!lgpdAceito) {
+      alert('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.')
+      return
+    }
     setFase('enviando')
     try {
       const res = await fetch('/api/ingressos/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ link_token: token, ...form }),
+        body: JSON.stringify({
+          link_token: token,
+          ...form,
+          consentimento_lgpd: true,
+          lgpd_versao: '1.0',
+          lgpd_timestamp: new Date().toISOString(),
+        }),
       })
       const data = await res.json()
       if (data.sucesso) {
@@ -128,7 +142,6 @@ export default function CadastroIngressoPage() {
             </p>
 
             <div className="mt-6 space-y-3">
-              {/* Botão principal: ir para /acesso */}
               <Link
                 href={`/acesso?email=${encodeURIComponent(form.email)}`}
                 className="flex items-center justify-center gap-2 w-full bg-dourado hover:bg-dourado/90 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all"
@@ -137,7 +150,6 @@ export default function CadastroIngressoPage() {
                 <ArrowRight size={14} />
               </Link>
 
-              {/* Instrução secundária */}
               <p className="font-body text-xs text-bege-escuro/40 leading-relaxed pt-1">
                 {temConta
                   ? 'Acesse sua conta para visualizar o QR Code do ingresso.'
@@ -206,6 +218,9 @@ export default function CadastroIngressoPage() {
                     <option value="outro">Outro</option>
                   </select>
                 </div>
+                <p className="font-body text-[10px] text-bege-escuro/30 mt-1.5 pl-1">
+                  Usado para precificação do ingresso conforme política do estabelecimento
+                </p>
               </div>
 
               {/* CPF */}
@@ -262,11 +277,59 @@ export default function CadastroIngressoPage() {
                 </div>
               </div>
 
-              {/* Botão */}
+              {/* ── CONSENTIMENTO LGPD EXPLÍCITO ─────────────────────── */}
+              <div className="border border-dourado/15 bg-dourado/5 rounded-sm p-4 mt-2">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex-shrink-0 mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={lgpdAceito}
+                      onChange={e => setLgpdAceito(e.target.checked)}
+                      className="sr-only"
+                      disabled={fase === 'enviando'}
+                    />
+                    <div className={`w-4 h-4 rounded-sm border transition-all ${
+                      lgpdAceito
+                        ? 'bg-dourado border-dourado'
+                        : 'border-white/30 bg-black/30 group-hover:border-dourado/50'
+                    }`}>
+                      {lgpdAceito && (
+                        <svg viewBox="0 0 12 12" fill="none" className="w-full h-full p-0.5">
+                          <path d="M2 6l3 3 5-5" stroke="#0a0604" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-body text-[11px] text-bege-escuro/60 leading-relaxed">
+                    Li e aceito os{' '}
+                    <Link href="/politicas#termos" target="_blank" className="text-dourado/80 hover:text-dourado underline underline-offset-2">
+                      Termos de Uso
+                    </Link>{' '}
+                    e a{' '}
+                    <Link href="/politicas#privacidade" target="_blank" className="text-dourado/80 hover:text-dourado underline underline-offset-2">
+                      Política de Privacidade
+                    </Link>
+                    . Meus dados (nome, CPF, e-mail, WhatsApp e gênero) serão usados exclusivamente para emissão e controle de acesso do ingresso, conforme a{' '}
+                    <span className="text-dourado/80">LGPD — Lei nº 13.709/2018</span>.
+                  </span>
+                </label>
+
+                {/* Indicador visual quando não aceito e tentativa de envio */}
+                {!lgpdAceito && (
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <Shield size={11} className="text-bege-escuro/30 flex-shrink-0" />
+                    <p className="font-body text-[10px] text-bege-escuro/30">
+                      Obrigatório para prosseguir — seus dados ficam protegidos
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão — desabilitado até LGPD ser aceito */}
               <button
                 onClick={handleSubmit}
-                disabled={fase === 'enviando'}
-                className="w-full bg-dourado hover:bg-dourado/90 disabled:bg-dourado/40 text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all duration-200 flex items-center justify-center gap-2 mt-2"
+                disabled={fase === 'enviando' || !lgpdAceito}
+                className="w-full bg-dourado hover:bg-dourado/90 disabled:bg-dourado/30 disabled:cursor-not-allowed text-preto-profundo font-accent text-xs tracking-[0.25em] uppercase py-4 rounded-sm transition-all duration-200 flex items-center justify-center gap-2 mt-2"
               >
                 {fase === 'enviando'
                   ? <><Loader2 size={14} className="animate-spin" /> Processando...</>
@@ -274,10 +337,6 @@ export default function CadastroIngressoPage() {
                 }
               </button>
 
-              {/* Aviso LGPD */}
-              <p className="font-body text-[10px] text-bege-escuro/25 text-center leading-relaxed">
-                Seus dados são utilizados exclusivamente para identificação e acesso ao ingresso, conforme a LGPD.
-              </p>
             </div>
           </>
         )}

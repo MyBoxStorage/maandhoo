@@ -1,5 +1,10 @@
 import React from 'react'
 
+// ── LGPD: data de atualização fixada manualmente ──────────────────────────────
+// NÃO use new Date() aqui — a data deve refletir a última alteração real da política,
+// não a data de renderização. Atualize este valor sempre que a política for modificada.
+const ULTIMA_ATUALIZACAO = '01/06/2025'
+
 export default function PoliticasPage() {
   return (
     <div className="min-h-screen pt-28 pb-20 px-4">
@@ -14,13 +19,95 @@ export default function PoliticasPage() {
         <section id="privacidade" className="mb-12">
           <h2 className="font-display text-3xl text-bege mb-6">Política de Privacidade (LGPD)</h2>
           <div className="space-y-4 font-body text-sm text-bege-escuro/80 leading-relaxed">
+
+            {/* ── IDENTIFICAÇÃO DO CONTROLADOR (art. 9º LGPD) ────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Controlador dos Dados</h4>
+            <p>
+              <strong className="text-bege">Razão Social:</strong> [RAZÃO SOCIAL DO ESTABELECIMENTO]<br />
+              <strong className="text-bege">CNPJ:</strong> [00.000.000/0001-00]<br />
+              <strong className="text-bege">Endereço:</strong> [Endereço completo, Balneário Camboriú — SC]<br />
+              <strong className="text-bege">E-mail do Encarregado (DPO):</strong>{' '}
+              <a href="mailto:privacidade@maandhoo.com" className="text-dourado underline underline-offset-2">
+                privacidade@maandhoo.com
+              </a>
+            </p>
+
+            {/* ── ENCARREGADO DE DADOS / DPO (art. 41 LGPD) ─────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Encarregado de Proteção de Dados (DPO)</h4>
+            <p>
+              O Maandhoo Club designou como Encarregado de Proteção de Dados:{' '}
+              <strong className="text-bege">[Nome do Encarregado]</strong>, responsável por atender
+              solicitações de titulares e comunicar-se com a Autoridade Nacional de Proteção de Dados (ANPD).
+              Contato: <a href="mailto:privacidade@maandhoo.com" className="text-dourado underline underline-offset-2">privacidade@maandhoo.com</a>.
+            </p>
+
             <p>O Maandhoo Club respeita sua privacidade e está comprometido com a proteção dos seus dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
-            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Dados Coletados</h4>
-            <p>Coletamos os seguintes dados pessoais: nome completo, CPF, endereço de e-mail e número de WhatsApp. Esses dados são coletados exclusivamente para a emissão de ingressos nominais, gestão de reservas, envio de confirmações e comunicações relacionadas aos eventos do Maandhoo Club.</p>
-            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Uso dos Dados</h4>
-            <p>Seus dados são utilizados para: emissão e envio de ingressos; confirmação e gestão de reservas; notificações sobre eventos e alterações de programação; cumprimento de obrigações legais. Não vendemos, compartilhamos ou cedemos seus dados a terceiros para fins comerciais.</p>
-            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Seus Direitos</h4>
-            <p>Você tem direito a solicitar: acesso aos seus dados, correção de dados incorretos, exclusão dos seus dados, revogação do consentimento. Para exercer seus direitos, entre em contato pelo email contato@maandhoo.com.</p>
+
+            {/* ── DADOS COLETADOS ─────────────────────────────────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Dados Coletados e Finalidades</h4>
+            <p>Coletamos os seguintes dados pessoais e os utilizamos para as finalidades indicadas:</p>
+            <ul className="list-disc pl-5 space-y-1 text-bege-escuro/70">
+              <li><strong className="text-bege">Nome completo</strong> — identificação nominal do ingresso e controle de acesso</li>
+              <li><strong className="text-bege">CPF</strong> — vinculação do ingresso ao titular e verificação de identidade na portaria</li>
+              <li><strong className="text-bege">E-mail</strong> — envio de ingresso, confirmações e comunicações sobre o evento</li>
+              <li><strong className="text-bege">WhatsApp</strong> — notificações urgentes sobre o evento e suporte ao cliente</li>
+              <li><strong className="text-bege">Gênero</strong> — aplicação da política de precificação diferenciada do estabelecimento, conforme prática do setor</li>
+            </ul>
+
+            {/* ── USO DOS DADOS ────────────────────────────────────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Base Legal do Tratamento</h4>
+            <p>
+              O tratamento dos dados é fundamentado nas seguintes bases legais previstas no art. 7º da LGPD:{' '}
+              <strong className="text-bege">execução de contrato</strong> (emissão e gestão de ingressos) e{' '}
+              <strong className="text-bege">consentimento</strong> do titular para comunicações opcionais.
+              Não vendemos, compartilhamos ou cedemos seus dados a terceiros para fins comerciais.
+            </p>
+
+            {/* ── RETENÇÃO DE DADOS (art. 9º LGPD) ───────────────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Retenção e Descarte de Dados</h4>
+            <p>
+              Os dados pessoais são retidos pelo período necessário ao cumprimento da finalidade para a qual foram coletados,
+              observados os seguintes prazos:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-bege-escuro/70">
+              <li>Dados de ingresso e acesso a eventos: <strong className="text-bege">até 5 (cinco) anos</strong> após a realização do evento, para fins de cumprimento de obrigações legais e fiscais</li>
+              <li>Dados de comunicação (e-mail, WhatsApp): até a <strong className="text-bege">revogação do consentimento</strong> pelo titular ou solicitação de exclusão</li>
+              <li>Registros de consentimento (LGPD): <strong className="text-bege">5 (cinco) anos</strong>, para fins de comprovação regulatória</li>
+            </ul>
+            <p>
+              Após o prazo de retenção, os dados são eliminados de forma segura ou anonimizados, de modo que não possam
+              ser associados ao titular.
+            </p>
+
+            {/* ── DIREITOS DOS TITULARES ───────────────────────────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Seus Direitos (art. 18 LGPD)</h4>
+            <p>Você tem direito a solicitar, a qualquer momento:</p>
+            <ul className="list-disc pl-5 space-y-1 text-bege-escuro/70">
+              <li>Confirmação da existência de tratamento dos seus dados</li>
+              <li>Acesso aos dados que temos sobre você</li>
+              <li>Correção de dados incompletos, inexatos ou desatualizados</li>
+              <li>Anonimização, bloqueio ou eliminação de dados desnecessários</li>
+              <li>Portabilidade dos seus dados a outro fornecedor de serviço</li>
+              <li>Eliminação dos dados tratados com base no seu consentimento</li>
+              <li>Revogação do consentimento a qualquer momento, sem prejuízo à legalidade do tratamento anterior</li>
+              <li>Informação sobre o não fornecimento de consentimento e suas consequências</li>
+            </ul>
+            <p>
+              Para exercer seus direitos, entre em contato com nosso Encarregado pelo e-mail{' '}
+              <a href="mailto:privacidade@maandhoo.com" className="text-dourado underline underline-offset-2">
+                privacidade@maandhoo.com
+              </a>
+              . O prazo de resposta é de até 15 (quinze) dias corridos.
+            </p>
+
+            {/* ── SEGURANÇA ────────────────────────────────────────────────── */}
+            <h4 className="font-accent text-xs tracking-widest uppercase text-dourado mt-6 mb-2">Segurança dos Dados</h4>
+            <p>
+              Adotamos medidas técnicas e administrativas adequadas para proteger seus dados contra acesso não
+              autorizado, destruição, perda, alteração ou divulgação indevida, incluindo controle de acesso,
+              criptografia e registro de operações.
+            </p>
+
           </div>
         </section>
 
@@ -67,8 +154,9 @@ export default function PoliticasPage() {
           </div>
         </section>
 
+        {/* ── RODAPÉ COM DATA FIXA ──────────────────────────────────────────── */}
         <p className="text-xs text-bege-escuro/30 text-center">
-          Última atualização: {new Date().toLocaleDateString('pt-BR')} · Maandhoo Club — contato@maandhoo.com
+          Última atualização: {ULTIMA_ATUALIZACAO} · Maandhoo Club — contato@maandhoo.com
         </p>
       </div>
     </div>
