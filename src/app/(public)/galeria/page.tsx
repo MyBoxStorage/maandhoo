@@ -151,10 +151,7 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
             src={midia.url} autoPlay muted loop playsInline
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-white/10 px-2 py-1 rounded-sm">
-            <Play size={9} className="text-dourado fill-dourado" />
-            <span className="font-accent text-[9px] tracking-widest uppercase text-dourado/80">Vídeo</span>
-          </div>
+
         </>
       ) : (
         <>
