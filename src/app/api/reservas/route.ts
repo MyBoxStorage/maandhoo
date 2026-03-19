@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dados obrigatórios faltando' }, { status: 400 })
     }
 
-    // Salvar reserva no Supabase
     const { data: reserva, error } = await supabaseAdmin
       .from('reservas')
       .insert({
@@ -33,7 +32,6 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('[reservas] Erro ao salvar:', error)
-      // Não bloquear o usuário por erro de DB — captura lead mesmo assim
     }
 
     // Capturar lead automaticamente
@@ -77,6 +75,7 @@ export async function GET() {
   return NextResponse.json({ reservas: data ?? [] })
 }
 
+// PATCH — atualiza apenas status e observacoes_admin
 export async function PATCH(req: NextRequest) {
   const { id, status, observacoes_admin } = await req.json()
   if (!id || !status) return NextResponse.json({ erro: 'id e status são obrigatórios' }, { status: 400 })
@@ -90,4 +89,41 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
   return NextResponse.json({ reserva: data })
+}
+
+// PUT — edição completa de uma reserva pelo admin
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { id, tipo, nome, email, whatsapp, numeroPessoas, areaDesejada, dataAniversario, observacoes, observacoes_admin, status } = body
+
+    if (!id || !nome || !whatsapp) {
+      return NextResponse.json({ erro: 'id, nome e whatsapp são obrigatórios' }, { status: 400 })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('reservas')
+      .update({
+        tipo: tipo ?? undefined,
+        nome: nome.trim(),
+        email: email?.trim()?.toLowerCase() ?? null,
+        whatsapp: whatsapp.replace(/\D/g, ''),
+        numero_pessoas: numeroPessoas ?? 1,
+        area_desejada: areaDesejada ?? null,
+        data_aniversario: dataAniversario ?? null,
+        observacoes: observacoes ?? null,
+        observacoes_admin: observacoes_admin ?? null,
+        status: status ?? undefined,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
+    return NextResponse.json({ reserva: data })
+  } catch (error) {
+    console.error('[API Reservas PUT]', error)
+    return NextResponse.json({ erro: 'Erro interno' }, { status: 500 })
+  }
 }
