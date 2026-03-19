@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
-import { X, Play, Loader2 } from 'lucide-react'
+import { X, Play, Loader2, Download, Lock } from 'lucide-react'
 
 type MidiaGaleria = {
   id: string
@@ -15,9 +15,23 @@ const isVideo = (url: string): boolean =>
   url.includes('/video/upload/') ||
   /\.(mp4|webm|mov)(\?.*)?$/i.test(url)
 
+// Foto hospedada no Supabase Storage (upload direto pelo admin)
+const isSupabase = (url: string): boolean =>
+  url.includes('supabase.co') || url.includes('/storage/v1/object/public/')
+
 // ─── Lightbox ────────────────────────────────────────────────
-function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void }) {
+function Lightbox({
+  midia,
+  logado,
+  onClose,
+}: {
+  midia: MidiaGaleria
+  logado: boolean
+  onClose: () => void
+}) {
   const video = isVideo(midia.url)
+  const podeDownload = !video && isSupabase(midia.url)
+  const [baixando, setBaixando] = useState(false)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -25,17 +39,69 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
+  const handleDownload = async () => {
+    if (!logado) {
+      window.location.href = '/acesso'
+      return
+    }
+    setBaixando(true)
+    try {
+      const res = await fetch(midia.url, { cache: 'no-store' })
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const ext = midia.url.split('.').pop()?.split('?')[0] ?? 'jpg'
+      const nome = (midia.alt ?? 'maandhoo')
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${nome}.${ext}`
+      a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      // silencioso
+    } finally {
+      setBaixando(false)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-4"
       onClick={onClose}
     >
+      {/* Fechar */}
       <button
         onClick={onClose}
         className="absolute top-5 right-5 text-bege-escuro hover:text-bege bg-black/60 rounded-full p-2 transition-colors z-10"
       >
         <X size={22} />
       </button>
+
+      {/* Botão de download — só para fotos do Supabase */}
+      {podeDownload && (
+        <button
+          onClick={e => { e.stopPropagation(); handleDownload() }}
+          disabled={baixando}
+          title={logado ? 'Baixar foto em alta qualidade' : 'Faça login para baixar'}
+          className={`absolute top-5 right-16 z-10 flex items-center gap-2 px-3 py-2 rounded-sm border text-xs font-accent tracking-widest uppercase transition-all
+            ${logado
+              ? 'border-dourado/50 bg-black/60 text-dourado hover:bg-dourado/15 hover:border-dourado'
+              : 'border-white/15 bg-black/60 text-bege-escuro/40 cursor-pointer hover:border-white/30'
+            }`}
+        >
+          {baixando ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : logado ? (
+            <Download size={13} />
+          ) : (
+            <Lock size={13} />
+          )}
+          {logado ? (baixando ? 'Baixando...' : 'Baixar') : 'Login para baixar'}
+        </button>
+      )}
+
       <div
         className="relative max-w-4xl w-full flex flex-col items-center gap-3"
         style={{ maxHeight: '90vh' }}
@@ -64,10 +130,6 @@ function Lightbox({ midia, onClose }: { midia: MidiaGaleria; onClose: () => void
 function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => void }) {
   const video = isVideo(midia.url)
 
-  // Proporções:
-  //   foto portrait  → 3/4  (fileira de 4)
-  //   foto landscape → 4/3  (fileira de 3)
-  //   vídeo          → 9/16 (fileira de 3, tamanho maior)
   const aspectRatio = video
     ? '9/16'
     : midia.orientacao === 'portrait'
@@ -92,11 +154,21 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
           </div>
         </>
       ) : (
-        <Image
-          src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 640px) 50vw, 33vw"
-        />
+        <>
+          <Image
+            src={midia.url} alt={midia.alt ?? 'Maandhoo Club'} fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, 33vw"
+          />
+          {/* Indicador de download disponível (só Supabase) */}
+          {isSupabase(midia.url) && (
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-dourado/30 px-1.5 py-1 rounded-sm">
+                <Download size={9} className="text-dourado" />
+              </div>
+            </div>
+          )}
+        </>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-preto-profundo/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       {midia.alt && (
@@ -109,18 +181,9 @@ function MediaCard({ midia, onClick }: { midia: MidiaGaleria; onClick: () => voi
 }
 
 // ─── Tipos de fileira ─────────────────────────────────────────
-// 'portrait'  → sempre exatamente 4 itens lado a lado
-// 'landscape' → sempre exatamente 3 itens lado a lado
-// 'video'     → sempre exatamente 3 vídeos lado a lado
 type TipoFileira = 'portrait' | 'landscape' | 'video'
 type Fileira = { tipo: TipoFileira; itens: MidiaGaleria[] }
 
-// ─── Montar fileiras com grupos exatos ───────────────────────
-// Regras:
-//   • Vídeos agrupados em lotes de 3 (se sobrar menos de 3, ainda exibe)
-//   • Fotos portrait agrupadas em lotes de 4 (se sobrar menos de 4, ainda exibe)
-//   • Fotos landscape agrupadas em lotes de 3 (se sobrar menos de 3, ainda exibe)
-//   • Cada tipo forma sua própria sequência; nunca mistura tipos numa fileira
 function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
   const fileiras: Fileira[] = []
   let i = 0
@@ -130,25 +193,21 @@ function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
     const ehVideo = isVideo(atual.url)
 
     if (ehVideo) {
-      // Coletar todos os vídeos consecutivos em grupos de 3
       const grupo: MidiaGaleria[] = []
       while (i < midias.length && isVideo(midias[i].url) && grupo.length < 3) {
         grupo.push(midias[i++])
       }
       fileiras.push({ tipo: 'video', itens: grupo })
-      // Se ainda há vídeos consecutivos, continua no próximo loop
       continue
     }
 
     if (atual.orientacao === 'portrait') {
-      // Coletar fotos portrait consecutivas em grupos de 4
       const grupo: MidiaGaleria[] = []
       while (i < midias.length && !isVideo(midias[i].url) && midias[i].orientacao === 'portrait' && grupo.length < 4) {
         grupo.push(midias[i++])
       }
       fileiras.push({ tipo: 'portrait', itens: grupo })
     } else {
-      // Coletar fotos landscape consecutivas em grupos de 3
       const grupo: MidiaGaleria[] = []
       while (i < midias.length && !isVideo(midias[i].url) && midias[i].orientacao === 'landscape' && grupo.length < 3) {
         grupo.push(midias[i++])
@@ -161,17 +220,17 @@ function montarFileiras(midias: MidiaGaleria[]): Fileira[] {
 }
 
 // ─── Página principal ─────────────────────────────────────────
-const INTERVALO_ATUALIZACAO = 30_000 // 30 segundos
+const INTERVALO_ATUALIZACAO = 30_000
 
 export default function GaleriaPage() {
   const [midias, setMidias] = useState<MidiaGaleria[]>([])
   const [carregando, setCarregando] = useState(true)
   const [midiaAberta, setMidiaAberta] = useState<MidiaGaleria | null>(null)
+  const [logado, setLogado] = useState(false)
 
   const carregar = useCallback(async (silencioso = false) => {
     if (!silencioso) setCarregando(true)
     try {
-      // cache: 'no-store' garante que sempre busca dados frescos do servidor
       const res = await fetch('/api/galeria', {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' },
@@ -179,24 +238,35 @@ export default function GaleriaPage() {
       const data = await res.json()
       setMidias(Array.isArray(data.fotos) ? data.fotos : [])
     } catch {
-      // falha silenciosa nas atualizações automáticas
+      // silencioso
     } finally {
       if (!silencioso) setCarregando(false)
     }
   }, [])
 
-  // Carga inicial
+  // Verifica sessão do cliente silenciosamente
+  const verificarSessao = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cliente/auth', { cache: 'no-store' })
+      const data = await res.json()
+      setLogado(data.autenticado === true)
+    } catch {
+      setLogado(false)
+    }
+  }, [])
+
   useEffect(() => {
     carregar(false)
-  }, [carregar])
+    verificarSessao()
+  }, [carregar, verificarSessao])
 
-  // Polling automático a cada 30s para refletir novos uploads sem recarregar a página
+  // Polling automático a cada 30s
   useEffect(() => {
     const intervalo = setInterval(() => carregar(true), INTERVALO_ATUALIZACAO)
     return () => clearInterval(intervalo)
   }, [carregar])
 
-  // Recarrega quando a aba volta ao foco (usuário troca de aba e volta)
+  // Recarrega ao voltar foco na aba
   useEffect(() => {
     const onFocus = () => carregar(true)
     window.addEventListener('visibilitychange', onFocus)
@@ -229,45 +299,28 @@ export default function GaleriaPage() {
         ) : (
           <div className="space-y-4">
             {fileiras.map((fileira, fi) => {
-              // ── Vídeos: 3 lado a lado, tamanho grande (aspect 9/16) ──
               if (fileira.tipo === 'video') {
                 return (
                   <div key={fi} className="grid grid-cols-3 gap-3">
                     {fileira.itens.map(midia => (
-                      <MediaCard
-                        key={midia.id}
-                        midia={midia}
-                        onClick={() => setMidiaAberta(midia)}
-                      />
+                      <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
                     ))}
                   </div>
                 )
               }
-
-              // ── Fotos portrait: 4 lado a lado (2 colunas no mobile) ──
               if (fileira.tipo === 'portrait') {
                 return (
                   <div key={fi} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {fileira.itens.map(midia => (
-                      <MediaCard
-                        key={midia.id}
-                        midia={midia}
-                        onClick={() => setMidiaAberta(midia)}
-                      />
+                      <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
                     ))}
                   </div>
                 )
               }
-
-              // ── Fotos landscape: 3 lado a lado (1 coluna no mobile) ──
               return (
                 <div key={fi} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {fileira.itens.map(midia => (
-                    <MediaCard
-                      key={midia.id}
-                      midia={midia}
-                      onClick={() => setMidiaAberta(midia)}
-                    />
+                    <MediaCard key={midia.id} midia={midia} onClick={() => setMidiaAberta(midia)} />
                   ))}
                 </div>
               )
@@ -281,7 +334,11 @@ export default function GaleriaPage() {
       </div>
 
       {midiaAberta && (
-        <Lightbox midia={midiaAberta} onClose={() => setMidiaAberta(null)} />
+        <Lightbox
+          midia={midiaAberta}
+          logado={logado}
+          onClose={() => setMidiaAberta(null)}
+        />
       )}
     </div>
   )
