@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBcEvent } from '@/lib/bcconnect'
 
 // ============================================
-// API: /api/leads — Supabase
+// API: /api/leads — Supabase + BC Connect
 // ============================================
 
 export async function POST(req: NextRequest) {
@@ -41,6 +42,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, leadId: null })
     }
 
+    // ── BC Connect: enviar evento (fire-and-forget, nunca bloqueia) ──────────
+    // Só enviamos se tiver email (campo obrigatório no BC Connect)
+    if (email) {
+      // Mapear origem do Maandhoo → eventType do BC Connect
+      const eventTypeMap: Record<string, 'SIGNUP' | 'RESERVATION'> = {
+        cadastro: 'SIGNUP',
+        lista_vip: 'SIGNUP',
+        popup_lista: 'SIGNUP',
+        reserva_mesa: 'RESERVATION',
+        reserva_camarote: 'RESERVATION',
+        reserva_aniversario: 'RESERVATION',
+        contato: 'SIGNUP',
+      }
+      const eventType = eventTypeMap[origem] ?? 'SIGNUP'
+
+      sendBcEvent({
+        eventType,
+        occurredAt: new Date().toISOString(),
+        lead: {
+          email: email.trim().toLowerCase(),
+          name: nome.trim(),
+          phone: whatsapp?.replace(/\D/g, '') ?? undefined,
+        },
+        optinAccepted: true, // consentimentoLGPD já validado acima
+        metadata: {
+          eventName: eventoNome ?? undefined,
+          occasionType: origem === 'reserva_aniversario' ? 'birthday' : undefined,
+        },
+      })
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     return NextResponse.json({ success: true, leadId: data.id })
   } catch (error) {
     console.error('[API Leads POST]', error)
@@ -65,7 +98,6 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
     if (error) return NextResponse.json({ erro: error.message }, { status: 500 })
 
-    // Normalizar campos para compatibilidade com o frontend
     const leads = (data ?? []).map(l => ({
       id: l.id,
       nome: l.nome,

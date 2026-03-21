@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBcEvent } from '@/lib/bcconnect'
 import {
   criarTokenCliente, verificarTokenCliente,
   CLIENTE_SESSION_COOKIE, CLIENTE_SESSION_DURATION_SECONDS,
@@ -88,6 +89,20 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.warn('[cliente-auth] Falha ao capturar lead:', e)
       }
+
+      sendBcEvent({
+        eventType: 'SIGNUP',
+        occurredAt: new Date().toISOString(),
+        lead: {
+          email: email.toLowerCase(),
+          name: nome.trim(),
+          phone: whatsapp ? String(whatsapp).replace(/\D/g, '') : undefined,
+        },
+        optinAccepted: true,
+        metadata: {
+          occasionType: 'area_cliente',
+        },
+      })
 
       return _responderComSessao(cliente)
     }

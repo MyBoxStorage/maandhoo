@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBcEvent } from '@/lib/bcconnect'
 import { enviarEmailCamarote } from '@/lib/email-ingresso'
 import type { GerarCamarotePayload } from '@/types/ingressos'
 
@@ -92,6 +93,21 @@ export async function POST(req: NextRequest) {
       console.log('[camarote] Email enviado para:', email_responsavel)
     }
 
+    sendBcEvent({
+      eventType: 'TICKET_PURCHASE',
+      occurredAt: new Date().toISOString(),
+      lead: {
+        email: email_responsavel.trim().toLowerCase(),
+        name: (nome_responsavel ?? 'Responsável').trim(),
+      },
+      optinAccepted: true,
+      metadata: {
+        eventName: typeof data.evento === 'string' ? data.evento : undefined,
+        occasionType: 'camarote',
+        groupSize: typeof data.total_ingressos === 'number' ? data.total_ingressos : undefined,
+      },
+    })
+
     return NextResponse.json({
       sucesso: true,
       camarote: data.camarote,
@@ -156,6 +172,21 @@ export async function PATCH(req: NextRequest) {
     if (!resultadoEmail.sucesso) {
       return NextResponse.json({ erro: `Falha no envio: ${resultadoEmail.erro}` }, { status: 500 })
     }
+
+    sendBcEvent({
+      eventType: 'TICKET_PURCHASE',
+      occurredAt: new Date().toISOString(),
+      lead: {
+        email: email_responsavel.trim().toLowerCase(),
+        name: (nome_responsavel ?? 'Responsável').trim(),
+      },
+      optinAccepted: true,
+      metadata: {
+        eventName: eventoData?.eventos?.nome,
+        occasionType: 'camarote_reenvio',
+        groupSize: links.length,
+      },
+    })
 
     return NextResponse.json({ sucesso: true, total_links: links.length })
   } catch (err) {

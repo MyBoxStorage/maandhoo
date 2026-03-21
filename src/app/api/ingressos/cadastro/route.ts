@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendBcEvent } from '@/lib/bcconnect'
 import { hashCPF, formatarCPF, validarCPF, calcularExpiracao } from '@/lib/ingresso-utils'
 import type { CadastroPayload } from '@/types/ingressos'
 
@@ -136,6 +137,22 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn('[cadastro] Falha ao capturar lead:', e)
     }
+
+    sendBcEvent({
+      eventType: 'TICKET_PURCHASE',
+      occurredAt: new Date().toISOString(),
+      lead: {
+        email: emailNormalizado,
+        name: nome_completo.trim(),
+        phone: whatsapp.replace(/[^0-9]/g, ''),
+        gender: genero,
+      },
+      optinAccepted: true,
+      metadata: {
+        eventName: ingresso.eventos?.nome ?? undefined,
+        occasionType: ingresso.tipo === 'camarote' ? 'vip' : 'ingresso',
+      },
+    })
 
     return NextResponse.json({
       sucesso: true,
