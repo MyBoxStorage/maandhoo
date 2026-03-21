@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { gerarQRCodeBase64 } from '@/lib/qr-generator'
 import { enviarEmailLista } from '@/lib/email-ingresso'
 import { randomUUID } from 'crypto'
+import { sendBcEvent } from '@/lib/bcconnect'
 
 // ============================================
 // API: /api/lista
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       console.error('[lista] Exceção ao enviar email:', e)
     }
 
-    // 7. Capturar lead automaticamente
+    // 7. Capturar lead automaticamente no Supabase do Maandhoo
     try {
       await supabaseAdmin.from('leads').insert({
         nome: nome.trim(),
@@ -127,6 +128,22 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn('[lista] Falha ao capturar lead:', e)
     }
+
+    // 8. Enviar evento para o BC Connect (fire-and-forget)
+    sendBcEvent({
+      eventType: 'SIGNUP',
+      occurredAt: new Date().toISOString(),
+      lead: {
+        email: email.trim().toLowerCase(),
+        name: nome.trim(),
+        gender: genero,
+      },
+      optinAccepted: true,
+      metadata: {
+        eventName: evento.nome,
+        occasionType: 'lista_amiga',
+      },
+    })
 
     return NextResponse.json({
       success: true,
