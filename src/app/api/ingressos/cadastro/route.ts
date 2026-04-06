@@ -138,6 +138,13 @@ export async function POST(req: NextRequest) {
       console.warn('[cadastro] Falha ao capturar lead:', e)
     }
 
+    const lote = ingresso.lotes as import('@/types/ingressos').LoteDB | null
+    const precoPago = ingresso.preco_pago as number | null | undefined
+    const precoLote = lote
+      ? (genero === 'feminino' ? lote.preco_fem : lote.preco_masc)
+      : undefined
+    const estimatedTicket = precoPago ?? precoLote ?? undefined
+
     sendBcEvent({
       eventType: 'TICKET_PURCHASE',
       occurredAt: new Date().toISOString(),
@@ -151,6 +158,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         eventName: ingresso.eventos?.nome ?? undefined,
         occasionType: ingresso.tipo === 'camarote' ? 'vip' : 'ingresso',
+        estimatedTicket,
       },
     })
 

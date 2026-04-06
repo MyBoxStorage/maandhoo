@@ -90,6 +90,10 @@ export async function POST(req: NextRequest) {
         console.warn('[cliente-auth] Falha ao capturar lead:', e)
       }
 
+      const leadAge = data_nascimento
+        ? new Date().getFullYear() - new Date(data_nascimento).getFullYear()
+        : undefined
+
       sendBcEvent({
         eventType: 'SIGNUP',
         occurredAt: new Date().toISOString(),
@@ -97,8 +101,10 @@ export async function POST(req: NextRequest) {
           email: email.toLowerCase(),
           name: nome.trim(),
           phone: whatsapp ? String(whatsapp).replace(/\D/g, '') : undefined,
+          age: leadAge,
+          cityOfOrigin: cidade?.trim() || undefined,
         },
-        optinAccepted: true,
+        optinAccepted: !!lgpd_aceito,
         metadata: {
           occasionType: 'area_cliente',
         },

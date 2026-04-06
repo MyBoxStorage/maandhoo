@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const { data: camaroteData } = await supabaseAdmin
       .from('camarotes')
-      .select('evento_id, identificador, eventos(nome, data_evento)')
+      .select('evento_id, identificador, preco_total, eventos(nome, data_evento)')
       .eq('id', camarote_id)
       .single()
 
@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
         eventName: typeof data.evento === 'string' ? data.evento : undefined,
         occasionType: 'camarote',
         groupSize: typeof data.total_ingressos === 'number' ? data.total_ingressos : undefined,
+        estimatedTicket: (camaroteData as { preco_total?: number | null } | null)?.preco_total ?? undefined,
       },
     })
 
