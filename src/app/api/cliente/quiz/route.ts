@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verificarTokenCliente, CLIENTE_SESSION_COOKIE } from '@/lib/cliente-session'
+import { sendBcEvent } from '@/lib/bcconnect'
 
 // POST /api/cliente/quiz
-// Salva resultado do quiz de perfil + consentimento LGPD opcional
+// Salva resultado do quiz de perfil + envia preferências ao BC Connect
 export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get(CLIENTE_SESSION_COOKIE)?.value
@@ -28,14 +29,12 @@ export async function POST(req: NextRequest) {
       quiz_perfil_nome: perfil_nome,
     }
 
-    // Registra consentimento LGPD se foi dado durante o quiz
     if (lgpd_aceito) {
       updates.lgpd_aceito        = true
       updates.lgpd_aceito_em     = agora
       updates.lgpd_versao_termo  = lgpd_versao ?? '1.0'
       updates.lgpd_ip            = ip
 
-      // Log imutável de auditoria (requisito LGPD)
       await supabaseAdmin.from('consentimentos_log').insert({
         cliente_id:  payload.id,
         tipo:        'lgpd',
@@ -46,14 +45,40 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const { error } = await supabaseAdmin
+    const { data: cliente, error } = await supabaseAdmin
       .from('clientes')
       .update(updates)
       .eq('id', payload.id)
+      .select('email, nome, whatsapp')
+      .single()
 
     if (error) {
       console.error('[quiz POST]', error)
       return NextResponse.json({ erro: 'Erro ao salvar quiz' }, { status: 500 })
+    }
+
+    // Envia preferências ao BC Connect para enriquecer o score do lead
+    // respostas é um objeto { categoria: valor } vindo do quiz de perfil
+    if (cliente?.email && respostas && typeof respostas === 'object') {
+      const preferences = Object.entries(respostas as Record<string, string>).map(
+        ([category, value]) => ({ category: String(category).toUpperCase(), value: String(value) })
+      )
+
+      void sendBcEvent({
+        eventType: 'PREFERENCE_UPDATE',
+        occurredAt: agora,
+        lead: {
+          email: cliente.email,
+          name:  cliente.nome ?? undefined,
+          phone: cliente.whatsapp ? String(cliente.whatsapp).replace(/\D/g, '') : undefined,
+        },
+        optinAccepted: true,
+        metadata: {
+          preferences,
+          eventName: `quiz_perfil_${perfil_id ?? 'desconhecido'}`,
+          occasionType: 'quiz',
+        },
+      })
     }
 
     return NextResponse.json({ ok: true })
